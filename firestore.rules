@@ -1,0 +1,225 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - role: string (required, 'user' or 'admin')
+    //   - profileCompleted: boolean (required)
+    //   - createdAt: timestamp (required, immutable)
+    //   - displayName: string (optional)
+    //   - photoURL: string (optional)
+    //   - legalName: string (optional)
+    //   - phone: string (optional)
+    //   - guardianName: string (optional)
+    //   - guardianPhone: string (optional)
+    //   - nidNumber: string (optional)
+    //   - nidImageUrl: string (optional)
+    //
+    // Collection: rooms
+    // Document ID: {roomId}
+    // Fields:
+    //   - id: string (required)
+    //   - name: string (required)
+    //   - type: string (required, 'Single Delux', 'Double Delux', 'Family Suite', 'Super Deluxe')
+    //   - price: number (required)
+    //   - isAvailable: boolean (required)
+    //   - createdAt: timestamp (required, immutable)
+    //   - amenities: list (optional)
+    //   - imageUrl: string (optional)
+    //   - description: string (optional)
+    //
+    // Collection: bookings
+    // Document ID: {bookingId}
+    // Fields:
+    //   - id: string (required)
+    //   - userId: string (required)
+    //   - roomId: string (required)
+    //   - roomName: string (optional)
+    //   - userName: string (optional)
+    //   - userPhone: string (optional)
+    //   - userEmail: string (optional)
+    //   - checkIn: timestamp (required)
+    //   - checkOut: timestamp (required)
+    //   - status: string (required, 'pending', 'confirmed', 'accepted', 'rejected', 'cancelled', 'completed')
+    //   - totalAmount: number (required)
+    //   - createdAt: timestamp (required, immutable)
+    //
+    // Collection: content
+    // Document ID: {contentId}
+    // Fields:
+    //   - id: string (required)
+    //   - section: string (required)
+    //   - data: string (required)
+    //   - updatedAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.email == "hotelshotabdiabashik@gmail.com" && request.auth.token.email_verified == true) ||
+        (request.auth.token.email == "fuadf342@gmail.com" && request.auth.token.email_verified == true) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function hasOnlyAllowedFields(allowedFields) {
+      return request.resource.data.keys().hasOnly(allowedFields);
+    }
+
+    function hasRequiredFields(requiredFields) {
+      return request.resource.data.keys().hasAll(requiredFields);
+    }
+
+    function areImmutableFieldsUnchanged(fields) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser() {
+      let allowedFields = ['uid', 'email', 'role', 'profileCompleted', 'createdAt', 'displayName', 'photoURL', 'legalName', 'phone', 'guardianName', 'guardianPhone', 'nidNumber', 'nidImageUrl', 'lastUpdated'];
+      let requiredFields = ['uid', 'email', 'role', 'profileCompleted', 'createdAt'];
+      
+      return hasOnlyAllowedFields(allowedFields) &&
+             hasRequiredFields(requiredFields) &&
+             request.resource.data.uid is string && request.resource.data.uid.size() > 0 && request.resource.data.uid.size() <= 128 &&
+             request.resource.data.email is string && request.resource.data.email.size() > 0 && request.resource.data.email.size() <= 256 &&
+             request.resource.data.role in ['user', 'admin'] &&
+             request.resource.data.profileCompleted is bool &&
+             request.resource.data.createdAt is timestamp &&
+             (!('displayName' in request.resource.data) || (request.resource.data.displayName is string && request.resource.data.displayName.size() <= 100)) &&
+             (!('photoURL' in request.resource.data) || (request.resource.data.photoURL is string && request.resource.data.photoURL.size() <= 1000)) &&
+             (!('legalName' in request.resource.data) || (request.resource.data.legalName is string && request.resource.data.legalName.size() <= 100)) &&
+             (!('phone' in request.resource.data) || (request.resource.data.phone is string && request.resource.data.phone.size() <= 20)) &&
+             (!('guardianName' in request.resource.data) || (request.resource.data.guardianName is string && request.resource.data.guardianName.size() <= 100)) &&
+             (!('guardianPhone' in request.resource.data) || (request.resource.data.guardianPhone is string && request.resource.data.guardianPhone.size() <= 20)) &&
+             (!('nidNumber' in request.resource.data) || (request.resource.data.nidNumber is string && request.resource.data.nidNumber.size() <= 50)) &&
+             (!('nidImageUrl' in request.resource.data) || (request.resource.data.nidImageUrl is string && request.resource.data.nidImageUrl.size() <= 1000)) &&
+             (!('lastUpdated' in request.resource.data) || (request.resource.data.lastUpdated is timestamp));
+    }
+
+    function isValidRoom() {
+      let allowedFields = ['id', 'name', 'type', 'price', 'cutPrice', 'isAvailable', 'createdAt', 'amenities', 'imageUrl', 'description'];
+      let requiredFields = ['id', 'name', 'type', 'price', 'isAvailable', 'createdAt'];
+      
+      return hasOnlyAllowedFields(allowedFields) &&
+             hasRequiredFields(requiredFields) &&
+             request.resource.data.id is string && request.resource.data.id.size() > 0 && request.resource.data.id.size() <= 128 &&
+             request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100 &&
+             request.resource.data.type in ['Single Delux', 'Double Delux', 'Family Suite', 'Super Deluxe'] &&
+             request.resource.data.price is number && request.resource.data.price >= 0 &&
+             (!('cutPrice' in request.resource.data) || (request.resource.data.cutPrice is number && request.resource.data.cutPrice >= 0)) &&
+             request.resource.data.isAvailable is bool &&
+             request.resource.data.createdAt is timestamp &&
+             (!('amenities' in request.resource.data) || (request.resource.data.amenities is list && request.resource.data.amenities.size() <= 50)) &&
+             (!('imageUrl' in request.resource.data) || (request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 1000)) &&
+             (!('description' in request.resource.data) || (request.resource.data.description is string && request.resource.data.description.size() <= 2000));
+    }
+
+    function isValidBooking() {
+      let allowedFields = ['id', 'userId', 'roomId', 'roomName', 'userName', 'userPhone', 'userEmail', 'checkIn', 'checkOut', 'status', 'totalAmount', 'createdAt'];
+      let requiredFields = ['id', 'userId', 'roomId', 'checkIn', 'checkOut', 'status', 'totalAmount', 'createdAt'];
+      
+      return hasOnlyAllowedFields(allowedFields) &&
+             hasRequiredFields(requiredFields) &&
+             request.resource.data.id is string && request.resource.data.id.size() > 0 && request.resource.data.id.size() <= 128 &&
+             request.resource.data.userId is string && request.resource.data.userId.size() > 0 && request.resource.data.userId.size() <= 128 &&
+             request.resource.data.roomId is string && request.resource.data.roomId.size() > 0 && request.resource.data.roomId.size() <= 128 &&
+             (!('roomName' in request.resource.data) || (request.resource.data.roomName is string && request.resource.data.roomName.size() <= 100)) &&
+             (!('userName' in request.resource.data) || (request.resource.data.userName is string && request.resource.data.userName.size() <= 100)) &&
+             (!('userPhone' in request.resource.data) || (request.resource.data.userPhone is string && request.resource.data.userPhone.size() <= 20)) &&
+             (!('userEmail' in request.resource.data) || (request.resource.data.userEmail is string && request.resource.data.userEmail.size() <= 256)) &&
+             request.resource.data.checkIn is timestamp &&
+             request.resource.data.checkOut is timestamp &&
+             request.resource.data.checkIn < request.resource.data.checkOut &&
+             request.resource.data.status in ['pending', 'confirmed', 'accepted', 'rejected', 'cancelled', 'completed'] &&
+             request.resource.data.totalAmount is number && request.resource.data.totalAmount >= 0 &&
+             request.resource.data.createdAt is timestamp;
+    }
+
+    function isValidContent() {
+      let allowedFields = ['id', 'section', 'data', 'updatedAt'];
+      let requiredFields = ['id', 'section', 'data', 'updatedAt'];
+      
+      return hasOnlyAllowedFields(allowedFields) &&
+             hasRequiredFields(requiredFields) &&
+             request.resource.data.id is string && request.resource.data.id.size() > 0 && request.resource.data.id.size() <= 128 &&
+             request.resource.data.section is string && request.resource.data.section.size() > 0 && request.resource.data.section.size() <= 100 &&
+             request.resource.data.data is string && request.resource.data.data.size() <= 1500000 && // 1.5MB limit for base64 images
+             request.resource.data.updatedAt is timestamp;
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && 
+                    isOwner(userId) && 
+                    isValidUser() && 
+                    request.resource.data.uid == userId &&
+                    (request.resource.data.role == 'user' || isAdmin()); // Only admins can create admin users
+      allow update: if isAuthenticated() && 
+                    isValidUser() && 
+                    areImmutableFieldsUnchanged(['uid', 'createdAt']) &&
+                    (
+                      (isOwner(userId) && request.resource.data.role == resource.data.role) || // Users can't change their own role
+                      isAdmin()
+                    );
+      allow delete: if isAdmin();
+    }
+
+    match /rooms/{roomId} {
+      allow read: if true; // Anyone can read rooms
+      allow create: if isAdmin() && isValidRoom();
+      allow update: if isAdmin() && isValidRoom() && areImmutableFieldsUnchanged(['id', 'createdAt']);
+      allow delete: if isAdmin();
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      allow create: if isAuthenticated() && 
+                    isValidBooking() && 
+                    request.resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && 
+                    isValidBooking() && 
+                    areImmutableFieldsUnchanged(['id', 'userId', 'roomId', 'createdAt']) &&
+                    (
+                      (isOwner(resource.data.userId) && request.resource.data.status == 'cancelled') || // Users can only cancel their bookings
+                      isAdmin()
+                    );
+      allow delete: if isAdmin();
+    }
+
+    match /content/{contentId} {
+      allow read: if true; // Anyone can read content
+      allow create: if isAdmin() && isValidContent();
+      allow update: if isAdmin() && isValidContent() && areImmutableFieldsUnchanged(['id', 'section']);
+      allow delete: if isAdmin();
+    }
+  }
+}
