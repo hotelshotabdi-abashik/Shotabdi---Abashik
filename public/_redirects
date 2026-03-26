@@ -1,5 +1,3 @@
-# Allow the verification file to be seen directly
 /google4b44840852fd66ec.html /google4b44840852fd66ec.html 200
-
-# Your existing redirect for React SPA
+/sitemap.xml /sitemap.xml 200
 /* /index.html 200
