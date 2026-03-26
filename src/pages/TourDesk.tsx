@@ -52,17 +52,8 @@ export default function TourDesk() {
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, message: string, onConfirm: () => void }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
   useEffect(() => {
-    // Auto-seed if empty and user is admin
-    if ((!content.tourSpots || content.tourSpots.length === 0) && profile?.role === 'admin') {
-      console.log("Tour spots empty. Auto-seeding...");
-      updateContent('tourSpots', defaultTourSpots).catch(console.error);
-    } else if (profile?.role === 'admin' && !localStorage.getItem('tourSpotsRestored_v2')) {
-      console.log("Forcing restore of tour spots...");
-      updateContent('tourSpots', defaultTourSpots).catch(console.error);
-      localStorage.setItem('tourSpotsRestored_v2', 'true');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [content.tourSpots, profile?.role]);
+    // Removed auto-seeding logic to prevent data reset
+  }, [content.tourSpots]);
 
   const tourSpots = content.tourSpots && content.tourSpots.length > 0 ? content.tourSpots : defaultTourSpots;
 

@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
 
 interface Room {
@@ -15,6 +16,7 @@ interface Room {
   imageUrl: string;
   description: string;
   isAvailable: boolean;
+  order?: number;
 }
 
 interface User {
@@ -42,6 +44,7 @@ interface Booking {
 
 export default function Admin() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'rooms' | 'users' | 'bookings' | 'content'>('rooms');
   
   // Rooms State
@@ -166,6 +169,7 @@ export default function Admin() {
       imageUrl: 'https://picsum.photos/seed/newroom/800/600',
       description: 'নতুন রুমের বিবরণ।',
       isAvailable: true,
+      order: 5,
       createdAt: serverTimestamp()
     };
     
@@ -226,6 +230,11 @@ export default function Admin() {
   };
 
   const handleUpdateUserRole = async (uid: string, newRole: string) => {
+    if (user && user.uid === uid) {
+      toast.error(t("আপনি নিজের রোল পরিবর্তন করতে পারবেন না।", "You cannot change your own role."));
+      return;
+    }
+    
     try {
       const userRef = doc(db, 'users', uid);
       await updateDoc(userRef, { role: newRole });
@@ -334,6 +343,7 @@ export default function Admin() {
                       <th className="p-4 font-bold border-b">{t('রুমের নাম', 'Room Name')}</th>
                       <th className="p-4 font-bold border-b">{t('ধরন', 'Type')}</th>
                       <th className="p-4 font-bold border-b">{t('মূল্য (৳)', 'Price (৳)')}</th>
+                      <th className="p-4 font-bold border-b">{t('ক্রম', 'Order')}</th>
                       <th className="p-4 font-bold border-b">{t('অবস্থা', 'Status')}</th>
                       <th className="p-4 font-bold border-b text-right">{t('অ্যাকশন', 'Action')}</th>
                     </tr>
@@ -379,6 +389,18 @@ export default function Admin() {
                             />
                           ) : (
                             <span className="text-slate-600">৳{room.price}</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          {isEditing === room.id ? (
+                            <input 
+                              type="number" 
+                              value={editForm.order || 0} 
+                              onChange={(e) => setEditForm({...editForm, order: Number(e.target.value)})}
+                              className="w-full px-2 py-1 border border-slate-300 rounded"
+                            />
+                          ) : (
+                            <span className="text-slate-600">{room.order || '-'}</span>
                           )}
                         </td>
                         <td className="p-4">
@@ -466,7 +488,8 @@ export default function Admin() {
                           <select 
                             value={u.role}
                             onChange={(e) => handleUpdateUserRole(u.uid, e.target.value)}
-                            className="px-2 py-1 border border-slate-300 rounded text-sm"
+                            disabled={user?.uid === u.uid}
+                            className={`px-2 py-1 border border-slate-300 rounded text-sm ${user?.uid === u.uid ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <option value="user">User</option>
                             <option value="admin">Admin</option>

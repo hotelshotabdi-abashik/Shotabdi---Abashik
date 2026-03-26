@@ -52,20 +52,10 @@ export default function Restaurant() {
   useEffect(() => {
     if (content.restaurants && content.restaurants.length > 0) {
       setRestaurants(content.restaurants);
-      if (profile?.role === 'admin' && !localStorage.getItem('restaurantsRestored_v2')) {
-        console.log("Forcing restore of restaurants...");
-        updateContent('restaurants', defaultRestaurants).catch(console.error);
-        localStorage.setItem('restaurantsRestored_v2', 'true');
-      }
     } else {
       setRestaurants(defaultRestaurants);
-      if (profile?.role === 'admin') {
-        console.log("Restaurants empty. Auto-seeding...");
-        updateContent('restaurants', defaultRestaurants).catch(console.error);
-      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [content.restaurants, profile?.role]);
+  }, [content.restaurants]);
 
   const handleRestoreDefaults = async () => {
     setConfirmModal({

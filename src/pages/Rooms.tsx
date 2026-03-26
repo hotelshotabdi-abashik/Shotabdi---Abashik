@@ -21,6 +21,7 @@ interface Room {
   imageUrl: string;
   description: string;
   isAvailable: boolean;
+  order?: number;
 }
 
 const defaultRooms = [
@@ -33,6 +34,7 @@ const defaultRooms = [
     imageUrl: 'https://picsum.photos/seed/single/800/600',
     description: 'Comfortable single room perfect for solo travelers.',
     isAvailable: true,
+    order: 1,
   },
   {
     name: 'Double Delux',
@@ -43,6 +45,7 @@ const defaultRooms = [
     imageUrl: 'https://picsum.photos/seed/double/800/600',
     description: 'Spacious double room for couples or friends.',
     isAvailable: true,
+    order: 2,
   },
   {
     name: 'Family Suit',
@@ -53,6 +56,7 @@ const defaultRooms = [
     imageUrl: 'https://picsum.photos/seed/family/800/600',
     description: 'Large suite suitable for the whole family.',
     isAvailable: true,
+    order: 3,
   },
   {
     name: 'Super Delux',
@@ -63,6 +67,7 @@ const defaultRooms = [
     imageUrl: 'https://picsum.photos/seed/super/800/600',
     description: 'Premium room with extra comfort and air conditioning.',
     isAvailable: true,
+    order: 4,
   }
 ];
 
@@ -106,27 +111,6 @@ export default function Rooms() {
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
   useEffect(() => {
-    const seedIfEmpty = async () => {
-      if (profile?.role !== 'admin') return;
-      try {
-        const roomsRef = collection(db, 'rooms');
-        const snapshot = await getDocs(roomsRef);
-        if (snapshot.empty && !localStorage.getItem('roomsSeeded_v2')) {
-          console.log("Rooms collection is empty. Auto-seeding default rooms...");
-          for (const room of defaultRooms) {
-            const newRoomRef = doc(roomsRef);
-            await setDoc(newRoomRef, { ...room, id: newRoomRef.id, createdAt: serverTimestamp() });
-          }
-          localStorage.setItem('roomsSeeded_v2', 'true');
-        }
-      } catch (error) {
-        console.error("Error auto-seeding rooms:", error);
-      }
-    };
-    seedIfEmpty();
-  }, [profile?.role]);
-
-  useEffect(() => {
     const roomsRef = collection(db, 'rooms');
     const unsubscribe = onSnapshot(roomsRef, (snapshot) => {
       const roomsData = snapshot.docs.map(doc => ({
@@ -134,8 +118,15 @@ export default function Rooms() {
         ...doc.data()
       })) as Room[];
       
-      // Sort rooms to maintain consistent order (e.g., by price)
-      roomsData.sort((a, b) => a.price - b.price);
+      // Sort rooms to maintain consistent order (e.g., by order field, then price)
+      roomsData.sort((a, b) => {
+        if (a.order !== undefined && b.order !== undefined) {
+          return a.order - b.order;
+        }
+        if (a.order !== undefined) return -1;
+        if (b.order !== undefined) return 1;
+        return a.price - b.price;
+      });
       
       setRooms(roomsData);
       setLoading(false);

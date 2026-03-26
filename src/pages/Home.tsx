@@ -1,67 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BedDouble, CheckCircle2, MapPin, Percent, Utensils, Compass, PhoneCall, ArrowRight, Star } from 'lucide-react';
-import { collection, getDocs, query, where, limit } from 'firebase/firestore';
-import { db } from '../firebase';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
 import { EditableText } from '../components/EditableText';
 import { EditableImage } from '../components/EditableImage';
 
-interface Room {
-  id: string;
-  name: string;
-  type: string;
-  price: number;
-  cutPrice?: number;
-  imageUrl: string;
-}
-
 export default function Home() {
   const { t } = useLanguage();
   const { content } = useContent();
-  const [featuredRooms, setFeaturedRooms] = useState<Room[]>([
-    { id: '1', name: 'সিঙ্গেল ডিলাক্স', type: 'Single Delux', price: 1500, cutPrice: 2000, imageUrl: 'https://picsum.photos/seed/room1/800/600' },
-    { id: '2', name: 'ডাবল ডিলাক্স', type: 'Double Delux', price: 2500, cutPrice: 3333, imageUrl: 'https://picsum.photos/seed/room2/800/600' },
-    { id: '3', name: 'ফ্যামিলি স্যুট', type: 'Family Suit', price: 4000, cutPrice: 5333, imageUrl: 'https://picsum.photos/seed/room3/800/600' }
-  ]);
-
-  useEffect(() => {
-    const fetchRooms = async () => {
-      try {
-        const q = query(collection(db, 'rooms'), where('isAvailable', '==', true), limit(3));
-        const querySnapshot = await getDocs(q);
-        const roomsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Room));
-        
-        if (roomsData.length > 0) {
-          setFeaturedRooms(roomsData);
-        }
-      } catch (error) {
-        console.error("Error fetching rooms:", error);
-      }
-    };
-    fetchRooms();
-  }, []);
-
-  const globalDiscountRateStr = content?.global_discount_rate || '0';
-  const globalDiscountRate = parseInt(globalDiscountRateStr, 10) || 0;
-  
-  const getDiscountPercentage = (room: Room) => {
-    if (room.cutPrice && room.cutPrice > room.price) {
-      return Math.round(((room.cutPrice - room.price) / room.cutPrice) * 100);
-    }
-    return globalDiscountRate;
-  };
-
-  const getStrikethroughPrice = (room: Room) => {
-    if (room.cutPrice && room.cutPrice > room.price) {
-      return room.cutPrice;
-    }
-    if (globalDiscountRate > 0) {
-      return Math.round(room.price / (1 - globalDiscountRate / 100));
-    }
-    return null;
-  };
 
   return (
     <div className="bg-slate-50">
@@ -142,48 +89,25 @@ export default function Home() {
               <h2 className="text-3xl font-bold text-slate-900 mb-4">{t('আমাদের সেরা রুমসমূহ', 'Our Best Rooms')}</h2>
               <div className="w-24 h-1 bg-red-600 rounded-full"></div>
             </div>
-            <Link to="/rooms" className="hidden sm:flex items-center text-red-700 font-bold hover:text-red-800 transition-colors">
-              {t('সব রুম দেখুন', 'View All Rooms')}
-            </Link>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {featuredRooms.map((room) => (
-              <div key={room.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl transition-all group">
-                <div className="relative h-64 overflow-hidden">
-                  <img src={room.imageUrl} alt={room.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
-                  {getDiscountPercentage(room) > 0 ? (
-                    <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-sm animate-bounce">
-                      {getDiscountPercentage(room)}% OFF
-                    </div>
-                  ) : null}
-                </div>
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-bold text-slate-900">{t(room.name, room.type)}</h3>
-                    <div className="text-right">
-                      {getStrikethroughPrice(room) ? (
-                        <>
-                          <div className="text-xs text-slate-400 line-through">৳{getStrikethroughPrice(room)}</div>
-                          <div className="text-lg font-bold text-red-600">৳{room.price}</div>
-                        </>
-                      ) : (
-                        <div className="text-lg font-bold text-slate-900">৳{room.price}</div>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-sm text-slate-500 mb-6 uppercase tracking-wider font-semibold">{room.type}</p>
-                  <Link to="/rooms" className="w-full block text-center bg-slate-100 hover:bg-red-700 hover:text-white text-slate-900 font-bold py-3 px-4 rounded-xl transition-colors">
-                    {t('বিস্তারিত দেখুন', 'View Details')}
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-10 text-center sm:hidden">
-            <Link to="/rooms" className="inline-flex items-center text-red-700 font-bold hover:text-red-800 transition-colors">
-              {t('সব রুম দেখুন', 'View All Rooms')}
-            </Link>
+          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden relative">
+            <div className="absolute inset-0 opacity-20">
+              <EditableImage contentKey="home_rooms_shortcut_bg" defaultSrc="https://picsum.photos/seed/hotelrooms/1920/1080" className="w-full h-full object-cover" />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 to-slate-900/40"></div>
+            <div className="relative p-12 md:p-20 flex flex-col items-center text-center">
+              <BedDouble className="w-16 h-16 text-white mb-6" />
+              <h3 className="text-3xl md:text-5xl font-bold text-white mb-6">
+                <EditableText contentKey="home_rooms_shortcut_title" defaultText={t('আপনার পছন্দের রুমটি বেছে নিন', 'Choose Your Preferred Room')} />
+              </h3>
+              <p className="text-xl text-slate-200 mb-10 max-w-2xl">
+                <EditableText contentKey="home_rooms_shortcut_desc" defaultText={t('আমাদের সিঙ্গেল ডিলাক্স, ডাবল ডিলাক্স, ফ্যামিলি স্যুট এবং সুপার ডিলাক্স রুমগুলো থেকে আপনার প্রয়োজন অনুযায়ী সেরা রুমটি বেছে নিন।', 'Choose the best room according to your needs from our Single Delux, Double Delux, Family Suit, and Super Delux rooms.')} multiline />
+              </p>
+              <Link to="/rooms" className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-full bg-red-700 text-white hover:bg-red-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+                {t('সব রুম দেখুন', 'View All Rooms')} <ArrowRight className="ml-2 w-5 h-5" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
