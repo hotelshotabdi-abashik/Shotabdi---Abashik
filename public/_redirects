@@ -1,1 +1,5 @@
+# Allow the verification file to be seen directly
+/google4b44840852fd66ec.html /google4b44840852fd66ec.html 200
+
+# Your existing redirect for React SPA
 /* /index.html 200
