@@ -61,7 +61,19 @@ export default function Navbar() {
     return () => unsubscribe();
   }, [user, profile]);
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   const handleNotificationClick = () => {
+    setIsOpen(false);
     if (profile?.role === 'admin') {
       navigate('/admin');
     } else {
@@ -73,17 +85,16 @@ export default function Navbar() {
     <nav className="bg-white text-slate-900 shadow-sm sticky top-0 z-50">
       <div className="w-full px-2 sm:px-4 lg:px-6">
         <div className="flex justify-between min-h-[4rem] py-2">
-          <div className="flex items-center flex-1 mr-2 sm:mr-4">
-            <Link to="/" className="flex items-center gap-2">
+          <div className="flex items-center flex-1 mr-2 sm:mr-4 min-w-0">
+            <Link to="/" className="flex items-center gap-2 min-w-0" onClick={() => setIsOpen(false)}>
               <EditableImage 
                 contentKey="site_logo" 
                 defaultSrc="https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png" 
-                className="h-6 sm:h-8 lg:h-10 w-auto flex-shrink-0" 
+                className="h-8 sm:h-10 lg:h-12 w-auto flex-shrink-0 object-contain" 
                 alt="Hotel Shotabdi Abashik Logo"
                 folder="shotabdi-abashik/logo"
-                forceSvg={true}
               />
-              <span className="font-bold text-xs sm:text-sm md:text-base lg:text-xl text-slate-900 leading-tight whitespace-nowrap">
+              <span className="font-bold text-xs sm:text-sm md:text-base lg:text-xl text-slate-900 leading-tight truncate">
                 {t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik')}
               </span>
             </Link>
@@ -214,7 +225,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="xl:hidden bg-white border-t border-slate-100 shadow-lg">
+        <div className="xl:hidden bg-white border-t border-slate-100 shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
             {(!user || profile?.profileCompleted) && navLinks.map((link) => (
               <Link key={link.name} to={link.path} onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-3 py-2 rounded-md text-base font-medium">
