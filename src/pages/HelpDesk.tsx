@@ -1,4 +1,4 @@
-import { MessageCircle, PhoneCall, Mail } from 'lucide-react';
+import { MessageCircle, PhoneCall, Mail, Phone, Send } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function HelpDesk() {
@@ -19,8 +19,32 @@ export default function HelpDesk() {
             </div>
             <h3 className="text-xl font-bold text-slate-900 mb-3">{t('ফোন করুন', 'Call Us')}</h3>
             <p className="text-slate-600 mb-4">{t('সরাসরি কথা বলতে কল করুন:', 'Call to speak directly:')}</p>
-            <p className="font-bold text-red-600">+880 1717-425702</p>
-            <p className="font-bold text-red-600">+880 1334-935566</p>
+            
+            <div className="space-y-4">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <p className="font-bold text-slate-900 mb-2">+880 1717-425702</p>
+                <div className="flex justify-center gap-2">
+                  <a href="tel:+8801717425702" className="flex items-center gap-1 bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
+                    <Phone className="w-4 h-4" /> {t('কল', 'Call')}
+                  </a>
+                  <a href="https://wa.me/8801717425702" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                    <MessageCircle className="w-4 h-4" /> WhatsApp
+                  </a>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <p className="font-bold text-slate-900 mb-2">+880 1334-935566</p>
+                <div className="flex justify-center gap-2">
+                  <a href="tel:+8801334935566" className="flex items-center gap-1 bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
+                    <Phone className="w-4 h-4" /> {t('কল', 'Call')}
+                  </a>
+                  <a href="https://wa.me/8801334935566" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                    <MessageCircle className="w-4 h-4" /> WhatsApp
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
           
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 text-center hover:shadow-md transition-shadow">
@@ -29,8 +53,22 @@ export default function HelpDesk() {
             </div>
             <h3 className="text-xl font-bold text-slate-900 mb-3">{t('ইমেইল করুন', 'Email Us')}</h3>
             <p className="text-slate-600 mb-4">{t('যেকোনো তথ্যের জন্য ইমেইল করুন:', 'Email for any information:')}</p>
-            <a href="mailto:hotel@shotabdi-abashik.bd" className="font-bold text-red-600 hover:underline block">hotel@shotabdi-abashik.bd</a>
-            <a href="mailto:hotelshotabdiabashik@gmail.com" className="font-bold text-red-600 hover:underline block">hotelshotabdiabashik@gmail.com</a>
+            
+            <div className="space-y-4">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <p className="font-bold text-slate-900 mb-2 text-sm break-all">hotel@shotabdi-abashik.bd</p>
+                <a href="mailto:hotel@shotabdi-abashik.bd" className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
+                  <Send className="w-4 h-4" /> {t('ইমেইল পাঠান', 'Send Email')}
+                </a>
+              </div>
+
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <p className="font-bold text-slate-900 mb-2 text-sm break-all">hotelshotabdiabashik@gmail.com</p>
+                <a href="mailto:hotelshotabdiabashik@gmail.com" className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
+                  <Send className="w-4 h-4" /> {t('ইমেইল পাঠান', 'Send Email')}
+                </a>
+              </div>
+            </div>
           </div>
           
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 text-center hover:shadow-md transition-shadow">

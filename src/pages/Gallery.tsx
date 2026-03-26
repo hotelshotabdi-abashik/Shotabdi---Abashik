@@ -4,6 +4,7 @@ import { useContent } from '../context/ContentContext';
 import { uploadToR2, deleteFromR2 } from '../lib/r2';
 import { Trash2, Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Helmet } from 'react-helmet-async';
 import { ConfirmModal } from '../components/ConfirmModal';
 
 export default function Gallery() {
@@ -54,6 +55,11 @@ export default function Gallery() {
 
   return (
     <div className="bg-slate-50 py-16 min-h-screen">
+      <Helmet>
+        <title>Gallery | Hotel Shotabdi Abashik</title>
+        <meta name="description" content="View photos of Hotel Shotabdi Abashik. See our rooms, facilities, and the beautiful surroundings in Sylhet." />
+        <meta name="keywords" content="Hotel Shotabdi Abashik photos, Sylhet hotel gallery, room pictures Sylhet" />
+      </Helmet>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h1 className="text-4xl font-extrabold text-slate-900 mb-4">{t('গ্যালারি', 'Gallery')}</h1>

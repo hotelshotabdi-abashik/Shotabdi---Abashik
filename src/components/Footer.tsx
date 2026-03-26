@@ -46,11 +46,17 @@ export default function Footer() {
             <li><Link to="/about" className="hover:text-red-400 transition-colors">{t('আমাদের সম্পর্কে', 'About Us')}</Link></li>
             <li><Link to="/help-desk" className="hover:text-red-400 transition-colors">{t('হেল্প ডেস্ক', 'Help Desk')}</Link></li>
             <li><Link to="/tour-desk" className="hover:text-red-400 transition-colors">{t('ট্যুর ডেস্ক', 'Tour Desk')}</Link></li>
+            <li><Link to="/privacy-policy" className="hover:text-red-400 transition-colors">{t('গোপনীয়তা নীতি', 'Privacy Policy')}</Link></li>
+            <li><Link to="/terms-of-service" className="hover:text-red-400 transition-colors">{t('পরিষেবার শর্তাবলী', 'Terms of Service')}</Link></li>
           </ul>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-center text-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-center text-sm flex flex-col gap-2">
         <p>&copy; {new Date().getFullYear()} Hotel Shotabdi Abashik. All rights reserved.</p>
+        <p className="text-slate-500 text-xs">
+          {t('মালিকানা:', 'Owned by:')} <span className="font-semibold text-slate-400">Abdul Kahar Kodor</span> | 
+          {t(' ডেভেলপমেন্ট:', ' Developed by:')} <a href="https://www.facebook.com/fuad.ahmed.52090" target="_blank" rel="noreferrer" className="font-semibold text-slate-400 hover:text-white transition-colors">Fuad Ahmed (Fuad Editing Zone)</a>
+        </p>
       </div>
     </footer>
   );

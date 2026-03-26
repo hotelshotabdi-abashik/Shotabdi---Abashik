@@ -7,6 +7,7 @@ import { EditableText } from '../components/EditableText';
 import { ImageUploader } from '../components/ImageUploader';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
+import { Helmet } from 'react-helmet-async';
 
 const defaultTourSpots = [
   { id: '1', name: 'SUST Campus & Shahid Minar', location: 'Kumargaon', distance: '1.5 km', type: 'University / Monument', imageUrl: 'https://picsum.photos/seed/sust/400/300', mapUrl: '' },
@@ -144,6 +145,11 @@ export default function TourDesk() {
 
   return (
     <div className="bg-slate-50 py-16 min-h-screen">
+      <Helmet>
+        <title>Tour Desk & Attractions | Hotel Shotabdi Abashik</title>
+        <meta name="description" content="Explore top tourist spots in Sylhet with our Tour Desk. Visit SUST Campus, Hazrat Shahjalal Mazar, Ratargul, Jaflong and more." />
+        <meta name="keywords" content="Sylhet tourist spots, Tour desk Sylhet, Jaflong, Ratargul, SUST, Sylhet attractions" />
+      </Helmet>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Tourist Spots List */}
         <div>

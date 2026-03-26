@@ -3,6 +3,7 @@ import { BedDouble, CheckCircle2, Wifi, Tv, Wind, Plus, Trash2, Edit2, Save, X, 
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
 import { EditableText } from '../components/EditableText';
@@ -298,6 +299,11 @@ export default function Rooms() {
 
   return (
     <div className="bg-slate-50 py-16">
+      <Helmet>
+        <title>Our Rooms | Hotel Shotabdi Abashik</title>
+        <meta name="description" content="Explore our comfortable and affordable rooms in Sylhet. Choose from Single Delux, Double Delux, Family Suit, and Super Delux." />
+        <meta name="keywords" content="Hotel rooms Sylhet, Single Delux, Double Delux, Family Suit, Super Delux, affordable stay Sylhet" />
+      </Helmet>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16 relative">
           <EditableText

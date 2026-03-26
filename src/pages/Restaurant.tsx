@@ -7,6 +7,7 @@ import { EditableText } from '../components/EditableText';
 import { ImageUploader } from '../components/ImageUploader';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
+import { Helmet } from 'react-helmet-async';
 
 const defaultRestaurants = [
   { name: 'Al-Modina Restaurant', location: 'Kumargaon Bus Stand', distance: '0.1 km', type: 'Local Bengali', imageUrl: 'https://picsum.photos/seed/almodina/400/300', mapUrl: '' },
@@ -128,6 +129,11 @@ export default function Restaurant() {
 
   return (
     <div className="bg-slate-50 py-16 min-h-screen">
+      <Helmet>
+        <title>Restaurants & Dining | Hotel Shotabdi Abashik</title>
+        <meta name="description" content="Discover the best restaurants and dining options near Hotel Shotabdi Abashik in Sylhet. From local Bengali cuisine to fast food." />
+        <meta name="keywords" content="Restaurants Sylhet, dining Sylhet, food near Kumargaon, best restaurants Sylhet" />
+      </Helmet>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Nearby Restaurants List */}
         <div>

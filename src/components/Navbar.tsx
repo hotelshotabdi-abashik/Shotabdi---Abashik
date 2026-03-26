@@ -15,8 +15,14 @@ export default function Navbar() {
   const { editMode, setEditMode } = useContent();
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isFullScreenNotification, setIsFullScreenNotification] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationDropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   const navLinks = [
@@ -30,9 +36,30 @@ export default function Navbar() {
   ];
 
   useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+      setIsScrolling(true);
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        setIsScrolling(false);
+      }, 800); // 800ms after stopping scroll
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(timeout);
+    };
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsProfileOpen(false);
+      }
+      if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target as Node)) {
+        setIsNotificationOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -55,7 +82,9 @@ export default function Navbar() {
     }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setNotificationCount(snapshot.docs.length);
+      const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setNotifications(notifs);
+      setNotificationCount(notifs.length);
     });
 
     return () => unsubscribe();
@@ -73,17 +102,12 @@ export default function Navbar() {
   }, [isOpen]);
 
   const handleNotificationClick = () => {
-    setIsOpen(false);
-    if (profile?.role === 'admin') {
-      navigate('/admin');
-    } else {
-      navigate('/my-stays');
-    }
+    setIsNotificationOpen(!isNotificationOpen);
   };
 
   return (
-    <nav className="bg-white text-slate-900 shadow-sm sticky top-0 z-50">
-      <div className="w-full px-2 sm:px-4 lg:px-6">
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 ${scrolled ? (isScrolling ? 'bg-white/95 backdrop-blur-sm shadow-md' : 'bg-white/0 shadow-none pointer-events-none') : 'bg-white shadow-sm'} text-slate-900`}>
+      <div className={`w-full px-2 sm:px-4 lg:px-6 ${scrolled && !isScrolling ? 'pointer-events-auto' : ''}`}>
         <div className="flex justify-between min-h-[4rem] py-2">
           <div className="flex items-center flex-1 mr-2 sm:mr-4 min-w-0">
             <Link to="/" className="flex items-center gap-2 min-w-0" onClick={() => setIsOpen(false)}>
@@ -128,18 +152,57 @@ export default function Navbar() {
               <div className="w-24 h-10 bg-slate-100 animate-pulse rounded-md ml-2 flex-shrink-0"></div>
             ) : (
               <div className="flex items-center ml-2 border-l border-slate-200 pl-2 flex-shrink-0">
-                <button 
-                  onClick={user ? handleNotificationClick : login}
-                  className="relative flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-700 transition-colors focus:outline-none mr-2 flex-shrink-0"
-                  title={user ? "Notifications" : "Login to see notifications"}
-                >
-                  <Bell className="w-5 h-5" />
-                  {notificationCount > 0 && (
-                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
-                      {notificationCount}
-                    </span>
+                <div className="relative" ref={notificationDropdownRef}>
+                  <button 
+                    onClick={user ? handleNotificationClick : login}
+                    className="relative flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-700 transition-colors focus:outline-none mr-2 flex-shrink-0"
+                    title={user ? "Notifications" : "Login to see notifications"}
+                  >
+                    <Bell className="w-5 h-5" />
+                    {notificationCount > 0 && (
+                      <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
+                        {notificationCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {isNotificationOpen && user && (
+                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg py-2 border border-slate-100 z-50 max-h-96 overflow-y-auto">
+                      <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center">
+                        <h3 className="font-bold text-slate-800">{t('নোটিফিকেশন', 'Notifications')}</h3>
+                        <button 
+                          onClick={() => {
+                            setIsNotificationOpen(false);
+                            setIsFullScreenNotification(true);
+                          }}
+                          className="text-xs text-red-600 hover:text-red-800 font-medium"
+                        >
+                          {t('সব দেখুন', 'View All')}
+                        </button>
+                      </div>
+                      {notifications.length > 0 ? (
+                        <div className="divide-y divide-slate-50">
+                          {notifications.slice(0, 5).map((notif: any) => (
+                            <div key={notif.id} className="px-4 py-3 hover:bg-slate-50 transition-colors">
+                              <p className="text-sm text-slate-800 font-medium">
+                                {profile?.role === 'admin' 
+                                  ? `${notif.userName || 'Guest'} requested a booking` 
+                                  : `Booking ${notif.status}`}
+                              </p>
+                              <p className="text-xs text-slate-500 mt-1">
+                                {notif.roomName} • {new Date(notif.checkIn).toLocaleDateString()}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="px-4 py-6 text-center text-slate-500 text-sm">
+                          {t('কোনো নোটিফিকেশন নেই', 'No notifications')}
+                        </div>
+                      )}
+                    </div>
                   )}
-                </button>
+                </div>
 
                 {user ? (
                   <div className="relative" ref={dropdownRef}>
@@ -207,18 +270,57 @@ export default function Navbar() {
             <button onClick={() => setIsOpen(!isOpen)} className="inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md text-slate-900 hover:bg-slate-100 focus:outline-none flex-shrink-0">
               {isOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
             </button>
-            <button 
-              onClick={user ? handleNotificationClick : login}
-              className="relative inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md text-slate-900 hover:bg-slate-100 focus:outline-none flex-shrink-0"
-              title={user ? "Notifications" : "Login to see notifications"}
-            >
-              <Bell className="h-5 w-5 sm:h-6 sm:w-6" />
-              {notificationCount > 0 && (
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
-                  {notificationCount}
-                </span>
+            <div className="relative" ref={notificationDropdownRef}>
+              <button 
+                onClick={user ? handleNotificationClick : login}
+                className="relative inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md text-slate-900 hover:bg-slate-100 focus:outline-none flex-shrink-0"
+                title={user ? "Notifications" : "Login to see notifications"}
+              >
+                <Bell className="h-5 w-5 sm:h-6 sm:w-6" />
+                {notificationCount > 0 && (
+                  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
+                    {notificationCount}
+                  </span>
+                )}
+              </button>
+              
+              {isNotificationOpen && user && (
+                <div className="absolute right-0 mt-2 w-72 bg-white rounded-md shadow-lg py-2 border border-slate-100 z-50 max-h-96 overflow-y-auto">
+                  <div className="px-4 py-2 border-b border-slate-100 flex justify-between items-center">
+                    <h3 className="font-bold text-slate-800">{t('নোটিফিকেশন', 'Notifications')}</h3>
+                    <button 
+                      onClick={() => {
+                        setIsNotificationOpen(false);
+                        setIsFullScreenNotification(true);
+                      }}
+                      className="text-xs text-red-600 hover:text-red-800 font-medium"
+                    >
+                      {t('সব দেখুন', 'View All')}
+                    </button>
+                  </div>
+                  {notifications.length > 0 ? (
+                    <div className="divide-y divide-slate-50">
+                      {notifications.slice(0, 5).map((notif: any) => (
+                        <div key={notif.id} className="px-4 py-3 hover:bg-slate-50 transition-colors">
+                          <p className="text-sm text-slate-800 font-medium">
+                            {profile?.role === 'admin' 
+                              ? `${notif.userName || 'Guest'} requested a booking` 
+                              : `Booking ${notif.status}`}
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {notif.roomName} • {new Date(notif.checkIn).toLocaleDateString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="px-4 py-6 text-center text-slate-500 text-sm">
+                      {t('কোনো নোটিফিকেশন নেই', 'No notifications')}
+                    </div>
+                  )}
+                </div>
               )}
-            </button>
+            </div>
           </div>
         </div>
       </div>
@@ -269,6 +371,59 @@ export default function Navbar() {
                 <LogIn className="w-5 h-5 mr-2" /> {t('বুক করুন', 'Book Now')}
               </button>
             )}
+          </div>
+        </div>
+      )}
+      {/* Full Screen Notifications Modal */}
+      {isFullScreenNotification && (
+        <div className="fixed inset-0 z-[100] bg-white flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white sticky top-0">
+            <h2 className="text-xl font-bold text-slate-900">{t('সব নোটিফিকেশন', 'All Notifications')}</h2>
+            <button 
+              onClick={() => setIsFullScreenNotification(false)}
+              className="p-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
+            <div className="max-w-3xl mx-auto">
+              {notifications.length > 0 ? (
+                <div className="space-y-3">
+                  {notifications.map((notif: any) => (
+                    <div key={notif.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-bold text-slate-900">
+                          {profile?.role === 'admin' 
+                            ? `${notif.userName || 'Guest'} requested a booking` 
+                            : `Booking ${notif.status}`}
+                        </h3>
+                        <span className={`px-2 py-1 text-xs font-bold rounded-full ${
+                          notif.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+                          notif.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {notif.status.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="text-sm text-slate-600 space-y-1">
+                        <p><span className="font-medium">Room:</span> {notif.roomName}</p>
+                        <p><span className="font-medium">Check-in:</span> {new Date(notif.checkIn).toLocaleDateString()}</p>
+                        <p><span className="font-medium">Check-out:</span> {new Date(notif.checkOut).toLocaleDateString()}</p>
+                        {profile?.role === 'admin' && (
+                          <p><span className="font-medium">Contact:</span> {notif.userPhone || 'N/A'}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-slate-500">
+                  <Bell className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                  <p className="text-lg">{t('কোনো নোটিফিকেশন নেই', 'No notifications')}</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

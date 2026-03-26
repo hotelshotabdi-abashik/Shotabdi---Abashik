@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { BedDouble, CheckCircle2, MapPin, Percent, Utensils, Compass, PhoneCall, ArrowRight, Star } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { BedDouble, CheckCircle2, MapPin, Percent, Utensils, Compass, PhoneCall, ArrowRight, Star, Camera, Calendar, Search } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
 import { EditableText } from '../components/EditableText';
@@ -9,35 +10,124 @@ import { EditableImage } from '../components/EditableImage';
 export default function Home() {
   const { t } = useLanguage();
   const { content } = useContent();
+  const navigate = useNavigate();
+  const galleryImages: string[] = content.galleryImages || [];
+  
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
+  const [roomType, setRoomType] = useState('');
+
+  const heroImages = [
+    content.home_hero_bg_1 || 'https://picsum.photos/seed/hotel1/1920/1080',
+    content.home_hero_bg_2 || 'https://picsum.photos/seed/hotel2/1920/1080',
+    content.home_hero_bg_3 || 'https://picsum.photos/seed/hotel3/1920/1080',
+    content.home_hero_bg_4 || 'https://picsum.photos/seed/hotel4/1920/1080',
+    content.home_hero_bg_5 || 'https://picsum.photos/seed/hotel5/1920/1080',
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % heroImages.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [heroImages.length]);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Navigate to rooms page, optionally passing search params if we implement them later
+    navigate('/rooms');
+  };
 
   return (
     <div className="bg-slate-50">
       {/* Hero Section */}
-      <section className="relative bg-slate-900 text-white py-32 lg:py-48 overflow-hidden">
-        <div className="absolute inset-0 opacity-40 mix-blend-overlay">
-          <EditableImage contentKey="home_hero_bg" defaultSrc="https://picsum.photos/seed/hotel/1920/1080" className="w-full h-full object-cover" />
+      <section className="relative bg-white text-slate-900 py-32 lg:py-48 overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentImageIndex}
+              initial={{ opacity: 0, scale: 1.05 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1 }}
+              className="absolute inset-0"
+            >
+              <EditableImage 
+                contentKey={`home_hero_bg_${currentImageIndex + 1}`} 
+                defaultSrc={heroImages[currentImageIndex]} 
+                className="w-full h-full object-cover" 
+              />
+            </motion.div>
+          </AnimatePresence>
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm"></div>
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent"></div>
+        
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <h1 
-            className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 text-white drop-shadow-lg"
+            className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 text-slate-900 drop-shadow-sm"
           >
             <EditableText contentKey="home_hero_title" defaultText={t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik')} />
           </h1>
           <div 
-            className="text-xl md:text-2xl font-medium mb-10 max-w-3xl mx-auto text-slate-200 drop-shadow-md"
+            className="text-xl md:text-2xl font-medium mb-10 max-w-3xl mx-auto text-slate-700 drop-shadow-sm"
           >
-            <EditableText contentKey="home_hero_subtitle" defaultText={t('সিলেটে আপনার সাশ্রয়ী ও আরামদায়ক থাকার ঠিকানা।', 'Your affordable and comfortable stay in Sylhet.')} multiline />
+            <EditableText contentKey="home_hero_subtitle" defaultText={t('২৪ ঘণ্টা আবাসিক সার্ভিস', '24h Residential Service')} multiline />
           </div>
-          <div
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
-          >
-            <Link to="/rooms" className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-full bg-red-700 text-white hover:bg-red-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-              {t('রুম বুক করুন', 'Book a Room')}
-            </Link>
-            <Link to="/about" className="inline-flex items-center justify-center px-8 py-4 text-lg font-bold rounded-full bg-white/10 backdrop-blur-md text-white border border-white/20 hover:bg-white/20 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-1">
-              {t('আমাদের সম্পর্কে জানুন', 'Learn About Us')}
-            </Link>
+          
+          {/* Booking Shortcut Form */}
+          <div className="max-w-4xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border border-slate-200 mt-8 transform hover:-translate-y-1 transition-transform duration-300">
+            <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 items-end">
+              <div className="flex-1 w-full text-left">
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('রুমের ধরন', 'Room Type')}</label>
+                <select 
+                  value={roomType}
+                  onChange={(e) => setRoomType(e.target.value)}
+                  className="w-full border-slate-300 rounded-xl shadow-sm focus:border-red-500 focus:ring-red-500 bg-slate-50 py-3 px-4"
+                >
+                  <option value="">{t('যেকোনো রুম', 'Any Room')}</option>
+                  <option value="Single Delux">Single Delux</option>
+                  <option value="Double Delux">Double Delux</option>
+                  <option value="Family Suit">Family Suit</option>
+                  <option value="Super Delux">Super Delux</option>
+                </select>
+              </div>
+              <div className="flex-1 w-full text-left">
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('চেক-ইন', 'Check In')}</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Calendar className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input 
+                    type="date" 
+                    value={checkIn}
+                    onChange={(e) => setCheckIn(e.target.value)}
+                    className="w-full pl-10 border-slate-300 rounded-xl shadow-sm focus:border-red-500 focus:ring-red-500 bg-slate-50 py-3 px-4"
+                  />
+                </div>
+              </div>
+              <div className="flex-1 w-full text-left">
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('চেক-আউট', 'Check Out')}</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Calendar className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input 
+                    type="date" 
+                    value={checkOut}
+                    onChange={(e) => setCheckOut(e.target.value)}
+                    className="w-full pl-10 border-slate-300 rounded-xl shadow-sm focus:border-red-500 focus:ring-red-500 bg-slate-50 py-3 px-4"
+                  />
+                </div>
+              </div>
+              <button 
+                type="submit"
+                className="w-full md:w-auto bg-red-600 text-white px-8 py-3 rounded-xl hover:bg-red-700 font-bold transition-colors flex items-center justify-center gap-2 shadow-md h-[50px]"
+              >
+                <Search className="w-5 h-5" />
+                {t('খুঁজুন', 'Search')}
+              </button>
+            </form>
           </div>
         </div>
       </section>
@@ -77,6 +167,68 @@ export default function Home() {
                 <EditableText contentKey="home_feature3_desc" defaultText={t('আমাদের অফিসিয়াল চ্যানেল বা ওয়েবসাইটের মাধ্যমে বুকিং করলে পাচ্ছেন বিশেষ ছাড়!', 'Get special discounts when booking through our official channels or website!')} multiline />
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Gallery Shortcut Section */}
+      <section className="py-16 bg-slate-900 text-white overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold mb-4">{t('গ্যালারি', 'Gallery')}</h2>
+            <div className="w-24 h-1 bg-red-600 mx-auto rounded-full mb-6"></div>
+            <p className="text-slate-300 max-w-2xl mx-auto">
+              {t('আমাদের হোটেলের কিছু চমৎকার মুহূর্ত ও দৃশ্য।', 'Some wonderful moments and views of our hotel.')}
+            </p>
+          </div>
+
+          {galleryImages.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+              {galleryImages.slice(0, 8).map((src, index) => (
+                <motion.div 
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                  whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ 
+                    duration: 0.5, 
+                    delay: index * 0.1,
+                    type: "spring",
+                    stiffness: 100
+                  }}
+                  whileHover={{ scale: 1.05, zIndex: 10 }}
+                  className={`rounded-xl overflow-hidden shadow-lg relative group ${
+                    index === 0 ? 'md:col-span-2 md:row-span-2' : ''
+                  } ${index === 3 ? 'md:col-span-2' : ''}`}
+                >
+                  <div className="aspect-w-4 aspect-h-3 h-full">
+                    <img 
+                      src={src} 
+                      alt={`Gallery ${index + 1}`} 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                      referrerPolicy="no-referrer" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                      <Camera className="w-6 h-6 text-white/80" />
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-slate-400 bg-slate-800/50 rounded-2xl border border-slate-700/50 mb-10">
+              <Camera className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>{t('কোনো ছবি পাওয়া যায়নি।', 'No images found.')}</p>
+            </div>
+          )}
+
+          <div className="text-center">
+            <Link 
+              to="/gallery" 
+              className="inline-flex items-center bg-red-600 text-white px-8 py-3 rounded-full hover:bg-red-700 font-bold transition-all hover:shadow-lg hover:shadow-red-600/30 transform hover:-translate-y-1"
+            >
+              {t('সব ছবি দেখুন', 'View All Images')} <ArrowRight className="ml-2 w-5 h-5" />
+            </Link>
           </div>
         </div>
       </section>

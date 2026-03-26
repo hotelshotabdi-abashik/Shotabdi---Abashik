@@ -78,6 +78,7 @@ service cloud.firestore {
       return isAuthenticated() && (
         (request.auth.token.email == "hotelshotabdiabashik@gmail.com" && request.auth.token.email_verified == true) ||
         (request.auth.token.email == "fuadf342@gmail.com" && request.auth.token.email_verified == true) ||
+        (request.auth.token.email == "selectedlegendbusiness@gmail.com" && request.auth.token.email_verified == true) ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
@@ -122,21 +123,22 @@ service cloud.firestore {
     }
 
     function isValidRoom() {
-      let allowedFields = ['id', 'name', 'type', 'price', 'cutPrice', 'isAvailable', 'createdAt', 'amenities', 'imageUrl', 'description'];
+      let allowedFields = ['id', 'name', 'type', 'price', 'cutPrice', 'isAvailable', 'createdAt', 'amenities', 'imageUrl', 'description', 'order'];
       let requiredFields = ['id', 'name', 'type', 'price', 'isAvailable', 'createdAt'];
       
       return hasOnlyAllowedFields(allowedFields) &&
              hasRequiredFields(requiredFields) &&
              request.resource.data.id is string && request.resource.data.id.size() > 0 && request.resource.data.id.size() <= 128 &&
              request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100 &&
-             request.resource.data.type in ['Single Delux', 'Double Delux', 'Family Suite', 'Super Deluxe'] &&
+             request.resource.data.type in ['Single Delux', 'Double Delux', 'Family Suit', 'Super Delux'] &&
              request.resource.data.price is number && request.resource.data.price >= 0 &&
              (!('cutPrice' in request.resource.data) || (request.resource.data.cutPrice is number && request.resource.data.cutPrice >= 0)) &&
              request.resource.data.isAvailable is bool &&
              request.resource.data.createdAt is timestamp &&
              (!('amenities' in request.resource.data) || (request.resource.data.amenities is list && request.resource.data.amenities.size() <= 50)) &&
              (!('imageUrl' in request.resource.data) || (request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 1000)) &&
-             (!('description' in request.resource.data) || (request.resource.data.description is string && request.resource.data.description.size() <= 2000));
+             (!('description' in request.resource.data) || (request.resource.data.description is string && request.resource.data.description.size() <= 2000)) &&
+             (!('order' in request.resource.data) || (request.resource.data.order is number));
     }
 
     function isValidBooking() {

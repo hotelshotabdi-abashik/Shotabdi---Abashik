@@ -66,6 +66,8 @@ export default function Admin() {
   const [uploadedUrl, setUploadedUrl] = useState('');
   
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, message: string, onConfirm: () => void }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+  const [roleModal, setRoleModal] = useState<{ isOpen: boolean, uid: string, newRole: string, userEmail: string }>({ isOpen: false, uid: '', newRole: '', userEmail: '' });
+  const [rolePassword, setRolePassword] = useState('');
 
   useEffect(() => {
     if (activeTab === 'rooms') fetchRooms();
@@ -229,12 +231,32 @@ export default function Admin() {
     }
   };
 
-  const handleUpdateUserRole = async (uid: string, newRole: string) => {
+  const handleUpdateUserRole = (uid: string, newRole: string, userEmail: string) => {
     if (user && user.uid === uid) {
       toast.error(t("আপনি নিজের রোল পরিবর্তন করতে পারবেন না।", "You cannot change your own role."));
       return;
     }
     
+    const DEFAULT_ADMINS = ['hotelshotabdiabashik@gmail.com', 'fuadf342@gmail.com', 'selectedlegendbusiness@gmail.com'];
+    
+    // Check if trying to demote a default admin
+    if (newRole !== 'admin' && DEFAULT_ADMINS.includes(userEmail)) {
+      toast.error(t("ডিফল্ট অ্যাডমিনকে ডিমোট করা যাবে না।", "Cannot demote a default admin."));
+      return;
+    }
+
+    // If trying to promote to admin, ask for password
+    if (newRole === 'admin') {
+      setRoleModal({ isOpen: true, uid, newRole, userEmail });
+      setRolePassword('');
+      return;
+    }
+
+    // Otherwise (demoting a non-default admin), just do it
+    executeRoleUpdate(uid, newRole);
+  };
+
+  const executeRoleUpdate = async (uid: string, newRole: string) => {
     try {
       const userRef = doc(db, 'users', uid);
       await updateDoc(userRef, { role: newRole });
@@ -244,6 +266,15 @@ export default function Admin() {
       console.error("Error updating user:", error);
       toast.error(t("ইউজার আপডেট করতে সমস্যা হয়েছে।", "Failed to update user."));
     }
+  };
+
+  const confirmRoleUpdate = () => {
+    if (rolePassword !== 'kahar02') {
+      toast.error(t("ভুল পাসওয়ার্ড।", "Incorrect password."));
+      return;
+    }
+    setRoleModal({ isOpen: false, uid: '', newRole: '', userEmail: '' });
+    executeRoleUpdate(roleModal.uid, roleModal.newRole);
   };
 
   const handleUpload = async () => {
@@ -487,7 +518,7 @@ export default function Admin() {
                         <td className="p-4 text-right">
                           <select 
                             value={u.role}
-                            onChange={(e) => handleUpdateUserRole(u.uid, e.target.value)}
+                            onChange={(e) => handleUpdateUserRole(u.uid, e.target.value, u.email)}
                             disabled={user?.uid === u.uid}
                             className={`px-2 py-1 border border-slate-300 rounded text-sm ${user?.uid === u.uid ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
@@ -686,6 +717,41 @@ export default function Admin() {
         onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
         confirmText="Delete"
       />
+
+      {/* Role Password Modal */}
+      {roleModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-slate-900 mb-4">
+              {t('অ্যাডমিন পাসওয়ার্ড প্রয়োজন', 'Admin Password Required')}
+            </h3>
+            <p className="text-slate-600 mb-4">
+              {t('নতুন অ্যাডমিন যুক্ত করতে অনুগ্রহ করে পাসওয়ার্ড দিন।', 'Please enter the password to add a new admin.')}
+            </p>
+            <input
+              type="password"
+              value={rolePassword}
+              onChange={(e) => setRolePassword(e.target.value)}
+              placeholder="Password"
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 mb-6"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setRoleModal({ isOpen: false, uid: '', newRole: '', userEmail: '' })}
+                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-medium"
+              >
+                {t('বাতিল', 'Cancel')}
+              </button>
+              <button
+                onClick={confirmRoleUpdate}
+                className="px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded-lg transition-colors font-medium"
+              >
+                {t('নিশ্চিত করুন', 'Confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

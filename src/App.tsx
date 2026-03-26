@@ -6,6 +6,7 @@
 import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
+import { HelmetProvider, Helmet } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ContentProvider } from './context/ContentContext';
@@ -22,6 +23,8 @@ const MyStays = lazy(() => import('./pages/MyStays'));
 const HelpDesk = lazy(() => import('./pages/HelpDesk'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Admin = lazy(() => import('./pages/Admin'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -61,37 +64,71 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 export default function App() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Hotel",
+    "name": "Hotel Shotabdi Abashik",
+    "description": "24h Residential Service in Sylhet. Best hotel in Kumargaon, Sylhet.",
+    "url": "https://shotabdi-abashik.bd",
+    "telephone": "+8801717425702",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Sylhet",
+      "addressRegion": "Sylhet",
+      "addressCountry": "BD"
+    },
+    "founder": {
+      "@type": "Person",
+      "name": "Abdul Kahar Kodor"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Fuad Ahmed",
+      "alternateName": "Fuad Editing Zone",
+      "jobTitle": ["Graphic Designer", "VFX Video Editor", "Web Developer"]
+    }
+  };
+
   return (
-    <LanguageProvider>
-      <AuthProvider>
-        <ContentProvider>
-          <Router>
-            <ScrollToTop />
-            <ProfileEnforcer />
-            <div className="flex flex-col min-h-screen font-sans bg-slate-50 text-slate-900">
-              <Navbar />
-              <main className="flex-grow">
-                <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/rooms" element={<Rooms />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/restaurant" element={<Restaurant />} />
-                    <Route path="/tour-desk" element={<TourDesk />} />
-                    <Route path="/gallery" element={<Gallery />} />
-                    <Route path="/help-desk" element={<HelpDesk />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/my-stays" element={<ProtectedRoute><MyStays /></ProtectedRoute>} />
-                    <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-                  </Routes>
-                </Suspense>
-              </main>
-              <Footer />
-              <Toaster position="top-center" richColors />
-            </div>
-          </Router>
-        </ContentProvider>
-      </AuthProvider>
-    </LanguageProvider>
+    <HelmetProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <ContentProvider>
+            <Router>
+              <Helmet>
+                <script type="application/ld+json">
+                  {JSON.stringify(structuredData)}
+                </script>
+              </Helmet>
+              <ScrollToTop />
+              <ProfileEnforcer />
+              <div className="flex flex-col min-h-screen font-sans bg-slate-50 text-slate-900">
+                <Navbar />
+                <main className="flex-grow">
+                  <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+                    <Routes>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/rooms" element={<Rooms />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/restaurant" element={<Restaurant />} />
+                      <Route path="/tour-desk" element={<TourDesk />} />
+                      <Route path="/gallery" element={<Gallery />} />
+                      <Route path="/help-desk" element={<HelpDesk />} />
+                      <Route path="/profile" element={<Profile />} />
+                      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                      <Route path="/terms-of-service" element={<TermsOfService />} />
+                      <Route path="/my-stays" element={<ProtectedRoute><MyStays /></ProtectedRoute>} />
+                      <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+                    </Routes>
+                  </Suspense>
+                </main>
+                <Footer />
+                <Toaster position="top-center" richColors />
+              </div>
+            </Router>
+          </ContentProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </HelmetProvider>
   );
 }
