@@ -1,6 +1,6 @@
 export const uploadToR2 = async (file: File): Promise<string> => {
-  const WORKER_URL = import.meta.env.VITE_CLOUDFLARE_WORKER_URL;
-  const AUTH_KEY = import.meta.env.VITE_CLOUDFLARE_WORKER_SECRET;
+  const WORKER_URL = import.meta.env.VITE_CLOUDFLARE_WORKER_URL || 'https://shotabdi-abashik.hotelshotabdiabashik.workers.dev';
+  const AUTH_KEY = import.meta.env.VITE_CLOUDFLARE_WORKER_SECRET || '123456@';
   
   if (!WORKER_URL || !AUTH_KEY) {
     throw new Error("Cloudflare R2 credentials are not configured.");
@@ -25,8 +25,8 @@ export const uploadToR2 = async (file: File): Promise<string> => {
 };
 
 export const deleteFromR2 = async (url: string): Promise<void> => {
-  const WORKER_URL = import.meta.env.VITE_CLOUDFLARE_WORKER_URL;
-  const AUTH_KEY = import.meta.env.VITE_CLOUDFLARE_WORKER_SECRET;
+  const WORKER_URL = import.meta.env.VITE_CLOUDFLARE_WORKER_URL || 'https://shotabdi-abashik.hotelshotabdiabashik.workers.dev';
+  const AUTH_KEY = import.meta.env.VITE_CLOUDFLARE_WORKER_SECRET || '123456@';
   
   if (!WORKER_URL || !AUTH_KEY) return;
   

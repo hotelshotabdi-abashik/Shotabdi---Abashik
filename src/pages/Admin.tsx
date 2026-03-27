@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, doc, updateDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -45,7 +45,7 @@ interface Booking {
 export default function Admin() {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'rooms' | 'users' | 'bookings' | 'content'>('rooms');
+  const [activeTab, setActiveTab] = useState<'rooms' | 'users' | 'bookings' | 'content' | 'ratings'>('rooms');
   
   // Rooms State
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -58,6 +58,9 @@ export default function Admin() {
   
   // Bookings State
   const [bookings, setBookings] = useState<Booking[]>([]);
+
+  // Ratings State
+  const [ratings, setRatings] = useState<any[]>([]);
 
   // Content Upload State
   const [file, setFile] = useState<File | null>(null);
@@ -73,7 +76,37 @@ export default function Admin() {
     if (activeTab === 'rooms') fetchRooms();
     else if (activeTab === 'users') fetchUsers();
     else if (activeTab === 'bookings') fetchBookings();
+    else if (activeTab === 'ratings') fetchRatings();
   }, [activeTab]);
+
+  const fetchRatings = async () => {
+    setLoading(true);
+    try {
+      const ratingsRef = collection(db, 'ratings');
+      const snapshot = await getDocs(ratingsRef);
+      if (!snapshot.empty) {
+        const ratingsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        // Sort by newest first
+        ratingsData.sort((a: any, b: any) => {
+          const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt || 0);
+          const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt || 0);
+          return timeB - timeA;
+        });
+        
+        setRatings(ratingsData);
+      } else {
+        setRatings([]);
+      }
+    } catch (error) {
+      console.error("Error fetching ratings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchRooms = async () => {
     setLoading(true);
@@ -231,6 +264,37 @@ export default function Admin() {
     }
   };
 
+  const handleUpdateRatingStatus = async (id: string, newStatus: string) => {
+    try {
+      const ratingRef = doc(db, 'ratings', id);
+      await updateDoc(ratingRef, { status: newStatus });
+      fetchRatings();
+      toast.success(t("রেটিং স্ট্যাটাস আপডেট করা হয়েছে!", "Rating status updated!"));
+    } catch (error) {
+      console.error("Error updating rating:", error);
+      toast.error(t("রেটিং আপডেট করতে সমস্যা হয়েছে।", "Failed to update rating."));
+    }
+  };
+
+  const handleDeleteRating = async (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Rating',
+      message: 'Are you sure you want to delete this rating?',
+      onConfirm: async () => {
+        try {
+          const ratingRef = doc(db, 'ratings', id);
+          await deleteDoc(ratingRef);
+          fetchRatings();
+          toast.success(t("রেটিং মুছে ফেলা হয়েছে!", "Rating deleted successfully!"));
+        } catch (error) {
+          console.error("Error deleting rating:", error);
+          toast.error(t("রেটিং মুছতে সমস্যা হয়েছে।", "Failed to delete rating."));
+        }
+      }
+    });
+  };
+
   const handleUpdateUserRole = (uid: string, newRole: string, userEmail: string) => {
     if (user && user.uid === uid) {
       toast.error(t("আপনি নিজের রোল পরিবর্তন করতে পারবেন না।", "You cannot change your own role."));
@@ -350,6 +414,12 @@ export default function Admin() {
             className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'content' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
           >
             <Globe className="w-5 h-5 mr-2" /> {t('ওয়েবসাইট কন্টেন্ট', 'Website Content')}
+          </button>
+          <button 
+            onClick={() => setActiveTab('ratings')}
+            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'ratings' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+          >
+            <Star className="w-5 h-5 mr-2" /> {t('রেটিং পরিচালনা', 'Manage Ratings')}
           </button>
         </div>
 
@@ -703,6 +773,93 @@ export default function Admin() {
                 <p className="text-slate-500 text-sm max-w-sm">
                   Use the "Edit Web" button in the navigation bar to edit website content directly on the pages.
                 </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'ratings' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-slate-800">{t('রেটিং তালিকা', 'Rating List')}</h2>
+            </div>
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-600 text-sm uppercase tracking-wider">
+                      <th className="p-4 font-bold border-b">{t('ইউজার', 'User')}</th>
+                      <th className="p-4 font-bold border-b">{t('রেটিং', 'Rating')}</th>
+                      <th className="p-4 font-bold border-b">{t('মতামত', 'Comment')}</th>
+                      <th className="p-4 font-bold border-b">{t('তারিখ', 'Date')}</th>
+                      <th className="p-4 font-bold border-b">{t('অবস্থা', 'Status')}</th>
+                      <th className="p-4 font-bold border-b text-right">{t('অ্যাকশন', 'Action')}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {ratings.map((rating) => (
+                      <tr key={rating.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            {rating.userPhoto ? (
+                              <img src={rating.userPhoto} alt={rating.userName} className="w-8 h-8 rounded-full object-cover" referrerPolicy="no-referrer" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
+                                <Users className="w-4 h-4" />
+                              </div>
+                            )}
+                            <span className="font-medium text-slate-900">{rating.userName}</span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-4 h-4 ${i < rating.rating ? 'text-yellow-400 fill-yellow-400' : 'text-slate-300'}`}
+                              />
+                            ))}
+                          </div>
+                        </td>
+                        <td className="p-4 max-w-xs truncate" title={rating.comment}>{rating.comment}</td>
+                        <td className="p-4 text-slate-500">
+                          {rating.createdAt?.toDate ? new Date(rating.createdAt.toDate()).toLocaleDateString() : 'N/A'}
+                        </td>
+                        <td className="p-4">
+                          <select
+                            value={rating.status}
+                            onChange={(e) => handleUpdateRatingStatus(rating.id, e.target.value)}
+                            className={`p-2 rounded-lg border text-sm font-medium ${
+                              rating.status === 'approved' ? 'bg-green-50 text-green-700 border-green-200' : 
+                              rating.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' : 
+                              'bg-yellow-50 text-yellow-700 border-yellow-200'
+                            }`}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                        </td>
+                        <td className="p-4 text-right">
+                          <button 
+                            onClick={() => handleDeleteRating(rating.id)}
+                            className="text-red-500 hover:text-red-700 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                            title="Delete Rating"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {ratings.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="p-8 text-center text-slate-500">
+                          {t('কোনো রেটিং পাওয়া যায়নি।', 'No ratings found.')}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

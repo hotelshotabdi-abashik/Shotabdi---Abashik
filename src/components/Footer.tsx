@@ -53,10 +53,6 @@ export default function Footer() {
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-center text-sm flex flex-col gap-2">
         <p>&copy; {new Date().getFullYear()} Hotel Shotabdi Abashik. All rights reserved.</p>
-        <p className="text-slate-500 text-xs">
-          {t('মালিকানা:', 'Owned by:')} <span className="font-semibold text-slate-400">Abdul Kahar Kodor</span> | 
-          {t(' ডেভেলপমেন্ট:', ' Developed by:')} <a href="https://www.facebook.com/fuad.ahmed.52090" target="_blank" rel="noreferrer" className="font-semibold text-slate-400 hover:text-white transition-colors">Fuad Ahmed (Fuad Editing Zone)</a>
-        </p>
       </div>
     </footer>
   );

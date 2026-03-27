@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { collection, doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, onSnapshot, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
@@ -57,9 +57,12 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       const dataString = typeof value === 'string' ? value : JSON.stringify(value);
       const docRef = doc(db, 'content', path);
+      const docSnap = await getDoc(docRef);
+      const section = docSnap.exists() ? docSnap.data().section : 'general';
+      
       await setDoc(docRef, {
         id: path,
-        section: 'general',
+        section: section,
         data: dataString,
         updatedAt: serverTimestamp()
       });

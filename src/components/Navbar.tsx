@@ -19,7 +19,6 @@ export default function Navbar() {
   const [isFullScreenNotification, setIsFullScreenNotification] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [isScrolling, setIsScrolling] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationDropdownRef = useRef<HTMLDivElement>(null);
@@ -36,20 +35,13 @@ export default function Navbar() {
   ];
 
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
-      setIsScrolling(true);
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        setIsScrolling(false);
-      }, 800); // 800ms after stopping scroll
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      clearTimeout(timeout);
     };
   }, []);
 
@@ -91,7 +83,7 @@ export default function Navbar() {
   }, [user, profile]);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen || isFullScreenNotification || isProfileOpen || isNotificationOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -99,15 +91,15 @@ export default function Navbar() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isOpen]);
+  }, [isOpen, isFullScreenNotification, isProfileOpen, isNotificationOpen]);
 
   const handleNotificationClick = () => {
     setIsNotificationOpen(!isNotificationOpen);
   };
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 ${scrolled ? (isScrolling ? 'bg-white/95 backdrop-blur-sm shadow-md' : 'bg-white/0 shadow-none pointer-events-none') : 'bg-white shadow-sm'} text-slate-900`}>
-      <div className={`w-full px-2 sm:px-4 lg:px-6 ${scrolled && !isScrolling ? 'pointer-events-auto' : ''}`}>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 ${scrolled ? 'bg-transparent shadow-none' : 'bg-white shadow-sm'} text-slate-900`}>
+      <div className="w-full px-2 sm:px-4 lg:px-6">
         <div className="flex justify-between min-h-[4rem] py-2">
           <div className="flex items-center flex-1 mr-2 sm:mr-4 min-w-0">
             <Link to="/" className="flex items-center gap-2 min-w-0" onClick={() => setIsOpen(false)}>
@@ -327,49 +319,68 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="xl:hidden bg-white border-t border-slate-100 shadow-lg max-h-[calc(100vh-4rem)] overflow-y-auto">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+        <div className="xl:hidden fixed inset-0 z-[100] bg-white flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white sticky top-0">
+            <Link to="/" className="flex items-center gap-2 min-w-0" onClick={() => setIsOpen(false)}>
+              <EditableImage 
+                contentKey="site_logo" 
+                defaultSrc="https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png" 
+                className="h-8 w-auto flex-shrink-0 object-contain" 
+                alt="Hotel Shotabdi Abashik Logo"
+                folder="shotabdi-abashik/logo"
+              />
+              <span className="font-bold text-sm text-slate-900 leading-tight truncate">
+                {t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik')}
+              </span>
+            </Link>
+            <button onClick={() => setIsOpen(false)} className="p-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
             {(!user || profile?.profileCompleted) && navLinks.map((link) => (
-              <Link key={link.name} to={link.path} onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-3 py-2 rounded-md text-base font-medium">
+              <Link key={link.name} to={link.path} onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-3 rounded-xl text-lg font-medium transition-colors">
                 {link.name}
               </Link>
             ))}
             {profile?.role === 'admin' && (
               <button 
                 onClick={() => { setEditMode(!editMode); setIsOpen(false); }} 
-                className={`block w-full text-left px-3 py-2 rounded-md text-base font-bold mt-2 flex items-center ${editMode ? 'bg-red-600 text-white hover:bg-red-700' : 'text-amber-800 bg-amber-50 hover:bg-amber-100'}`}
+                className={`block w-full text-left px-4 py-3 rounded-xl text-lg font-bold mt-4 flex items-center ${editMode ? 'bg-red-600 text-white hover:bg-red-700' : 'text-amber-800 bg-amber-50 hover:bg-amber-100'}`}
               >
-                <Edit className="w-5 h-5 mr-2" /> {editMode ? t('সম্পাদনা বন্ধ করুন', 'Stop Editing') : t('ওয়েব সম্পাদনা', 'Edit Web')}
+                <Edit className="w-5 h-5 mr-3" /> {editMode ? t('সম্পাদনা বন্ধ করুন', 'Stop Editing') : t('ওয়েব সম্পাদনা', 'Edit Web')}
               </button>
             )}
             {loading ? (
-              <div className="w-full h-10 bg-slate-100 animate-pulse rounded-md mt-2"></div>
+              <div className="w-full h-12 bg-slate-100 animate-pulse rounded-xl mt-4"></div>
             ) : user ? (
-              <div className="border-t border-slate-100 pt-4 mt-2">
-                <div className="px-3 py-2 text-sm font-bold text-slate-900 flex items-center">
-                  <User className="w-5 h-5 mr-2" /> {t('প্রোফাইল', 'Profile')}
+              <div className="border-t border-slate-100 pt-6 mt-6 space-y-2">
+                <div className="px-4 py-2 text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center">
+                  <User className="w-4 h-4 mr-2" /> {t('প্রোফাইল', 'Profile')}
                 </div>
-                <Link to="/my-stays" onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-3 py-2 rounded-md text-base font-medium pl-8">
+                <Link to="/my-stays" onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-3 rounded-xl text-lg font-medium transition-colors">
                   {t('আমার বুকিং', 'My Stays')}
                 </Link>
                 {profile?.profileCompleted && (
-                  <Link to="/profile" onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-3 py-2 rounded-md text-base font-medium pl-8">
+                  <Link to="/profile" onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-3 rounded-xl text-lg font-medium transition-colors">
                     {t('অ্যাকাউন্ট পরিচালনা', 'Manage Account')}
                   </Link>
                 )}
                 {profile?.role === 'admin' && (
-                  <Link to="/admin" onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-3 py-2 rounded-md text-base font-medium pl-8">
+                  <Link to="/admin" onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-3 rounded-xl text-lg font-medium transition-colors">
                     {t('অ্যাডমিন প্যানেল', 'Admin Panel')}
                   </Link>
                 )}
-                <button onClick={() => { logout(); setIsOpen(false); }} className="w-full text-left flex items-center text-slate-700 hover:bg-red-50 hover:text-red-700 px-3 py-2 rounded-md text-base font-medium pl-8">
-                  {t('লগআউট', 'Logout')}
+                <button onClick={() => { logout(); setIsOpen(false); }} className="w-full text-left flex items-center text-red-600 hover:bg-red-50 px-4 py-3 rounded-xl text-lg font-medium transition-colors mt-2">
+                  <LogOut className="w-5 h-5 mr-3" /> {t('লগআউট', 'Logout')}
                 </button>
               </div>
             ) : (
-              <button onClick={() => { login(); setIsOpen(false); }} className="w-full text-left flex items-center bg-red-700 text-white px-3 py-2 rounded-md text-base font-bold mt-2">
-                <LogIn className="w-5 h-5 mr-2" /> {t('বুক করুন', 'Book Now')}
-              </button>
+              <div className="pt-6 mt-6 border-t border-slate-100">
+                <button onClick={() => { login(); setIsOpen(false); }} className="w-full flex items-center justify-center bg-red-700 text-white hover:bg-red-800 px-4 py-4 rounded-xl text-lg font-bold transition-colors shadow-md">
+                  <LogIn className="w-5 h-5 mr-2" /> {t('বুক করুন', 'Book Now')}
+                </button>
+              </div>
             )}
           </div>
         </div>

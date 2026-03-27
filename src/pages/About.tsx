@@ -1,5 +1,6 @@
 import { MapPin, Phone, Mail, Globe, Clock, ShieldCheck, Users } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { EditableText } from '../components/EditableText';
 
 export default function About() {
   const { t } = useLanguage();
@@ -7,19 +8,23 @@ export default function About() {
     <div className="bg-slate-50 py-16 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold text-slate-900 mb-4">{t('আমাদের সম্পর্কে', 'About Us')}</h1>
+          <h1 className="text-4xl font-extrabold text-slate-900 mb-4">
+            <EditableText contentKey="about_title" defaultText={t('আমাদের সম্পর্কে', 'About Us')} />
+          </h1>
           <div className="w-24 h-1 bg-red-600 mx-auto rounded-full mt-6"></div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-slate-900">{t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik')}</h2>
-            <p className="text-lg text-slate-600 leading-relaxed">
-              {t('হোটেল শতাব্দী আবাসিক হলো বাংলাদেশের সিলেটে অবস্থিত একটি সাশ্রয়ী মূল্যের আবাসিক হোটেল। এটি কুমারগাঁও বাস টার্মিনালের কাছে অবস্থিত, যা ভ্রমণকারীদের জন্য একটি সুবিধাজনক অবস্থান।', 'Hotel Shotabdi Abashik is an affordable residential hotel located in Sylhet, Bangladesh. It is situated near Kumargaon Bus Terminal, making it a convenient location for travelers.')}
-            </p>
-            <p className="text-lg text-slate-600 leading-relaxed">
-              {t('শাহজালাল বিজ্ঞান ও প্রযুক্তি বিশ্ববিদ্যালয় (SUST) এবং মাউন্ট এডোরা হাসপাতালের কাছাকাছি হওয়ায় এটি শিক্ষার্থী, রোগীর আত্মীয়স্বজন এবং সাধারণ পর্যটকদের জন্য একটি আদর্শ পছন্দ।', 'Being close to Shahjalal University of Science and Technology (SUST) and Mount Adora Hospital, it is an ideal choice for students, patients\' relatives, and general tourists.')}
-            </p>
+            <h2 className="text-3xl font-bold text-slate-900">
+              <EditableText contentKey="about_subtitle" defaultText={t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik')} />
+            </h2>
+            <div className="text-lg text-slate-600 leading-relaxed">
+              <EditableText contentKey="about_desc_1" defaultText={t('হোটেল শতাব্দী আবাসিক হলো বাংলাদেশের সিলেটে অবস্থিত একটি সাশ্রয়ী মূল্যের আবাসিক হোটেল। এটি কুমারগাঁও বাস টার্মিনালের কাছে অবস্থিত, যা ভ্রমণকারীদের জন্য একটি সুবিধাজনক অবস্থান।', 'Hotel Shotabdi Abashik is an affordable residential hotel located in Sylhet, Bangladesh. It is situated near Kumargaon Bus Terminal, making it a convenient location for travelers.')} multiline />
+            </div>
+            <div className="text-lg text-slate-600 leading-relaxed">
+              <EditableText contentKey="about_desc_2" defaultText={t('শাহজালাল বিজ্ঞান ও প্রযুক্তি বিশ্ববিদ্যালয় (SUST) এবং মাউন্ট এডোরা হাসপাতালের কাছাকাছি হওয়ায় এটি শিক্ষার্থী, রোগীর আত্মীয়স্বজন এবং সাধারণ পর্যটকদের জন্য একটি আদর্শ পছন্দ।', 'Being close to Shahjalal University of Science and Technology (SUST) and Mount Adora Hospital, it is an ideal choice for students, patients\' relatives, and general tourists.')} multiline />
+            </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6">
               <div className="flex items-start">
@@ -27,8 +32,12 @@ export default function About() {
                   <ShieldCheck className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900">{t('নিরাপদ পরিবেশ', 'Safe Environment')}</h4>
-                  <p className="text-sm text-slate-600">{t('২৪ ঘণ্টা নিরাপত্তা ব্যবস্থা।', '24-hour security system.')}</p>
+                  <h4 className="font-bold text-slate-900">
+                    <EditableText contentKey="about_feature_1_title" defaultText={t('নিরাপদ পরিবেশ', 'Safe Environment')} />
+                  </h4>
+                  <div className="text-sm text-slate-600">
+                    <EditableText contentKey="about_feature_1_desc" defaultText={t('২৪ ঘণ্টা নিরাপত্তা ব্যবস্থা।', '24-hour security system.')} multiline />
+                  </div>
                 </div>
               </div>
               <div className="flex items-start">
@@ -36,8 +45,12 @@ export default function About() {
                   <Users className="w-6 h-6" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900">{t('পারিবারিক পরিবেশ', 'Family Environment')}</h4>
-                  <p className="text-sm text-slate-600">{t('পরিবার নিয়ে থাকার জন্য উপযুক্ত।', 'Suitable for staying with family.')}</p>
+                  <h4 className="font-bold text-slate-900">
+                    <EditableText contentKey="about_feature_2_title" defaultText={t('পারিবারিক পরিবেশ', 'Family Environment')} />
+                  </h4>
+                  <div className="text-sm text-slate-600">
+                    <EditableText contentKey="about_feature_2_desc" defaultText={t('পরিবার নিয়ে থাকার জন্য উপযুক্ত।', 'Suitable for staying with family.')} multiline />
+                  </div>
                 </div>
               </div>
             </div>

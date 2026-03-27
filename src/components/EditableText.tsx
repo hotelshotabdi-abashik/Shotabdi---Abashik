@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useContent } from '../context/ContentContext';
 import { Edit2, Check, X } from 'lucide-react';
+import Editor from 'react-simple-wysiwyg';
 
 interface EditableTextProps {
   contentKey: string;
@@ -35,11 +36,13 @@ export const EditableText: React.FC<EditableTextProps> = ({ contentKey, defaultT
       return (
         <span className={`relative inline-block w-full ${className}`}>
           {multiline ? (
-            <textarea
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              className="w-full p-2 border-2 border-red-500 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-red-500 min-h-[100px]"
-            />
+            <div className="bg-white text-black p-1 rounded-md border-2 border-red-500">
+              <Editor
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                className="min-h-[150px]"
+              />
+            </div>
           ) : (
             <input
               type="text"
@@ -62,9 +65,11 @@ export const EditableText: React.FC<EditableTextProps> = ({ contentKey, defaultT
 
     return (
       <span className={`relative group inline-block ${className}`}>
-        <span className="cursor-pointer hover:opacity-80" onClick={() => setIsEditing(true)}>
-          {currentText}
-        </span>
+        <span 
+          className="cursor-pointer hover:opacity-80" 
+          onClick={() => setIsEditing(true)}
+          dangerouslySetInnerHTML={{ __html: currentText }}
+        />
         <button
           onClick={() => setIsEditing(true)}
           className="absolute -top-3 -right-3 p-1 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md z-10"
@@ -75,5 +80,5 @@ export const EditableText: React.FC<EditableTextProps> = ({ contentKey, defaultT
     );
   }
 
-  return <span className={className}>{currentText}</span>;
+  return <span className={className} dangerouslySetInnerHTML={{ __html: currentText }} />;
 };

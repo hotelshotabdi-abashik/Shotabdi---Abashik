@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
+import { EditableText } from '../components/EditableText';
 import { uploadToR2, deleteFromR2 } from '../lib/r2';
 import { Trash2, Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -62,8 +63,12 @@ export default function Gallery() {
       </Helmet>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold text-slate-900 mb-4">{t('গ্যালারি', 'Gallery')}</h1>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto">{t('আমাদের হোটেলের কিছু দৃশ্য।', 'Some views of our hotel.')}</p>
+          <h1 className="text-4xl font-extrabold text-slate-900 mb-4">
+            <EditableText contentKey="gallery_title" defaultText={t('গ্যালারি', 'Gallery')} />
+          </h1>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+            <EditableText contentKey="gallery_subtitle" defaultText={t('আমাদের হোটেলের কিছু দৃশ্য।', 'Some views of our hotel.')} multiline />
+          </p>
           <div className="w-24 h-1 bg-red-600 mx-auto rounded-full mt-6"></div>
         </div>
 

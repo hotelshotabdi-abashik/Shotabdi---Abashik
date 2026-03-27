@@ -333,7 +333,7 @@ export default function Rooms() {
                     <EditableText contentKey="global_discount_title" defaultText="Special Offer!" />
                   </h3>
                   <p className="text-red-100 font-medium mt-1">
-                    <EditableText contentKey="global_discount_desc" defaultText="Get a massive discount on all room bookings today." />
+                    <EditableText contentKey="global_discount_desc" defaultText="Get a massive discount on all room bookings today." multiline />
                   </p>
                 </div>
               </div>

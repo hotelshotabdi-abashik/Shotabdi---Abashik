@@ -18,7 +18,7 @@ export const EditableImage: React.FC<EditableImageProps> = ({ contentKey, defaul
   const [value, setValue] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const currentSrc = content[contentKey] || defaultSrc;
+  const currentSrc = content[contentKey] === 'deleted' ? '' : (content[contentKey] || defaultSrc);
 
   const handleSave = async () => {
     if (value.trim()) {
@@ -55,7 +55,7 @@ export const EditableImage: React.FC<EditableImageProps> = ({ contentKey, defaul
       }
     }
     
-    await updateContent(contentKey, '');
+    await updateContent(contentKey, 'deleted');
     setValue('');
     setIsEditing(false);
   };
@@ -118,6 +118,12 @@ export const EditableImage: React.FC<EditableImageProps> = ({ contentKey, defaul
   };
 
   const renderImage = (src: string) => {
+    if (!src) {
+      if (editMode) {
+        return <div className={`bg-slate-200 flex items-center justify-center ${className}`}><span className="text-slate-400 text-sm">No Image</span></div>;
+      }
+      return null;
+    }
     if (forceSvg && !src.toLowerCase().endsWith('.svg') && !src.startsWith('data:image/svg')) {
       return (
         <svg className={className} xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
