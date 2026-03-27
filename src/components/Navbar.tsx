@@ -31,6 +31,7 @@ export default function Navbar() {
     { name: t('রেস্টুরেন্ট', 'Restaurant'), path: '/restaurant' },
     { name: t('ট্যুর ডেস্ক', 'Tour Desk'), path: '/tour-desk' },
     { name: t('গ্যালারি', 'Gallery'), path: '/gallery' },
+    { name: t('রিভিউ', 'Reviews'), path: '/reviews' },
     { name: t('হেল্প ডেস্ক', 'Help Desk'), path: '/help-desk' },
   ];
 
@@ -46,6 +47,17 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsProfileOpen(false);
@@ -57,6 +69,8 @@ export default function Navbar() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const [hasSeenNotifications, setHasSeenNotifications] = useState(false);
 
   useEffect(() => {
     if (!user || !profile) return;
@@ -77,6 +91,9 @@ export default function Navbar() {
       const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setNotifications(notifs);
       setNotificationCount(notifs.length);
+      if (notifs.length > 0) {
+        setHasSeenNotifications(false);
+      }
     });
 
     return () => unsubscribe();
@@ -95,64 +112,89 @@ export default function Navbar() {
 
   const handleNotificationClick = () => {
     setIsNotificationOpen(!isNotificationOpen);
+    setHasSeenNotifications(true);
+  };
+
+  const handleNotificationItemClick = (notif: any) => {
+    setIsNotificationOpen(false);
+    setIsFullScreenNotification(false);
+    setHasSeenNotifications(true);
+    
+    if (profile?.role === 'admin') {
+      navigate('/admin');
+    } else {
+      navigate('/my-stays');
+    }
+    
+    // Scroll to the booking after a short delay to allow page load
+    setTimeout(() => {
+      const element = document.getElementById(`booking-${notif.id}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add('ring-4', 'ring-red-500', 'transition-all', 'duration-1000');
+        setTimeout(() => {
+          element.classList.remove('ring-4', 'ring-red-500');
+        }, 3000);
+      }
+    }, 500);
   };
 
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-500 ${scrolled ? 'bg-transparent shadow-none' : 'bg-white shadow-sm'} text-slate-900`}>
       <div className="w-full px-2 sm:px-4 lg:px-6">
-        <div className="flex justify-between min-h-[4rem] py-2">
+        <div className="flex justify-between h-14 py-1 items-center">
           <div className="flex items-center flex-1 mr-2 sm:mr-4 min-w-0">
             <Link to="/" className="flex items-center gap-2 min-w-0" onClick={() => setIsOpen(false)}>
               <EditableImage 
                 contentKey="site_logo" 
                 defaultSrc="https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png" 
-                className="h-8 sm:h-10 lg:h-12 w-auto flex-shrink-0 object-contain" 
+                className="h-6 sm:h-8 w-auto flex-shrink-0 object-contain" 
                 alt="Hotel Shotabdi Abashik Logo"
                 folder="shotabdi-abashik/logo"
               />
-              <span className="font-bold text-xs sm:text-sm md:text-base lg:text-xl text-slate-900 leading-tight truncate">
+              <span className="font-bold text-[10px] sm:text-xs md:text-sm lg:text-base text-slate-900 leading-tight truncate">
                 {t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik')}
               </span>
             </Link>
           </div>
           
           {/* Desktop Menu */}
-          <div className="hidden xl:flex items-center gap-1 flex-shrink-0">
+          <div className="hidden md:flex items-center gap-0.5 xl:gap-1 flex-shrink-0">
             {profile?.role === 'admin' && (
               <button 
                 onClick={() => setEditMode(!editMode)} 
-                className={`flex items-center px-2 py-1.5 rounded-md text-sm font-bold transition-colors whitespace-nowrap ${editMode ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-amber-100 text-amber-800 hover:bg-amber-200'}`}
+                className={`flex items-center px-2 py-1.5 rounded-md text-xs xl:text-sm font-bold transition-colors whitespace-nowrap ${editMode ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-amber-100 text-amber-800 hover:bg-amber-200'}`}
               >
-                <Edit className="w-4 h-4 mr-1" /> {editMode ? t('সম্পাদনা বন্ধ করুন', 'Stop Editing') : t('ওয়েব সম্পাদনা', 'Edit Web')}
+                <Edit className="w-3 h-3 xl:w-4 xl:h-4 mr-1" /> {editMode ? t('সম্পাদনা বন্ধ করুন', 'Stop Editing') : t('ওয়েব সম্পাদনা', 'Edit Web')}
               </button>
             )}
             {(!user || profile?.profileCompleted) && navLinks.map((link) => (
-              <Link key={link.name} to={link.path} className="text-slate-700 hover:bg-red-50 hover:text-red-700 px-2 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap">
+              <Link key={link.name} to={link.path} className="text-slate-700 hover:bg-red-50 hover:text-red-700 px-1 md:px-1.5 xl:px-2 py-2 rounded-md text-[10px] md:text-xs xl:text-sm font-medium transition-colors whitespace-nowrap">
                 {link.name}
               </Link>
             ))}
 
             <button
               onClick={() => setLanguage(language === 'bn' ? 'en' : 'bn')}
-              className="flex items-center justify-center ml-1 px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-700 transition-colors text-sm font-bold flex-shrink-0"
+              className="flex items-center justify-center ml-1 px-2 xl:px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-700 transition-colors text-xs xl:text-sm font-bold flex-shrink-0"
             >
-              <Globe className="w-4 h-4 mr-1" />
+              <Globe className="w-3 h-3 xl:w-4 xl:h-4 mr-1" />
               {language === 'bn' ? 'EN' : 'BN'}
             </button>
             
             {loading ? (
-              <div className="w-24 h-10 bg-slate-100 animate-pulse rounded-md ml-2 flex-shrink-0"></div>
+              <div className="w-24 h-8 xl:h-10 bg-slate-100 animate-pulse rounded-md ml-1 xl:ml-2 flex-shrink-0"></div>
             ) : (
-              <div className="flex items-center ml-2 border-l border-slate-200 pl-2 flex-shrink-0">
+              <div className="flex items-center ml-1 xl:ml-2 border-l border-slate-200 pl-1 xl:pl-2 flex-shrink-0">
                 <div className="relative" ref={notificationDropdownRef}>
                   <button 
                     onClick={user ? handleNotificationClick : login}
-                    className="relative flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-700 transition-colors focus:outline-none mr-2 flex-shrink-0"
+                    className="relative flex items-center justify-center w-8 h-8 xl:w-10 xl:h-10 rounded-full bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-700 transition-colors focus:outline-none mr-1 xl:mr-2 flex-shrink-0"
                     title={user ? "Notifications" : "Login to see notifications"}
                   >
-                    <Bell className="w-5 h-5" />
-                    {notificationCount > 0 && (
-                      <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
+                    <Bell className="w-4 h-4 xl:w-5 xl:h-5" />
+                    {notificationCount > 0 && !hasSeenNotifications && (
+                      <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 xl:px-2 xl:py-1 text-[10px] xl:text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
                         {notificationCount}
                       </span>
                     )}
@@ -175,7 +217,11 @@ export default function Navbar() {
                       {notifications.length > 0 ? (
                         <div className="divide-y divide-slate-50">
                           {notifications.slice(0, 5).map((notif: any) => (
-                            <div key={notif.id} className="px-4 py-3 hover:bg-slate-50 transition-colors">
+                            <div 
+                              key={notif.id} 
+                              onClick={() => handleNotificationItemClick(notif)}
+                              className="px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer"
+                            >
                               <p className="text-sm text-slate-800 font-medium">
                                 {profile?.role === 'admin' 
                                   ? `${notif.userName || 'Guest'} requested a booking` 
@@ -197,53 +243,39 @@ export default function Navbar() {
                 </div>
 
                 {user ? (
-                  <div className="relative" ref={dropdownRef}>
-                    <button 
-                      onClick={() => setIsProfileOpen(!isProfileOpen)} 
-                      className="flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-700 transition-colors focus:outline-none"
+                  <div className="flex items-center gap-0.5 xl:gap-1">
+                    <Link 
+                      to="/my-stays" 
+                      className="text-slate-700 hover:bg-red-50 hover:text-red-700 px-1.5 md:px-2 xl:px-3 py-1.5 rounded-md text-[10px] md:text-xs xl:text-sm font-medium transition-colors whitespace-nowrap"
                     >
-                      <User className="w-5 h-5" />
-                    </button>
-
-                    {isProfileOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 border border-slate-100 z-50">
-                        <Link 
-                          to="/my-stays" 
-                          onClick={() => setIsProfileOpen(false)}
-                          className="block px-4 py-2 text-sm text-slate-700 hover:bg-red-50 hover:text-red-700"
-                        >
-                          {t('আমার বুকিং', 'My Stays')}
-                        </Link>
-                        {profile?.profileCompleted && (
-                          <Link 
-                            to="/profile" 
-                            onClick={() => setIsProfileOpen(false)}
-                            className="block px-4 py-2 text-sm text-slate-700 hover:bg-red-50 hover:text-red-700"
-                          >
-                            {t('অ্যাকাউন্ট পরিচালনা', 'Manage Account')}
-                          </Link>
-                        )}
-                        {profile?.role === 'admin' && (
-                          <Link 
-                            to="/admin" 
-                            onClick={() => setIsProfileOpen(false)}
-                            className="block px-4 py-2 text-sm text-slate-700 hover:bg-red-50 hover:text-red-700"
-                          >
-                            {t('অ্যাডমিন প্যানেল', 'Admin Panel')}
-                          </Link>
-                        )}
-                        <button 
-                          onClick={() => { logout(); setIsProfileOpen(false); }} 
-                          className="block w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-red-50 hover:text-red-700"
-                        >
-                          {t('লগআউট', 'Logout')}
-                        </button>
-                      </div>
+                      {t('আমার বুকিং', 'My Stays')}
+                    </Link>
+                    {profile?.profileCompleted && (
+                      <Link 
+                        to="/profile" 
+                        className="text-slate-700 hover:bg-red-50 hover:text-red-700 px-1.5 md:px-2 xl:px-3 py-1.5 rounded-md text-[10px] md:text-xs xl:text-sm font-medium transition-colors whitespace-nowrap"
+                      >
+                        {t('অ্যাকাউন্ট', 'Account')}
+                      </Link>
                     )}
+                    {profile?.role === 'admin' && (
+                      <Link 
+                        to="/admin" 
+                        className="text-slate-700 hover:bg-red-50 hover:text-red-700 px-1.5 md:px-2 xl:px-3 py-1.5 rounded-md text-[10px] md:text-xs xl:text-sm font-medium transition-colors whitespace-nowrap"
+                      >
+                        {t('অ্যাডমিন', 'Admin')}
+                      </Link>
+                    )}
+                    <button 
+                      onClick={logout} 
+                      className="flex items-center text-slate-700 hover:bg-red-50 hover:text-red-700 px-1.5 md:px-2 xl:px-3 py-1.5 rounded-md text-[10px] md:text-xs xl:text-sm font-medium transition-colors whitespace-nowrap"
+                    >
+                      <LogOut className="w-3 h-3 xl:w-4 xl:h-4 mr-1" /> {t('লগআউট', 'Logout')}
+                    </button>
                   </div>
                 ) : (
-                  <button onClick={login} className="flex items-center bg-red-700 text-white hover:bg-red-800 px-4 py-2 rounded-md text-sm font-bold transition-colors flex-shrink-0">
-                    <LogIn className="w-4 h-4 mr-2" /> {t('বুক করুন', 'Book Now')}
+                  <button onClick={login} className="flex items-center bg-red-700 text-white hover:bg-red-800 px-2 md:px-3 xl:px-4 py-1.5 xl:py-2 rounded-md text-[10px] md:text-xs xl:text-sm font-bold transition-colors flex-shrink-0">
+                    <LogIn className="w-3 h-3 xl:w-4 xl:h-4 mr-1 xl:mr-2" /> {t('লগইন', 'Login')}
                   </button>
                 )}
               </div>
@@ -251,7 +283,7 @@ export default function Navbar() {
           </div>
 
           {/* Mobile menu button */}
-          <div className="xl:hidden flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          <div className="md:hidden flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <button
               onClick={() => setLanguage(language === 'bn' ? 'en' : 'bn')}
               className="flex items-center justify-center px-2 sm:px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-700 transition-colors text-xs sm:text-sm font-bold flex-shrink-0"
@@ -259,9 +291,13 @@ export default function Navbar() {
               <Globe className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
               {language === 'bn' ? 'EN' : 'BN'}
             </button>
-            <button onClick={() => setIsOpen(!isOpen)} className="inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md text-slate-900 hover:bg-slate-100 focus:outline-none flex-shrink-0">
-              {isOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
-            </button>
+            
+            {!user && (
+              <button onClick={login} className="flex items-center bg-red-700 text-white hover:bg-red-800 px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-bold transition-colors flex-shrink-0">
+                <LogIn className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> {t('লগইন', 'Login')}
+              </button>
+            )}
+
             <div className="relative" ref={notificationDropdownRef}>
               <button 
                 onClick={user ? handleNotificationClick : login}
@@ -269,7 +305,7 @@ export default function Navbar() {
                 title={user ? "Notifications" : "Login to see notifications"}
               >
                 <Bell className="h-5 w-5 sm:h-6 sm:w-6" />
-                {notificationCount > 0 && (
+                {notificationCount > 0 && !hasSeenNotifications && (
                   <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-[10px] font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
                     {notificationCount}
                   </span>
@@ -293,7 +329,11 @@ export default function Navbar() {
                   {notifications.length > 0 ? (
                     <div className="divide-y divide-slate-50">
                       {notifications.slice(0, 5).map((notif: any) => (
-                        <div key={notif.id} className="px-4 py-3 hover:bg-slate-50 transition-colors">
+                        <div 
+                          key={notif.id} 
+                          onClick={() => handleNotificationItemClick(notif)}
+                          className="px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer"
+                        >
                           <p className="text-sm text-slate-800 font-medium">
                             {profile?.role === 'admin' 
                               ? `${notif.userName || 'Guest'} requested a booking` 
@@ -313,23 +353,27 @@ export default function Navbar() {
                 </div>
               )}
             </div>
+
+            <button onClick={() => setIsOpen(!isOpen)} className="inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md text-slate-900 hover:bg-slate-100 focus:outline-none flex-shrink-0">
+              {isOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
+            </button>
           </div>
         </div>
       </div>
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="xl:hidden fixed inset-0 z-[100] bg-white flex flex-col">
+        <div className="md:hidden fixed inset-0 z-[100] bg-white flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white sticky top-0">
             <Link to="/" className="flex items-center gap-2 min-w-0" onClick={() => setIsOpen(false)}>
               <EditableImage 
                 contentKey="site_logo" 
                 defaultSrc="https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png" 
-                className="h-8 w-auto flex-shrink-0 object-contain" 
+                className="h-6 w-auto flex-shrink-0 object-contain" 
                 alt="Hotel Shotabdi Abashik Logo"
                 folder="shotabdi-abashik/logo"
               />
-              <span className="font-bold text-sm text-slate-900 leading-tight truncate">
+              <span className="font-bold text-xs text-slate-900 leading-tight truncate">
                 {t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik')}
               </span>
             </Link>
@@ -375,13 +419,7 @@ export default function Navbar() {
                   <LogOut className="w-5 h-5 mr-3" /> {t('লগআউট', 'Logout')}
                 </button>
               </div>
-            ) : (
-              <div className="pt-6 mt-6 border-t border-slate-100">
-                <button onClick={() => { login(); setIsOpen(false); }} className="w-full flex items-center justify-center bg-red-700 text-white hover:bg-red-800 px-4 py-4 rounded-xl text-lg font-bold transition-colors shadow-md">
-                  <LogIn className="w-5 h-5 mr-2" /> {t('বুক করুন', 'Book Now')}
-                </button>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
       )}
@@ -402,7 +440,11 @@ export default function Navbar() {
               {notifications.length > 0 ? (
                 <div className="space-y-3">
                   {notifications.map((notif: any) => (
-                    <div key={notif.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <div 
+                      key={notif.id} 
+                      onClick={() => handleNotificationItemClick(notif)}
+                      className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+                    >
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-bold text-slate-900">
                           {profile?.role === 'admin' 

@@ -9,6 +9,7 @@ import { useContent } from '../context/ContentContext';
 import { EditableText } from '../components/EditableText';
 import { EditableImage } from '../components/EditableImage';
 import { RatingsSection } from '../components/RatingsSection';
+import { ImageViewModal } from '../components/ImageViewModal';
 import { uploadToR2, deleteFromR2 } from '../lib/r2';
 import { toast } from 'sonner';
 
@@ -16,7 +17,8 @@ export default function Home() {
   const { t } = useLanguage();
   const { content, editMode, updateContent } = useContent();
   const navigate = useNavigate();
-  const galleryImages: string[] = content.galleryImages || [];
+  const rawGalleryImages: any[] = content.galleryImages || [];
+  const galleryImages = rawGalleryImages.map(img => typeof img === 'string' ? { url: img } : img);
   
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [direction, setDirection] = useState(0);
@@ -25,17 +27,49 @@ export default function Home() {
   const [roomType, setRoomType] = useState('');
   
   const [isHeroEditModalOpen, setIsHeroEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<any>(null);
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const [rooms, setRooms] = useState<any[]>([]);
 
+  const globalDiscountRate = parseInt(content.global_discount_rate || '0', 10);
+
+  const getDiscountPercentage = (room: any) => {
+    if (room.cutPrice && room.cutPrice > room.price) {
+      return Math.round(((room.cutPrice - room.price) / room.cutPrice) * 100);
+    }
+    return globalDiscountRate;
+  };
+
+  const getStrikethroughPrice = (room: any) => {
+    if (room.cutPrice && room.cutPrice > room.price) {
+      return room.cutPrice;
+    }
+    if (globalDiscountRate > 0) {
+      return Math.round(room.price / (1 - globalDiscountRate / 100));
+    }
+    return null;
+  };
+
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const q = query(collection(db, 'rooms'), orderBy('price', 'asc'));
+        const q = query(collection(db, 'rooms'));
         const snapshot = await getDocs(q);
         const roomsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setRooms(roomsData);
+        
+        // Sort rooms to maintain consistent order (e.g., by order field, then price)
+        roomsData.sort((a: any, b: any) => {
+          if (a.order !== undefined && b.order !== undefined) {
+            return a.order - b.order;
+          }
+          if (a.order !== undefined) return -1;
+          if (b.order !== undefined) return 1;
+          return a.price - b.price;
+        });
+        
+        setRooms(roomsData.slice(0, 4)); // Show top 4 rooms
       } catch (error) {
         console.error("Error fetching rooms:", error);
       }
@@ -163,7 +197,7 @@ export default function Home() {
   return (
     <div className="bg-slate-50">
       {/* Hero Section */}
-      <section className="relative bg-white text-slate-900 min-h-screen flex items-center justify-center overflow-hidden select-none">
+      <section className="relative bg-white text-slate-900 h-[100dvh] flex items-center justify-center overflow-hidden select-none pt-20 pb-10">
         {editMode && (
           <button
             onClick={() => setIsHeroEditModalOpen(true)}
@@ -215,44 +249,9 @@ export default function Home() {
           <div className="absolute inset-0 bg-black/50 pointer-events-none"></div>
         </div>
         
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center pt-20 pb-10 pointer-events-none">
-          <h1 
-            className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 text-white drop-shadow-lg"
-          >
-            <EditableText contentKey="home_hero_title" defaultText={t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik')} />
-          </h1>
-          <div 
-            className="text-xl md:text-2xl font-medium mb-8 max-w-3xl mx-auto text-slate-200 drop-shadow-md"
-          >
-            <EditableText contentKey="home_hero_subtitle" defaultText={t('২৪ ঘণ্টা আবাসিক সার্ভিস', '24h Residential Service')} multiline />
-          </div>
-
-          {/* Feature Buttons */}
-          <div className="flex flex-wrap justify-center gap-3 mb-10 pointer-events-auto">
-            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium shadow-lg">
-              <Wifi className="w-4 h-4" />
-              <EditableText contentKey="home_feature_wifi" defaultText={t('ফ্রি ওয়াইফাই', 'Free WiFi')} />
-            </div>
-            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium shadow-lg">
-              <Wind className="w-4 h-4" />
-              <EditableText contentKey="home_feature_ac" defaultText={t('এসি রুম', 'AC Rooms')} />
-            </div>
-            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium shadow-lg">
-              <Coffee className="w-4 h-4" />
-              <EditableText contentKey="home_feature_restaurant" defaultText={t('রেস্টুরেন্ট', 'Restaurant')} />
-            </div>
-            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium shadow-lg">
-              <Shield className="w-4 h-4" />
-              <EditableText contentKey="home_feature_safe" defaultText={t('নিরাপদ পরিবেশ', 'Safe Environment')} />
-            </div>
-            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-4 py-2 rounded-full flex items-center gap-2 text-sm font-medium shadow-lg">
-              <MapPin className="w-4 h-4" />
-              <EditableText contentKey="home_feature_location" defaultText={t('দুর্দান্ত লোকেশন', 'Great Location')} />
-            </div>
-          </div>
-          
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center pt-16 pb-8 pointer-events-none flex flex-col justify-center h-full">
           {/* Booking Shortcut Form */}
-          <div className="max-w-4xl mx-auto bg-white p-4 md:p-6 rounded-2xl shadow-xl border border-slate-200 mt-8 transform hover:-translate-y-1 transition-transform duration-300 pointer-events-auto">
+          <div className="max-w-4xl mx-auto bg-white p-5 md:p-6 rounded-2xl shadow-xl border border-slate-200 mb-6 transform hover:-translate-y-1 transition-transform duration-300 pointer-events-auto w-full">
             <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 items-end">
               <div className="flex-1 w-full text-left">
                 <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -261,7 +260,7 @@ export default function Home() {
                 <select 
                   value={roomType}
                   onChange={(e) => setRoomType(e.target.value)}
-                  className="w-full border-slate-300 rounded-xl shadow-sm focus:border-red-500 focus:ring-red-500 bg-slate-50 py-3 px-4"
+                  className="w-full border-slate-300 rounded-xl shadow-sm focus:border-red-500 focus:ring-red-500 bg-slate-50 py-4 px-5 text-base md:py-3 md:px-4 md:text-sm"
                 >
                   <option value="">{content['home_booking_any_room'] || t('যেকোনো রুম', 'Any Room')}</option>
                   <option value="Single Delux">Single Delux</option>
@@ -275,14 +274,14 @@ export default function Home() {
                   <EditableText contentKey="home_booking_check_in" defaultText={t('চেক-ইন', 'Check In')} />
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 left-0 pl-4 md:pl-3 flex items-center pointer-events-none">
                     <Calendar className="h-5 w-5 text-slate-400" />
                   </div>
                   <input 
                     type="date" 
                     value={checkIn}
                     onChange={(e) => setCheckIn(e.target.value)}
-                    className="w-full pl-10 border-slate-300 rounded-xl shadow-sm focus:border-red-500 focus:ring-red-500 bg-slate-50 py-3 px-4"
+                    className="w-full pl-12 md:pl-10 border-slate-300 rounded-xl shadow-sm focus:border-red-500 focus:ring-red-500 bg-slate-50 py-4 px-5 text-base md:py-3 md:px-4 md:text-sm"
                   />
                 </div>
               </div>
@@ -291,25 +290,49 @@ export default function Home() {
                   <EditableText contentKey="home_booking_check_out" defaultText={t('চেক-আউট', 'Check Out')} />
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 left-0 pl-4 md:pl-3 flex items-center pointer-events-none">
                     <Calendar className="h-5 w-5 text-slate-400" />
                   </div>
                   <input 
                     type="date" 
                     value={checkOut}
                     onChange={(e) => setCheckOut(e.target.value)}
-                    className="w-full pl-10 border-slate-300 rounded-xl shadow-sm focus:border-red-500 focus:ring-red-500 bg-slate-50 py-3 px-4"
+                    className="w-full pl-12 md:pl-10 border-slate-300 rounded-xl shadow-sm focus:border-red-500 focus:ring-red-500 bg-slate-50 py-4 px-5 text-base md:py-3 md:px-4 md:text-sm"
                   />
                 </div>
               </div>
               <button 
                 type="submit"
-                className="w-full md:w-auto bg-red-600 text-white px-8 py-3 rounded-xl hover:bg-red-700 font-bold transition-colors flex items-center justify-center gap-2 shadow-md h-[50px]"
+                className="w-full md:w-auto bg-red-600 text-white px-8 py-4 md:py-3 rounded-xl hover:bg-red-700 font-bold transition-colors flex items-center justify-center gap-2 shadow-md h-[60px] md:h-[50px] text-lg md:text-base"
               >
-                <Search className="w-5 h-5" />
+                <Search className="w-6 h-6 md:w-5 md:h-5" />
                 <EditableText contentKey="home_booking_search" defaultText={t('খুঁজুন', 'Search')} />
               </button>
             </form>
+          </div>
+
+          {/* Feature Buttons */}
+          <div className="flex flex-wrap justify-center gap-2 pointer-events-auto">
+            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
+              <Wifi className="w-3 h-3" />
+              <EditableText contentKey="home_feature_wifi" defaultText={t('ফ্রি ওয়াইফাই', 'Free WiFi')} />
+            </div>
+            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
+              <Wind className="w-3 h-3" />
+              <EditableText contentKey="home_feature_ac" defaultText={t('এসি রুম', 'AC Rooms')} />
+            </div>
+            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
+              <Coffee className="w-3 h-3" />
+              <EditableText contentKey="home_feature_restaurant" defaultText={t('রেস্টুরেন্ট', 'Restaurant')} />
+            </div>
+            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
+              <Shield className="w-3 h-3" />
+              <EditableText contentKey="home_feature_safe" defaultText={t('নিরাপদ পরিবেশ', 'Safe Environment')} />
+            </div>
+            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
+              <MapPin className="w-3 h-3" />
+              <EditableText contentKey="home_feature_location" defaultText={t('দুর্দান্ত লোকেশন', 'Great Location')} />
+            </div>
           </div>
         </div>
 
@@ -378,7 +401,7 @@ export default function Home() {
 
           {galleryImages.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-              {galleryImages.slice(0, 8).map((src, index) => (
+              {galleryImages.slice(0, 8).map((img, index) => (
                 <motion.div 
                   key={index}
                   initial={{ opacity: 0, scale: 0.8, y: 20 }}
@@ -391,14 +414,18 @@ export default function Home() {
                     stiffness: 100
                   }}
                   whileHover={{ scale: 1.05, zIndex: 10 }}
-                  className={`rounded-xl overflow-hidden shadow-lg relative group ${
+                  onClick={() => {
+                    setSelectedImage(img);
+                    setIsViewModalOpen(true);
+                  }}
+                  className={`rounded-xl overflow-hidden shadow-lg relative group cursor-pointer ${
                     index === 0 ? 'md:col-span-2 md:row-span-2' : ''
                   } ${index === 3 ? 'md:col-span-2' : ''}`}
                 >
                   <div className="aspect-w-4 aspect-h-3 h-full">
                     <img 
-                      src={src} 
-                      alt={`Gallery ${index + 1}`} 
+                      src={img.url} 
+                      alt={img.title || `Gallery ${index + 1}`} 
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                       referrerPolicy="no-referrer" 
                     />
@@ -443,30 +470,54 @@ export default function Home() {
           </div>
           
           {rooms.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
               {rooms.map((room) => (
-                <div key={room.id} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden group hover:shadow-md transition-shadow flex flex-col sm:flex-row">
-                  <div className="w-full sm:w-2/5 h-48 sm:h-auto relative overflow-hidden">
-                    <img 
-                      src={room.images?.[0] || 'https://picsum.photos/seed/room/800/600'} 
-                      alt={room.name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-bold text-red-600 shadow-sm">
-                      ৳{room.price} <span className="text-slate-500 text-xs font-normal">/{t('রাত', 'night')}</span>
-                    </div>
+                <div key={room.id} className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col hover:shadow-xl transition-shadow relative group">
+                  <div className="relative h-64">
+                    <img src={room.imageUrl || room.images?.[0] || 'https://picsum.photos/seed/room/800/600'} alt={room.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    {getDiscountPercentage(room) > 0 ? (
+                      <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md animate-bounce">
+                        {getDiscountPercentage(room)}% OFF
+                      </div>
+                    ) : null}
                   </div>
-                  <div className="p-6 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-900 mb-2">{room.name}</h3>
-                      <div className="flex items-center gap-4 text-sm text-slate-500 mb-4">
-                        <span className="flex items-center gap-1"><BedDouble className="w-4 h-4" /> {room.type}</span>
-                        <span className="flex items-center gap-1"><CheckCircle2 className="w-4 h-4" /> {room.capacity} {t('জন', 'Persons')}</span>
+                  <div className="p-8 flex-grow flex flex-col">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h2 className="text-2xl font-bold text-slate-900">{t(room.name, room.type)}</h2>
+                        <span className="inline-block bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-semibold mt-2 uppercase tracking-wider">{room.type}</span>
+                      </div>
+                      <div className="text-right">
+                        {getStrikethroughPrice(room) ? (
+                          <>
+                            <div className="text-sm text-slate-400 line-through">৳{getStrikethroughPrice(room)}</div>
+                            <div className="text-2xl font-bold text-red-600">৳{room.price}</div>
+                          </>
+                        ) : (
+                          <div className="text-2xl font-bold text-slate-900">৳{room.price}</div>
+                        )}
+                        <div className="text-xs text-slate-500">{t('রাত', 'Night')}</div>
                       </div>
                     </div>
-                    <Link to={`/rooms/${room.id}`} className="inline-flex items-center justify-center w-full bg-slate-100 text-slate-900 px-4 py-2 rounded-xl hover:bg-red-600 hover:text-white font-medium transition-colors mt-4">
-                      {t('বিস্তারিত দেখুন', 'View Details')}
+                    <p className="text-slate-600 mb-6 flex-grow">{room.description}</p>
+                    
+                    <div className="mb-8">
+                      <h4 className="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">{t('সুবিধাসমূহ', 'Amenities')}</h4>
+                      <ul className="grid grid-cols-2 gap-2">
+                        {room.amenities?.map((amenity: string, index: number) => (
+                          <li key={index} className="flex items-center text-sm text-slate-600">
+                            <CheckCircle2 className="w-4 h-4 mr-2 text-red-500" />
+                            {amenity}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    <Link 
+                      to={`/rooms`}
+                      className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center"
+                    >
+                      {t('বুক করুন', 'Book Now')}
                     </Link>
                   </div>
                 </div>
@@ -571,6 +622,12 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      <ImageViewModal 
+        isOpen={isViewModalOpen} 
+        onClose={() => setIsViewModalOpen(false)} 
+        selectedImage={selectedImage} 
+      />
     </div>
   );
 }

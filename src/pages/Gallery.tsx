@@ -3,49 +3,136 @@ import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
 import { EditableText } from '../components/EditableText';
 import { uploadToR2, deleteFromR2 } from '../lib/r2';
-import { Trash2, Upload, Loader2 } from 'lucide-react';
+import { Trash2, Upload, Loader2, X, Image as ImageIcon, Edit2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Helmet } from 'react-helmet-async';
 import { ConfirmModal } from '../components/ConfirmModal';
+
+export interface GalleryImage {
+  id: string;
+  url: string;
+  title: string;
+  description: string;
+  keywords: string;
+  createdAt: number;
+}
+
+import { ImageViewModal } from '../components/ImageViewModal';
 
 export default function Gallery() {
   const { t } = useLanguage();
   const { content, editMode, updateContent } = useContent();
   const [uploading, setUploading] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, message: string, onConfirm: () => void }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+  
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  
+  const [formData, setFormData] = useState({
+    file: null as File | null,
+    title: '',
+    description: '',
+    keywords: ''
+  });
 
-  const images: string[] = content.galleryImages || [];
+  const rawImages: any[] = content.galleryImages || [];
+  const images: GalleryImage[] = rawImages.map((img, idx) => {
+    if (typeof img === 'string') {
+      return {
+        id: `img-${idx}-${Date.now()}`,
+        url: img,
+        title: '',
+        description: '',
+        keywords: '',
+        createdAt: Date.now()
+      };
+    }
+    return img;
+  });
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleOpenUploadModal = (index: number | null = null) => {
+    if (index !== null) {
+      const img = images[index];
+      setFormData({
+        file: null,
+        title: img.title || '',
+        description: img.description || '',
+        keywords: img.keywords || ''
+      });
+      setEditingIndex(index);
+    } else {
+      setFormData({ file: null, title: '', description: '', keywords: '' });
+      setEditingIndex(null);
+    }
+    setIsUploadModalOpen(true);
+  };
+
+  const handleSaveImage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingIndex === null && !formData.file) {
+      toast.error('Please select an image');
+      return;
+    }
 
     setUploading(true);
     try {
-      const url = await uploadToR2(file);
-      const newImages = [...images, url];
+      let url = editingIndex !== null ? images[editingIndex].url : '';
+      
+      if (formData.file) {
+        url = await uploadToR2(formData.file);
+        // If editing and we uploaded a new file, delete the old one
+        if (editingIndex !== null && images[editingIndex].url.includes('workers.dev')) {
+          await deleteFromR2(images[editingIndex].url).catch(console.error);
+        }
+      }
+
+      const newImage: GalleryImage = {
+        id: editingIndex !== null ? images[editingIndex].id : `img-${Date.now()}`,
+        url,
+        title: formData.title,
+        description: formData.description,
+        keywords: formData.keywords,
+        createdAt: editingIndex !== null ? images[editingIndex].createdAt : Date.now()
+      };
+
+      const newImages = [...images];
+      if (editingIndex !== null) {
+        newImages[editingIndex] = newImage;
+      } else {
+        newImages.push(newImage);
+      }
+
       await updateContent('galleryImages', newImages);
-      toast.success('Image uploaded successfully');
+      toast.success(editingIndex !== null ? 'Image updated successfully' : 'Image uploaded successfully');
+      setIsUploadModalOpen(false);
     } catch (error) {
       console.error(error);
-      toast.error('Failed to upload image');
+      toast.error('Failed to save image');
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDelete = async (index: number, url: string) => {
+  const handleDelete = async (index: number, url: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     setConfirmModal({
       isOpen: true,
       title: 'Delete Image',
       message: 'Are you sure you want to delete this image from the gallery? This action cannot be undone.',
       onConfirm: async () => {
         try {
-          await deleteFromR2(url);
+          if (url.includes('workers.dev')) {
+            await deleteFromR2(url);
+          }
           const newImages = [...images];
           newImages.splice(index, 1);
           await updateContent('galleryImages', newImages);
           toast.success('Image deleted successfully');
+          if (selectedImage?.id === images[index].id) {
+            setIsViewModalOpen(false);
+          }
         } catch (error) {
           console.error(error);
           toast.error('Failed to delete image');
@@ -54,12 +141,20 @@ export default function Gallery() {
     });
   };
 
+  const openImageView = (img: GalleryImage) => {
+    setSelectedImage(img);
+    setIsViewModalOpen(true);
+  };
+
+  const allKeywords = Array.from(new Set(images.flatMap(img => img.keywords ? img.keywords.split(',').map(k => k.trim()) : []))).filter(Boolean).join(', ');
+  const metaKeywords = `Hotel Shotabdi Abashik photos, Sylhet hotel gallery, room pictures Sylhet${allKeywords ? ', ' + allKeywords : ''}`;
+
   return (
-    <div className="bg-slate-50 py-16 min-h-screen">
+    <div className="bg-white py-16 min-h-screen">
       <Helmet>
         <title>Gallery | Hotel Shotabdi Abashik</title>
         <meta name="description" content="View photos of Hotel Shotabdi Abashik. See our rooms, facilities, and the beautiful surroundings in Sylhet." />
-        <meta name="keywords" content="Hotel Shotabdi Abashik photos, Sylhet hotel gallery, room pictures Sylhet" />
+        <meta name="keywords" content={metaKeywords} />
       </Helmet>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
@@ -74,31 +169,50 @@ export default function Gallery() {
 
         {editMode && (
           <div className="mb-8 flex justify-center">
-            <label className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition-colors cursor-pointer font-medium shadow-md">
-              {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
-              {uploading ? 'Uploading...' : 'Upload New Image'}
-              <input 
-                type="file" 
-                accept="image/*" 
-                className="hidden" 
-                onChange={handleUpload}
-                disabled={uploading}
-              />
-            </label>
+            <button 
+              onClick={() => handleOpenUploadModal(null)}
+              className="flex items-center gap-2 bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700 transition-colors font-medium shadow-md"
+            >
+              <Upload className="w-5 h-5" />
+              Upload New Image
+            </button>
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {images.map((src, index) => (
-            <div key={index} className="rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow aspect-w-4 aspect-h-3 relative group">
-              <img src={src} alt={`Gallery ${index + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {images.map((img, index) => (
+            <div 
+              key={img.id} 
+              className="rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all aspect-w-1 aspect-h-1 relative group cursor-pointer bg-white"
+              onClick={() => openImageView(img)}
+            >
+              <img src={img.url} alt={img.title || `Gallery ${index + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              
+              {/* SEO Hidden Text */}
+              <div className="sr-only">
+                <h2>{img.title}</h2>
+                <p>{img.description}</p>
+                <p>{img.keywords}</p>
+              </div>
+
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
+                {img.title && <h3 className="text-white font-bold text-lg truncate">{img.title}</h3>}
+                {img.description && <p className="text-slate-200 text-sm line-clamp-2 mt-1">{img.description}</p>}
+              </div>
+
               {editMode && (
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button 
-                    onClick={() => handleDelete(index, src)}
-                    className="bg-red-600 text-white p-3 rounded-full hover:bg-red-700 transform hover:scale-110 transition-all shadow-lg"
+                    onClick={(e) => { e.stopPropagation(); handleOpenUploadModal(index); }}
+                    className="bg-white/90 text-blue-600 p-2 rounded-full hover:bg-white transform hover:scale-110 transition-all shadow-lg"
                   >
-                    <Trash2 className="w-6 h-6" />
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={(e) => handleDelete(index, img.url, e)}
+                    className="bg-red-600/90 text-white p-2 rounded-full hover:bg-red-600 transform hover:scale-110 transition-all shadow-lg"
+                  >
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               )}
@@ -111,6 +225,103 @@ export default function Gallery() {
           )}
         </div>
       </div>
+
+      {/* Upload/Edit Modal */}
+      {isUploadModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-slate-100 p-6 flex items-center justify-between z-10">
+              <h2 className="text-2xl font-bold text-slate-900">
+                {editingIndex !== null ? 'Edit Image Details' : 'Upload New Image'}
+              </h2>
+              <button onClick={() => setIsUploadModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                <X className="w-6 h-6 text-slate-500" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveImage} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Image File {editingIndex === null && '*'}</label>
+                <div className="flex items-center justify-center w-full">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-xl cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <ImageIcon className="w-8 h-8 text-slate-400 mb-2" />
+                      <p className="text-sm text-slate-500">
+                        {formData.file ? formData.file.name : (editingIndex !== null ? 'Click to replace image (optional)' : 'Click to select image')}
+                      </p>
+                    </div>
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*"
+                      onChange={(e) => setFormData({...formData, file: e.target.files?.[0] || null})}
+                    />
+                  </label>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+                <input 
+                  type="text" 
+                  value={formData.title}
+                  onChange={(e) => setFormData({...formData, title: e.target.value})}
+                  className="w-full border-slate-300 rounded-xl shadow-sm focus:border-red-500 focus:ring-red-500"
+                  placeholder="e.g., Deluxe Room View"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                <textarea 
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  className="w-full border-slate-300 rounded-xl shadow-sm focus:border-red-500 focus:ring-red-500"
+                  rows={3}
+                  placeholder="Describe the image for visitors..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Keywords (SEO)</label>
+                <input 
+                  type="text" 
+                  value={formData.keywords}
+                  onChange={(e) => setFormData({...formData, keywords: e.target.value})}
+                  className="w-full border-slate-300 rounded-xl shadow-sm focus:border-red-500 focus:ring-red-500"
+                  placeholder="e.g., hotel, sylhet, deluxe room, view"
+                />
+                <p className="text-xs text-slate-500 mt-1">Comma separated keywords for Google Search</p>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setIsUploadModalOpen(false)}
+                  className="px-6 py-2 border border-slate-300 rounded-xl text-slate-700 hover:bg-slate-50 font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={uploading || (editingIndex === null && !formData.file)}
+                  className="px-6 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {uploading ? 'Saving...' : 'Save Image'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Modal (Instagram-like Post View) */}
+      <ImageViewModal 
+        isOpen={isViewModalOpen} 
+        onClose={() => setIsViewModalOpen(false)} 
+        selectedImage={selectedImage} 
+      />
+
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         title={confirmModal.title}
