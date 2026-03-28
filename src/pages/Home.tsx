@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BedDouble, CheckCircle2, MapPin, Percent, Utensils, Compass, PhoneCall, ArrowRight, Star, Camera, Calendar, Search, Edit2, X, Upload, Trash2, Loader2, Wifi, Wind, Coffee, Shield } from 'lucide-react';
+import { BedDouble, CheckCircle2, MapPin, Percent, Utensils, Compass, PhoneCall, ArrowRight, Star, Camera, Calendar, Search, Edit2, X, Upload, Trash2, Loader2, Wifi, Wind, Coffee, Shield, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { collection, getDocs, query, limit, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -306,6 +306,10 @@ export default function Home() {
 
           {/* Feature Buttons */}
           <div className="flex flex-wrap justify-center gap-2 pointer-events-auto">
+            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
+              <Clock className="w-3 h-3" />
+              <EditableText contentKey="home_feature_service" defaultText={t('২৪ ঘণ্টা আবাসিক সেবা', '24h Residential Service')} />
+            </div>
             <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
               <Wifi className="w-3 h-3" />
               <EditableText contentKey="home_feature_wifi" defaultText={t('ফ্রি ওয়াইফাই', 'Free WiFi')} />
