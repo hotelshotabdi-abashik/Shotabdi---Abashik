@@ -71,6 +71,21 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "section", "data", "updatedAt"]
+    },
+    "Rating": {
+      "title": "Rating",
+      "description": "A review or rating left by a guest.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhoto": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "status": { "type": "string", "enum": ["approved", "pending", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "rating", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -89,6 +104,10 @@
     "/content/{contentId}": {
       "schema": { "$ref": "#/entities/Content" },
       "description": "Stores dynamic website content."
+    },
+    "/ratings/{ratingId}": {
+      "schema": { "$ref": "#/entities/Rating" },
+      "description": "Stores guest reviews and ratings."
     }
   }
 }

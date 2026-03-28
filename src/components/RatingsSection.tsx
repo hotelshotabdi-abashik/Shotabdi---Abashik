@@ -58,13 +58,14 @@ export const RatingsSection: React.FC = () => {
         userPhoto: profile?.photoURL || user.photoURL || '',
         rating: newRating,
         comment: newComment,
-        status: 'pending',
+        status: 'approved',
         createdAt: serverTimestamp()
       });
       
       setNewComment('');
       setNewRating(5);
-      alert(t('আপনার রেটিং সফলভাবে জমা দেওয়া হয়েছে। অনুমোদনের পর এটি প্রদর্শিত হবে।', 'Your rating has been submitted successfully. It will be displayed after approval.'));
+      fetchRatings();
+      alert(t('আপনার রেটিং সফলভাবে জমা দেওয়া হয়েছে।', 'Your rating has been submitted successfully.'));
     } catch (error) {
       console.error("Error submitting rating:", error);
       alert(t('রেটিং জমা দিতে সমস্যা হয়েছে।', 'Failed to submit rating.'));

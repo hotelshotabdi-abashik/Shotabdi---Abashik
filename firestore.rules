@@ -60,6 +60,17 @@ service cloud.firestore {
     //   - data: string (required)
     //   - updatedAt: timestamp (required)
     //
+    // Collection: ratings
+    // Document ID: {ratingId}
+    // Fields:
+    //   - userId: string (required)
+    //   - userName: string (required)
+    //   - userPhoto: string (optional)
+    //   - rating: number (required, 1-5)
+    //   - comment: string (optional)
+    //   - createdAt: timestamp (required, immutable)
+    //   - status: string (required, 'approved', 'pending', 'rejected')
+    //
     // ===============================================================
 
     // ===============================================================
@@ -75,10 +86,9 @@ service cloud.firestore {
     }
 
     function isAdmin() {
+      let adminEmails = ["hotelshotabdiabashik@gmail.com", "selectedlegendbusiness@gmail.com", "fuadf342@gmail.com"];
       return isAuthenticated() && (
-        (request.auth.token.email == "hotelshotabdiabashik@gmail.com" && request.auth.token.email_verified == true) ||
-        (request.auth.token.email == "fuadf342@gmail.com" && request.auth.token.email_verified == true) ||
-        (request.auth.token.email == "selectedlegendbusiness@gmail.com" && request.auth.token.email_verified == true) ||
+        (request.auth.token.email in adminEmails && request.auth.token.email_verified == true) ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
       );
@@ -94,6 +104,12 @@ service cloud.firestore {
 
     function areImmutableFieldsUnchanged(fields) {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+
+    function isRecent(ts) {
+      return ts is timestamp &&
+        ts > request.time - duration.value(5, 'm') &&
+        ts < request.time + duration.value(5, 'm');
     }
 
     // ===============================================================
@@ -175,12 +191,11 @@ service cloud.firestore {
     }
 
     function isValidRating() {
-      let allowedFields = ['id', 'userId', 'userName', 'userPhoto', 'rating', 'comment', 'createdAt', 'status'];
-      let requiredFields = ['id', 'userId', 'userName', 'rating', 'createdAt', 'status'];
+      let allowedFields = ['userId', 'userName', 'userPhoto', 'rating', 'comment', 'createdAt', 'status'];
+      let requiredFields = ['userId', 'userName', 'rating', 'createdAt', 'status'];
       
       return hasOnlyAllowedFields(allowedFields) &&
              hasRequiredFields(requiredFields) &&
-             request.resource.data.id is string && request.resource.data.id.size() > 0 && request.resource.data.id.size() <= 128 &&
              request.resource.data.userId is string && request.resource.data.userId.size() > 0 && request.resource.data.userId.size() <= 128 &&
              request.resource.data.userName is string && request.resource.data.userName.size() > 0 && request.resource.data.userName.size() <= 100 &&
              (!('userPhoto' in request.resource.data) || (request.resource.data.userPhoto is string && request.resource.data.userPhoto.size() <= 1000)) &&
@@ -199,6 +214,7 @@ service cloud.firestore {
       allow create: if isAuthenticated() && 
                     isOwner(userId) && 
                     isValidUser() && 
+                    isRecent(request.resource.data.createdAt) &&
                     request.resource.data.uid == userId &&
                     (request.resource.data.role == 'user' || isAdmin()); // Only admins can create admin users
       allow update: if isAuthenticated() && 
@@ -213,7 +229,7 @@ service cloud.firestore {
 
     match /rooms/{roomId} {
       allow read: if true; // Anyone can read rooms
-      allow create: if isAdmin() && isValidRoom();
+      allow create: if isAdmin() && isValidRoom() && isRecent(request.resource.data.createdAt);
       allow update: if isAdmin() && isValidRoom() && areImmutableFieldsUnchanged(['id', 'createdAt']);
       allow delete: if isAdmin();
     }
@@ -222,6 +238,7 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
       allow create: if isAuthenticated() && 
                     isValidBooking() && 
+                    isRecent(request.resource.data.createdAt) &&
                     request.resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated() && 
                     isValidBooking() && 
@@ -242,8 +259,12 @@ service cloud.firestore {
 
     match /ratings/{ratingId} {
       allow read: if true; // Anyone can read approved ratings (filtered on client side)
-      allow create: if isAuthenticated() && isValidRating() && request.resource.data.userId == request.auth.uid && request.resource.data.status == 'approved'; // Auto-approve for now, or 'pending' if you prefer
-      allow update: if isAdmin() && isValidRating() && areImmutableFieldsUnchanged(['id', 'userId', 'createdAt']);
+      allow create: if isAuthenticated() && 
+                    isValidRating() && 
+                    isRecent(request.resource.data.createdAt) &&
+                    request.resource.data.userId == request.auth.uid && 
+                    (request.resource.data.status == 'approved' || isAdmin()); // Auto-approve all reviews
+      allow update: if isAdmin() && isValidRating() && areImmutableFieldsUnchanged(['userId', 'createdAt']);
       allow delete: if isAdmin() || (isAuthenticated() && isOwner(resource.data.userId));
     }
   }
