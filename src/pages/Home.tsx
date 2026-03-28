@@ -208,45 +208,38 @@ export default function Home() {
           </button>
         )}
 
-        <div className="absolute inset-0 z-0">
-          <AnimatePresence initial={false} custom={direction}>
-            {activeHeroImages[currentImageIndex] && (
-              <motion.div
-                key={activeHeroImages[currentImageIndex].key}
-                custom={direction}
-                variants={variants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{
-                  x: { type: "spring", stiffness: 300, damping: 30 }
-                }}
-                drag="x"
-                dragConstraints={{ left: 0, right: 0 }}
-                dragElastic={1}
-                onDragEnd={(e, { offset, velocity }) => {
-                  const swipe = swipePower(offset.x, velocity.x);
-                  if (swipe < -swipeConfidenceThreshold) {
-                    paginate(1);
-                  } else if (swipe > swipeConfidenceThreshold) {
-                    paginate(-1);
-                  }
-                }}
-                className="absolute inset-0 cursor-grab active:cursor-grabbing"
-              >
-                <div className="w-full h-full pointer-events-none">
-                  <img 
-                    src={content[activeHeroImages[currentImageIndex].key] && content[activeHeroImages[currentImageIndex].key] !== 'deleted' ? content[activeHeroImages[currentImageIndex].key] : activeHeroImages[currentImageIndex].default} 
-                    alt="Hotel Hero" 
-                    className="w-full h-full object-cover pointer-events-none" 
-                    referrerPolicy="no-referrer"
-                    draggable={false}
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <div className="absolute inset-0 bg-black/50 pointer-events-none"></div>
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <motion.div
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={(e, { offset, velocity }) => {
+              const swipe = swipePower(offset.x, velocity.x);
+              if (swipe < -swipeConfidenceThreshold) {
+                paginate(1);
+              } else if (swipe > swipeConfidenceThreshold) {
+                paginate(-1);
+              }
+            }}
+            animate={{ x: `-${currentImageIndex * 100}%` }}
+            transition={{
+              x: { type: "spring", stiffness: 300, damping: 30 }
+            }}
+            className="absolute inset-0 flex h-full w-full cursor-grab active:cursor-grabbing"
+          >
+            {activeHeroImages.map((slot) => (
+              <div key={slot.key} className="w-full h-full flex-shrink-0 relative">
+                <img 
+                  src={content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : slot.default} 
+                  alt="Hotel Hero" 
+                  className="w-full h-full object-cover pointer-events-none" 
+                  referrerPolicy="no-referrer"
+                  draggable={false}
+                />
+                <div className="absolute inset-0 bg-black/50 pointer-events-none"></div>
+              </div>
+            ))}
+          </motion.div>
         </div>
         
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center pt-16 pb-8 pointer-events-none flex flex-col justify-center h-full">
@@ -468,44 +461,44 @@ export default function Home() {
           </div>
           
           {rooms.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10">
               {rooms.map((room) => (
                 <div key={room.id} className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col hover:shadow-xl transition-shadow relative group">
-                  <div className="relative h-64">
+                  <div className="relative h-48 sm:h-64">
                     <img src={room.imageUrl || room.images?.[0] || 'https://picsum.photos/seed/room/800/600'} alt={room.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     {getDiscountPercentage(room) > 0 ? (
-                      <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md animate-bounce">
+                      <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs sm:text-sm font-bold shadow-md animate-bounce">
                         {getDiscountPercentage(room)}% OFF
                       </div>
                     ) : null}
                   </div>
-                  <div className="p-8 flex-grow flex flex-col">
+                  <div className="p-5 sm:p-8 flex-grow flex flex-col">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h2 className="text-2xl font-bold text-slate-900">{t(room.name, room.type)}</h2>
-                        <span className="inline-block bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-semibold mt-2 uppercase tracking-wider">{room.type}</span>
+                        <h2 className="text-lg sm:text-2xl font-bold text-slate-900 leading-tight">{t(room.name, room.type)}</h2>
+                        <span className="inline-block bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] sm:text-xs font-semibold mt-2 uppercase tracking-wider">{room.type}</span>
                       </div>
                       <div className="text-right">
                         {getStrikethroughPrice(room) ? (
                           <>
-                            <div className="text-sm text-slate-400 line-through">৳{getStrikethroughPrice(room)}</div>
-                            <div className="text-2xl font-bold text-red-600">৳{room.price}</div>
+                            <div className="text-[10px] sm:text-sm text-slate-400 line-through">৳{getStrikethroughPrice(room)}</div>
+                            <div className="text-lg sm:text-2xl font-bold text-red-600">৳{room.price}</div>
                           </>
                         ) : (
-                          <div className="text-2xl font-bold text-slate-900">৳{room.price}</div>
+                          <div className="text-lg sm:text-2xl font-bold text-slate-900">৳{room.price}</div>
                         )}
-                        <div className="text-xs text-slate-500">{t('রাত', 'Night')}</div>
+                        <div className="text-[10px] sm:text-xs text-slate-500">{t('রাত', 'Night')}</div>
                       </div>
                     </div>
-                    <p className="text-slate-600 mb-6 flex-grow">{room.description}</p>
+                    <p className="text-sm sm:text-base text-slate-600 mb-6 flex-grow line-clamp-2 sm:line-clamp-none">{room.description}</p>
                     
-                    <div className="mb-8">
-                      <h4 className="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">{t('সুবিধাসমূহ', 'Amenities')}</h4>
+                    <div className="mb-6 sm:mb-8">
+                      <h4 className="text-[10px] sm:text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">{t('সুবিধাসমূহ', 'Amenities')}</h4>
                       <ul className="grid grid-cols-2 gap-2">
-                        {room.amenities?.map((amenity: string, index: number) => (
-                          <li key={index} className="flex items-center text-sm text-slate-600">
-                            <CheckCircle2 className="w-4 h-4 mr-2 text-red-500" />
-                            {amenity}
+                        {room.amenities?.slice(0, 4).map((amenity: string, index: number) => (
+                          <li key={index} className="flex items-center text-[10px] sm:text-sm text-slate-600">
+                            <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-red-500 flex-shrink-0" />
+                            <span className="truncate">{amenity}</span>
                           </li>
                         ))}
                       </ul>

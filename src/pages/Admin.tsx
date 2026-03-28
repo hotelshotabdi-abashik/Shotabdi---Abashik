@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, updateDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -1078,39 +1078,90 @@ export default function Admin() {
         )}
 
         {activeTab === 'offers' && (
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 max-w-2xl">
-            <h2 className="text-xl font-bold text-slate-800 mb-6">{t('এক্সক্লুসিভ অফার পাঠান', 'Send Exclusive Offer')}</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('অফার টাইটেল', 'Offer Title')}</label>
-                <input 
-                  type="text" 
-                  value={offerForm.title}
-                  onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })}
-                  className="w-full border border-slate-300 rounded-lg p-2"
-                  placeholder="e.g. 20% Discount on Family Suit"
-                />
+          <div className="space-y-8">
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 max-w-2xl">
+              <h2 className="text-xl font-bold text-slate-800 mb-6">{t('কাস্টম অফার পাঠান', 'Send Custom Offer')}</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('অফার টাইটেল', 'Offer Title')}</label>
+                  <input 
+                    type="text" 
+                    value={offerForm.title}
+                    onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })}
+                    className="w-full border border-slate-300 rounded-lg p-2"
+                    placeholder="e.g. 20% Discount on Family Suit"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('অফার বিবরণ', 'Offer Description')}</label>
+                  <textarea 
+                    value={offerForm.description}
+                    onChange={(e) => setOfferForm({ ...offerForm, description: e.target.value })}
+                    className="w-full border border-slate-300 rounded-lg p-2"
+                    rows={4}
+                    placeholder="Describe the offer details..."
+                  />
+                </div>
+                <button 
+                  onClick={async () => {
+                    if (!offerForm.title || !offerForm.description) {
+                      toast.error('Please fill in both title and description');
+                      return;
+                    }
+                    
+                    try {
+                      setLoading(true);
+                      const usersRef = collection(db, 'users');
+                      const snapshot = await getDocs(usersRef);
+                      const userEmails = snapshot.docs.map(doc => doc.data().email).filter(Boolean);
+                      
+                      if (userEmails.length === 0) {
+                        toast.error('No users found to send offers to.');
+                        return;
+                      }
+                      
+                      const promises = userEmails.map(email => notifyExclusiveOffer(email, offerForm.title, offerForm.description));
+                      await Promise.all(promises);
+                      
+                      toast.success(`Offer sent to ${userEmails.length} users!`);
+                      setOfferForm({ title: '', description: '' });
+                    } catch (error) {
+                      console.error('Error sending offers:', error);
+                      toast.error('Failed to send offers');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  disabled={loading}
+                  className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
+                >
+                  {loading ? 'Sending...' : t('সবাইকে অফার পাঠান', 'Send Offer to All Users')}
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('অফার বিবরণ', 'Offer Description')}</label>
-                <textarea 
-                  value={offerForm.description}
-                  onChange={(e) => setOfferForm({ ...offerForm, description: e.target.value })}
-                  className="w-full border border-slate-300 rounded-lg p-2"
-                  rows={4}
-                  placeholder="Describe the offer details..."
-                />
-              </div>
+            </div>
+
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 max-w-2xl">
+              <h2 className="text-xl font-bold text-slate-800 mb-2">{t('ওয়েবসাইট স্পেশাল অফার পাঠান', 'Send Website Special Offer')}</h2>
+              <p className="text-slate-600 text-sm mb-6">
+                {t('হোমপেজে প্রদর্শিত স্পেশাল অফারটি সকল ব্যবহারকারীকে ইমেইল করুন।', 'Email the special offer displayed on the homepage to all users.')}
+              </p>
+              
               <button 
                 onClick={async () => {
-                  if (!offerForm.title || !offerForm.description) {
-                    toast.error('Please fill in both title and description');
-                    return;
-                  }
-                  
                   try {
                     setLoading(true);
-                    // Fetch all users to send email
+                    
+                    // Fetch global discount details from Firestore
+                    const discountTitleDoc = await getDoc(doc(db, 'content', 'global_discount_title'));
+                    const discountDescDoc = await getDoc(doc(db, 'content', 'global_discount_desc'));
+                    const discountRateDoc = await getDoc(doc(db, 'content', 'global_discount_rate'));
+                    const heroImageDoc = await getDoc(doc(db, 'content', 'hero_image_1'));
+                    
+                    const title = discountTitleDoc.exists() ? discountTitleDoc.data().value : 'Special Offer!';
+                    const description = discountDescDoc.exists() ? discountDescDoc.data().value : 'Get a massive discount on all room bookings today.';
+                    const rate = discountRateDoc.exists() ? discountRateDoc.data().value : '0';
+                    const imageUrl = heroImageDoc.exists() ? heroImageDoc.data().value : '';
+                    
                     const usersRef = collection(db, 'users');
                     const snapshot = await getDocs(usersRef);
                     const userEmails = snapshot.docs.map(doc => doc.data().email).filter(Boolean);
@@ -1120,23 +1171,24 @@ export default function Admin() {
                       return;
                     }
                     
-                    // Send emails
-                    const promises = userEmails.map(email => notifyExclusiveOffer(email, offerForm.title, offerForm.description));
+                    const promises = userEmails.map(email => 
+                      notifyExclusiveOffer(email, `${rate}% OFF: ${title}`, description, imageUrl)
+                    );
                     await Promise.all(promises);
                     
-                    toast.success(`Offer sent to ${userEmails.length} users!`);
-                    setOfferForm({ title: '', description: '' });
+                    toast.success(`Special offer sent to ${userEmails.length} users!`);
                   } catch (error) {
-                    console.error('Error sending offers:', error);
-                    toast.error('Failed to send offers');
+                    console.error('Error sending special offer:', error);
+                    toast.error('Failed to send special offer');
                   } finally {
                     setLoading(false);
                   }
                 }}
                 disabled={loading}
-                className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {loading ? 'Sending...' : t('সবাইকে অফার পাঠান', 'Send Offer to All Users')}
+                <Send className="w-5 h-5" />
+                {loading ? 'Sending...' : t('সবাইকে স্পেশাল অফার পাঠান', 'Send Special Offer to All')}
               </button>
             </div>
           </div>

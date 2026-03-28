@@ -20,11 +20,9 @@ export default function Navbar() {
   const [notificationCount, setNotificationCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [scrolled, setScrolled] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
   const notificationDropdownRef = useRef<HTMLDivElement>(null);
-  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
   const navLinks = [
@@ -38,26 +36,14 @@ export default function Navbar() {
     { name: t('হেল্প ডেস্ক', 'Help Desk'), path: '/help-desk' },
   ];
 
-  const bottomNavPaths = ['/', '/rooms', '/restaurant', '/tour-desk', '/reviews', '/help-desk'];
-
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
-      
-      // Show on scroll, hide after inactivity
-      setIsVisible(true);
-      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-      scrollTimeout.current = setTimeout(() => {
-        if (window.scrollY > 100) { // Only hide if we've scrolled down a bit
-          setIsVisible(false);
-        }
-      }, 3000);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
     };
   }, []);
 
@@ -157,6 +143,30 @@ export default function Navbar() {
     }, 500);
   };
 
+  const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
+  const scrollTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsBottomNavVisible(true);
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+      scrollTimerRef.current = setTimeout(() => {
+        setIsBottomNavVisible(false);
+      }, 3000);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('touchstart', handleScroll, { passive: true });
+    window.addEventListener('mousemove', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('touchstart', handleScroll);
+      window.removeEventListener('mousemove', handleScroll);
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    };
+  }, []);
+
   const handleLogoClick = (e: React.MouseEvent) => {
     setIsOpen(false);
     if (window.location.pathname === '/') {
@@ -166,7 +176,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 ${!isVisible && !isOpen ? '-translate-y-full' : 'translate-y-0'} ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm' : 'bg-transparent'} text-slate-900`}>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 ${scrolled ? 'bg-transparent shadow-none' : 'bg-white shadow-sm'} text-slate-900`}>
       <div className="w-full px-2 sm:px-4 lg:px-6">
         <div className="flex justify-between h-14 py-1 items-center">
           <div className="flex items-center flex-1 mr-2 sm:mr-4 min-w-0">
@@ -485,7 +495,7 @@ export default function Navbar() {
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
-            {(!user || profile?.profileCompleted) && navLinks.filter(link => !bottomNavPaths.includes(link.path)).map((link) => (
+            {(!user || profile?.profileCompleted) && navLinks.map((link) => (
               <Link key={link.name} to={link.path} onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-3 rounded-xl text-lg font-medium transition-colors">
                 {link.name}
               </Link>
@@ -527,7 +537,7 @@ export default function Navbar() {
         </div>
       )}
       {/* Mobile Bottom Navigation */}
-      <div className={`md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200 z-50 px-1 py-1 flex justify-between items-center overflow-x-auto no-scrollbar shadow-[0_-2px_10px_rgba(0,0,0,0.05)] transition-transform duration-500 ${!isVisible && !isOpen ? 'translate-y-full' : 'translate-y-0'}`}>
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 px-1 py-1 flex justify-between items-center overflow-x-auto scrollbar-hide shadow-[0_-2px_10px_rgba(0,0,0,0.05)] transition-transform duration-500 ${isBottomNavVisible ? 'translate-y-0' : 'translate-y-full'}`}>
         <Link to="/" className="flex flex-col items-center justify-center min-w-[60px] py-1 text-slate-600 hover:text-red-700 transition-colors">
           <Home className="w-5 h-5" />
           <span className="text-[9px] mt-0.5 font-medium">{t('হোম', 'Home')}</span>

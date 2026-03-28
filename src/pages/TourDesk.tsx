@@ -190,7 +190,7 @@ export default function TourDesk() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
             {filteredSpots.map((spot: any, index: number) => (
               <div key={index} className="bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow flex flex-col h-full relative group overflow-hidden">
                 {editMode && editingId !== index.toString() && (
@@ -273,32 +273,32 @@ export default function TourDesk() {
                 ) : (
                   <>
                     {spot.imageUrl && (
-                      <div className="h-48 w-full relative">
+                      <div className="h-24 sm:h-48 w-full relative">
                         <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </div>
                     )}
-                    <div className="p-6 flex-grow flex flex-col">
+                    <div className="p-3 sm:p-6 flex-grow flex flex-col">
                       <div className="flex-grow">
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="text-lg font-bold text-slate-900 pr-8">{spot.name}</h3>
-                          <span className="bg-red-50 text-red-700 text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap ml-2">
+                        <div className="flex flex-col sm:flex-row justify-between items-start mb-1 sm:mb-2">
+                          <h3 className="text-xs sm:text-lg font-bold text-slate-900 pr-1 sm:pr-8 leading-tight truncate w-full">{spot.name}</h3>
+                          <span className="bg-red-50 text-red-700 text-[8px] sm:text-xs font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap mt-1 sm:mt-0 sm:ml-2">
                             {spot.distance}
                           </span>
                         </div>
-                        <p className="text-sm text-slate-500 mb-4">{spot.type}</p>
-                        <div className="flex items-center text-slate-600 text-sm mb-6">
-                          <MapPin className="w-4 h-4 mr-1 text-slate-400" />
-                          {spot.location}
+                        <p className="text-[9px] sm:text-sm text-slate-500 mb-2 sm:mb-4">{spot.type}</p>
+                        <div className="flex items-center text-slate-600 text-[9px] sm:text-sm mb-3 sm:mb-6">
+                          <MapPin className="w-2.5 h-2.5 sm:w-4 sm:h-4 mr-1 text-slate-400 flex-shrink-0" />
+                          <span className="truncate">{spot.location}</span>
                         </div>
                       </div>
                       <a 
                         href={getDirectionsUrl(spot)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full bg-slate-50 hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-200 hover:border-red-200 font-medium py-2 px-4 rounded-xl transition-colors flex items-center justify-center text-sm mt-auto"
+                        className="w-full bg-slate-50 hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-200 hover:border-red-200 font-medium py-1.5 sm:py-2 px-2 sm:px-4 rounded-lg sm:rounded-xl transition-colors flex items-center justify-center text-[10px] sm:text-sm mt-auto"
                       >
-                        <Navigation className="w-4 h-4 mr-2" />
-                        {t('ম্যাপে ডিরেকশন দেখুন', 'View Directions on Map')}
+                        <Navigation className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                        {t('ম্যাপে ডিরেকশন', 'View Directions')}
                       </a>
                     </div>
                   </>

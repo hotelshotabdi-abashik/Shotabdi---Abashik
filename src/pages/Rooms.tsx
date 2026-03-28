@@ -380,7 +380,7 @@ export default function Rooms() {
           )}
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-10">
+        <div className="grid grid-cols-2 md:grid-cols-2 gap-3 sm:gap-10">
           {loading ? (
             <div className="col-span-full text-center py-12 text-slate-500">Loading rooms...</div>
           ) : rooms.length === 0 ? (
@@ -476,7 +476,7 @@ export default function Rooms() {
                 </div>
               ) : (
                 <>
-                  <div className="relative h-64">
+                  <div className="relative h-32 sm:h-64">
                     <img src={room.imageUrl} alt={room.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     {getDiscountPercentage(room) > 0 ? (
                       <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md animate-bounce">
@@ -484,33 +484,33 @@ export default function Rooms() {
                       </div>
                     ) : null}
                   </div>
-                  <div className="p-8 flex-grow flex flex-col">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h2 className="text-2xl font-bold text-slate-900">{t(room.name, room.type)}</h2>
-                        <span className="inline-block bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-semibold mt-2 uppercase tracking-wider">{room.type}</span>
+                  <div className="p-3 sm:p-8 flex-grow flex flex-col">
+                    <div className="flex flex-col sm:flex-row justify-between items-start mb-2 sm:mb-4">
+                      <div className="min-w-0 flex-1 pr-1 sm:pr-2">
+                        <h2 className="text-sm sm:text-2xl font-bold text-slate-900 truncate">{t(room.name, room.type)}</h2>
+                        <span className="inline-block bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[8px] sm:text-xs font-semibold mt-1 sm:mt-2 uppercase tracking-wider">{room.type}</span>
                       </div>
-                      <div className="text-right">
+                      <div className="text-left sm:text-right flex-shrink-0 mt-1 sm:mt-0">
                         {getStrikethroughPrice(room) ? (
                           <>
-                            <div className="text-sm text-slate-400 line-through">৳{getStrikethroughPrice(room)}</div>
-                            <div className="text-2xl font-bold text-red-600">৳{room.price}</div>
+                            <div className="text-[8px] sm:text-sm text-slate-400 line-through">৳{getStrikethroughPrice(room)}</div>
+                            <div className="text-sm sm:text-2xl font-bold text-red-600">৳{room.price}</div>
                           </>
                         ) : (
-                          <div className="text-2xl font-bold text-slate-900">৳{room.price}</div>
+                          <div className="text-sm sm:text-2xl font-bold text-slate-900">৳{room.price}</div>
                         )}
-                        <div className="text-xs text-slate-500">{t('রাত', 'Night')}</div>
+                        <div className="text-[8px] sm:text-xs text-slate-500">{t('রাত', 'Night')}</div>
                       </div>
                     </div>
-                    <p className="text-slate-600 mb-6 flex-grow">{room.description}</p>
+                    <p className="text-[10px] sm:text-base text-slate-600 mb-3 sm:mb-6 flex-grow line-clamp-2 sm:line-clamp-none leading-tight">{room.description}</p>
                     
-                    <div className="mb-8">
-                      <h4 className="text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">{t('সুবিধাসমূহ', 'Amenities')}</h4>
-                      <ul className="grid grid-cols-2 gap-2">
-                        {room.amenities?.map((amenity, index) => (
-                          <li key={index} className="flex items-center text-sm text-slate-600">
-                            <CheckCircle2 className="w-4 h-4 mr-2 text-red-500" />
-                            {amenity}
+                    <div className="mb-3 sm:mb-8">
+                      <h4 className="text-[9px] sm:text-sm font-bold text-slate-900 mb-1.5 sm:mb-3 uppercase tracking-wider">{t('সুবিধাসমূহ', 'Amenities')}</h4>
+                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                        {room.amenities?.slice(0, 4).map((amenity, index) => (
+                          <li key={index} className="flex items-center text-[9px] sm:text-sm text-slate-600">
+                            <CheckCircle2 className="w-2.5 h-2.5 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-red-500 flex-shrink-0" />
+                            <span className="truncate">{amenity}</span>
                           </li>
                         ))}
                       </ul>
@@ -518,9 +518,9 @@ export default function Rooms() {
                     
                     <button 
                       onClick={() => handleBook(room)}
-                      className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center"
+                      className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 sm:py-3 px-2 sm:px-4 rounded-lg sm:rounded-xl transition-colors flex items-center justify-center text-xs sm:text-base"
                     >
-                      <BedDouble className="w-5 h-5 mr-2" />
+                      <BedDouble className="w-3 h-3 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                       {t('বুক করুন', 'Book Now')}
                     </button>
                   </div>

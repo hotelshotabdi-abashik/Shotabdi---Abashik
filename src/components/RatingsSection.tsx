@@ -102,7 +102,7 @@ export const RatingsSection: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-3 gap-3 md:gap-6 mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 mb-12">
               {ratings.length > 0 ? (
                 ratings.map((rating) => (
                   <div key={rating.id} className="bg-white p-3 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
