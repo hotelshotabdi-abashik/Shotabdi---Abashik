@@ -389,19 +389,19 @@ export default function Home() {
 
 
       {/* Gallery Shortcut Section */}
-      <section className="py-16 bg-slate-900 text-white overflow-hidden">
+      <section className="py-16 bg-white text-slate-900 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">{t('গ্যালারি', 'Gallery')}</h2>
             <div className="w-24 h-1 bg-red-600 mx-auto rounded-full mb-6"></div>
-            <p className="text-slate-300 max-w-2xl mx-auto">
+            <p className="text-slate-600 max-w-2xl mx-auto">
               {t('আমাদের হোটেলের কিছু চমৎকার মুহূর্ত ও দৃশ্য।', 'Some wonderful moments and views of our hotel.')}
             </p>
           </div>
 
           {galleryImages.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-              {galleryImages.slice(0, 8).map((img, index) => (
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-10">
+              {galleryImages.slice(0, 20).map((img, index) => (
                 <motion.div 
                   key={index}
                   initial={{ opacity: 0, scale: 0.8, y: 20 }}
@@ -409,7 +409,7 @@ export default function Home() {
                   viewport={{ once: true, margin: "-50px" }}
                   transition={{ 
                     duration: 0.5, 
-                    delay: index * 0.1,
+                    delay: index * 0.05,
                     type: "spring",
                     stiffness: 100
                   }}
@@ -418,26 +418,24 @@ export default function Home() {
                     setSelectedImage(img);
                     setIsViewModalOpen(true);
                   }}
-                  className={`rounded-xl overflow-hidden shadow-lg relative group cursor-pointer ${
-                    index === 0 ? 'md:col-span-2 md:row-span-2' : ''
-                  } ${index === 3 ? 'md:col-span-2' : ''}`}
+                  className="rounded-lg sm:rounded-xl overflow-hidden shadow-md sm:shadow-lg relative group cursor-pointer"
                 >
-                  <div className="aspect-w-4 aspect-h-3 h-full">
+                  <div className="aspect-w-1 aspect-h-1 h-full">
                     <img 
                       src={img.url} 
                       alt={img.title || `Gallery ${index + 1}`} 
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
                       referrerPolicy="no-referrer" 
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                      <Camera className="w-6 h-6 text-white/80" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-2 sm:p-4">
+                      <Camera className="w-4 h-4 sm:w-6 sm:h-6 text-white/80" />
                     </div>
                   </div>
                 </motion.div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 text-slate-400 bg-slate-800/50 rounded-2xl border border-slate-700/50 mb-10">
+            <div className="text-center py-12 text-slate-400 bg-slate-50 rounded-2xl border border-slate-100 mb-10">
               <Camera className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>{t('কোনো ছবি পাওয়া যায়নি।', 'No images found.')}</p>
             </div>

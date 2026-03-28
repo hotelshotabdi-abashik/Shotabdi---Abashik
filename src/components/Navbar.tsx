@@ -139,12 +139,20 @@ export default function Navbar() {
     }, 500);
   };
 
+  const handleLogoClick = (e: React.MouseEvent) => {
+    setIsOpen(false);
+    if (window.location.pathname === '/') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <nav className={`fixed w-full top-0 z-50 transition-all duration-500 ${scrolled ? 'bg-transparent shadow-none' : 'bg-white shadow-sm'} text-slate-900`}>
       <div className="w-full px-2 sm:px-4 lg:px-6">
         <div className="flex justify-between h-14 py-1 items-center">
           <div className="flex items-center flex-1 mr-2 sm:mr-4 min-w-0">
-            <Link to="/" className="flex items-center gap-2 min-w-0" onClick={() => setIsOpen(false)}>
+            <Link to="/" className="flex items-center gap-2 min-w-0" onClick={handleLogoClick}>
               <EditableImage 
                 contentKey="site_logo" 
                 defaultSrc="https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png" 
@@ -365,7 +373,7 @@ export default function Navbar() {
       {isOpen && (
         <div className="md:hidden fixed inset-0 z-[100] bg-white flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white sticky top-0">
-            <Link to="/" className="flex items-center gap-2 min-w-0" onClick={() => setIsOpen(false)}>
+            <Link to="/" className="flex items-center gap-2 min-w-0" onClick={handleLogoClick}>
               <EditableImage 
                 contentKey="site_logo" 
                 defaultSrc="https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png" 
