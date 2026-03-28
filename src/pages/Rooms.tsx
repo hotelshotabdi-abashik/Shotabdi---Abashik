@@ -9,6 +9,7 @@ import { useContent } from '../context/ContentContext';
 import { EditableText } from '../components/EditableText';
 import { ImageUploader } from '../components/ImageUploader';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { notifyBookingSubmitted, notifyAdminNewBooking } from '../services/NotificationService';
 import { collection, getDocs, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -189,6 +190,26 @@ export default function Rooms() {
         createdAt: serverTimestamp()
       });
       
+      // Send booking notification
+      if (user?.email) {
+        notifyBookingSubmitted(
+          user.email,
+          profile?.displayName || user?.displayName || 'User',
+          bookingRoom?.name || 'Room',
+          totalAmount
+        ).catch(console.error);
+      }
+      
+      // Send admin notification
+      notifyAdminNewBooking({
+        userName: profile?.displayName || user?.displayName || 'User',
+        userEmail: user?.email || 'Unknown',
+        roomName: bookingRoom?.name || 'Room',
+        totalAmount,
+        checkIn: inDate,
+        checkOut: outDate
+      }).catch(console.error);
+      
       setBookingRoom(null);
       setBookingSuccess(true);
     } catch (error) {
@@ -359,7 +380,7 @@ export default function Rooms() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-10">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-10">
           {loading ? (
             <div className="col-span-full text-center py-12 text-slate-500">Loading rooms...</div>
           ) : rooms.length === 0 ? (

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
-import { Menu, X, LogIn, LogOut, User, Globe, Edit, Bell } from 'lucide-react';
+import { Menu, X, LogIn, LogOut, User, Globe, Edit, Bell, Calendar, Home, Bed, Utensils, Map, Star, Headphones, Info } from 'lucide-react';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -20,8 +20,11 @@ export default function Navbar() {
   const [notificationCount, setNotificationCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [scrolled, setScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
   const notificationDropdownRef = useRef<HTMLDivElement>(null);
+  const scrollTimeout = useRef<NodeJS.Timeout | null>(null);
   const navigate = useNavigate();
 
   const navLinks = [
@@ -35,14 +38,26 @@ export default function Navbar() {
     { name: t('হেল্প ডেস্ক', 'Help Desk'), path: '/help-desk' },
   ];
 
+  const bottomNavPaths = ['/', '/rooms', '/restaurant', '/tour-desk', '/reviews', '/help-desk'];
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
+      
+      // Show on scroll, hide after inactivity
+      setIsVisible(true);
+      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+      scrollTimeout.current = setTimeout(() => {
+        if (window.scrollY > 100) { // Only hide if we've scrolled down a bit
+          setIsVisible(false);
+        }
+      }, 3000);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
     };
   }, []);
 
@@ -60,6 +75,9 @@ export default function Navbar() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+      if (mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target as Node)) {
         setIsProfileOpen(false);
       }
       if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target as Node)) {
@@ -148,7 +166,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 ${scrolled ? 'bg-transparent shadow-none' : 'bg-white shadow-sm'} text-slate-900`}>
+    <nav className={`fixed w-full top-0 z-50 transition-all duration-500 ${!isVisible && !isOpen ? '-translate-y-full' : 'translate-y-0'} ${scrolled ? 'bg-white/80 backdrop-blur-md shadow-sm' : 'bg-transparent'} text-slate-900`}>
       <div className="w-full px-2 sm:px-4 lg:px-6">
         <div className="flex justify-between h-14 py-1 items-center">
           <div className="flex items-center flex-1 mr-2 sm:mr-4 min-w-0">
@@ -251,35 +269,59 @@ export default function Navbar() {
                 </div>
 
                 {user ? (
-                  <div className="flex items-center gap-0.5 xl:gap-1">
-                    <Link 
-                      to="/my-stays" 
-                      className="text-slate-700 hover:bg-red-50 hover:text-red-700 px-1.5 md:px-2 xl:px-3 py-1.5 rounded-md text-[10px] md:text-xs xl:text-sm font-medium transition-colors whitespace-nowrap"
-                    >
-                      {t('আমার বুকিং', 'My Stays')}
-                    </Link>
-                    {profile?.profileCompleted && (
-                      <Link 
-                        to="/profile" 
-                        className="text-slate-700 hover:bg-red-50 hover:text-red-700 px-1.5 md:px-2 xl:px-3 py-1.5 rounded-md text-[10px] md:text-xs xl:text-sm font-medium transition-colors whitespace-nowrap"
-                      >
-                        {t('অ্যাকাউন্ট', 'Account')}
-                      </Link>
-                    )}
-                    {profile?.role === 'admin' && (
-                      <Link 
-                        to="/admin" 
-                        className="text-slate-700 hover:bg-red-50 hover:text-red-700 px-1.5 md:px-2 xl:px-3 py-1.5 rounded-md text-[10px] md:text-xs xl:text-sm font-medium transition-colors whitespace-nowrap"
-                      >
-                        {t('অ্যাডমিন', 'Admin')}
-                      </Link>
-                    )}
+                  <div className="relative" ref={dropdownRef}>
                     <button 
-                      onClick={logout} 
-                      className="flex items-center text-slate-700 hover:bg-red-50 hover:text-red-700 px-1.5 md:px-2 xl:px-3 py-1.5 rounded-md text-[10px] md:text-xs xl:text-sm font-medium transition-colors whitespace-nowrap"
+                      onClick={() => setIsProfileOpen(!isProfileOpen)}
+                      className="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100 transition-colors focus:outline-none"
                     >
-                      <LogOut className="w-3 h-3 xl:w-4 xl:h-4 mr-1" /> {t('লগআউট', 'Logout')}
+                      {user.photoURL || profile?.photoURL ? (
+                        <img 
+                          src={user.photoURL || profile?.photoURL} 
+                          alt="Profile" 
+                          className="w-8 h-8 xl:w-9 xl:h-9 rounded-full object-cover border border-slate-200"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 xl:w-9 xl:h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-500">
+                          <User className="w-4 h-4 xl:w-5 xl:h-5" />
+                        </div>
+                      )}
                     </button>
+
+                    {isProfileOpen && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 border border-slate-100 z-50 overflow-hidden">
+                        <Link 
+                          to="/my-stays" 
+                          onClick={() => setIsProfileOpen(false)}
+                          className="flex items-center px-4 py-2.5 text-sm text-slate-700 hover:bg-red-50 hover:text-red-700 transition-colors"
+                        >
+                          <Calendar className="w-4 h-4 mr-3" /> {t('আমার বুকিং', 'My Stays')}
+                        </Link>
+                        <Link 
+                          to="/profile" 
+                          onClick={() => setIsProfileOpen(false)}
+                          className="flex items-center px-4 py-2.5 text-sm text-slate-700 hover:bg-red-50 hover:text-red-700 transition-colors"
+                        >
+                          <User className="w-4 h-4 mr-3" /> {t('অ্যাকাউন্ট', 'Account')}
+                        </Link>
+                        {profile?.role === 'admin' && (
+                          <Link 
+                            to="/admin" 
+                            onClick={() => setIsProfileOpen(false)}
+                            className="flex items-center px-4 py-2.5 text-sm text-slate-700 hover:bg-red-50 hover:text-red-700 transition-colors"
+                          >
+                            <Edit className="w-4 h-4 mr-3" /> {t('অ্যাডমিন', 'Admin')}
+                          </Link>
+                        )}
+                        <div className="border-t border-slate-50 my-1"></div>
+                        <button 
+                          onClick={() => { logout(); setIsProfileOpen(false); }} 
+                          className="flex items-center w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4 mr-3" /> {t('লগআউট', 'Logout')}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <button onClick={login} className="flex items-center bg-red-700 text-white hover:bg-red-800 px-2 md:px-3 xl:px-4 py-1.5 xl:py-2 rounded-md text-[10px] md:text-xs xl:text-sm font-bold transition-colors flex-shrink-0">
@@ -300,7 +342,60 @@ export default function Navbar() {
               {language === 'bn' ? 'EN' : 'BN'}
             </button>
             
-            {!user && (
+            {user ? (
+              <div className="relative" ref={mobileDropdownRef}>
+                <button 
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-700 transition-colors focus:outline-none flex-shrink-0 overflow-hidden border border-slate-200"
+                >
+                  {user.photoURL || profile?.photoURL ? (
+                    <img 
+                      src={user.photoURL || profile?.photoURL} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                  )}
+                </button>
+
+                {isProfileOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 border border-slate-100 z-50 overflow-hidden">
+                    <Link 
+                      to="/my-stays" 
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center px-4 py-2.5 text-sm text-slate-700 hover:bg-red-50 hover:text-red-700 transition-colors"
+                    >
+                      <Calendar className="w-4 h-4 mr-3" /> {t('আমার বুকিং', 'My Stays')}
+                    </Link>
+                    <Link 
+                      to="/profile" 
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center px-4 py-2.5 text-sm text-slate-700 hover:bg-red-50 hover:text-red-700 transition-colors"
+                    >
+                      <User className="w-4 h-4 mr-3" /> {t('অ্যাকাউন্ট', 'Account')}
+                    </Link>
+                    {profile?.role === 'admin' && (
+                      <Link 
+                        to="/admin" 
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center px-4 py-2.5 text-sm text-slate-700 hover:bg-red-50 hover:text-red-700 transition-colors"
+                      >
+                        <Edit className="w-4 h-4 mr-3" /> {t('অ্যাডমিন', 'Admin')}
+                      </Link>
+                    )}
+                    <div className="border-t border-slate-50 my-1"></div>
+                    <button 
+                      onClick={() => { logout(); setIsProfileOpen(false); }} 
+                      className="flex items-center w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4 mr-3" /> {t('লগআউট', 'Logout')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
               <button onClick={login} className="flex items-center bg-red-700 text-white hover:bg-red-800 px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-bold transition-colors flex-shrink-0">
                 <LogIn className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> {t('লগইন', 'Login')}
               </button>
@@ -390,7 +485,7 @@ export default function Navbar() {
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
-            {(!user || profile?.profileCompleted) && navLinks.map((link) => (
+            {(!user || profile?.profileCompleted) && navLinks.filter(link => !bottomNavPaths.includes(link.path)).map((link) => (
               <Link key={link.name} to={link.path} onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-3 rounded-xl text-lg font-medium transition-colors">
                 {link.name}
               </Link>
@@ -431,6 +526,38 @@ export default function Navbar() {
           </div>
         </div>
       )}
+      {/* Mobile Bottom Navigation */}
+      <div className={`md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200 z-50 px-1 py-1 flex justify-between items-center overflow-x-auto no-scrollbar shadow-[0_-2px_10px_rgba(0,0,0,0.05)] transition-transform duration-500 ${!isVisible && !isOpen ? 'translate-y-full' : 'translate-y-0'}`}>
+        <Link to="/" className="flex flex-col items-center justify-center min-w-[60px] py-1 text-slate-600 hover:text-red-700 transition-colors">
+          <Home className="w-5 h-5" />
+          <span className="text-[9px] mt-0.5 font-medium">{t('হোম', 'Home')}</span>
+        </Link>
+        <Link to="/rooms" className="flex flex-col items-center justify-center min-w-[60px] py-1 text-slate-600 hover:text-red-700 transition-colors">
+          <Bed className="w-5 h-5" />
+          <span className="text-[9px] mt-0.5 font-medium">{t('রুম', 'Rooms')}</span>
+        </Link>
+        <Link to="/restaurant" className="flex flex-col items-center justify-center min-w-[60px] py-1 text-slate-600 hover:text-red-700 transition-colors">
+          <Utensils className="w-5 h-5" />
+          <span className="text-[9px] mt-0.5 font-medium">{t('রেস্টুরেন্ট', 'Restaurant')}</span>
+        </Link>
+        <Link to="/tour-desk" className="flex flex-col items-center justify-center min-w-[60px] py-1 text-slate-600 hover:text-red-700 transition-colors">
+          <Map className="w-5 h-5" />
+          <span className="text-[9px] mt-0.5 font-medium">{t('ট্যুর ডেস্ক', 'Tour Desk')}</span>
+        </Link>
+        <Link to="/reviews" className="flex flex-col items-center justify-center min-w-[60px] py-1 text-slate-600 hover:text-red-700 transition-colors">
+          <Star className="w-5 h-5" />
+          <span className="text-[9px] mt-0.5 font-medium">{t('রিভিউ', 'Reviews')}</span>
+        </Link>
+        <Link to="/help-desk" className="flex flex-col items-center justify-center min-w-[60px] py-1 text-slate-600 hover:text-red-700 transition-colors">
+          <Headphones className="w-5 h-5" />
+          <span className="text-[9px] mt-0.5 font-medium">{t('হেল্প ডেস্ক', 'Help Desk')}</span>
+        </Link>
+        <Link to="/about" className="flex flex-col items-center justify-center min-w-[60px] py-1 text-slate-600 hover:text-red-700 transition-colors">
+          <Info className="w-5 h-5" />
+          <span className="text-[9px] mt-0.5 font-medium">{t('আমাদের সম্পর্কে', 'About')}</span>
+        </Link>
+      </div>
+
       {/* Full Screen Notifications Modal */}
       {isFullScreenNotification && (
         <div className="fixed inset-0 z-[100] bg-white flex flex-col">

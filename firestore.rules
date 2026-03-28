@@ -191,11 +191,12 @@ service cloud.firestore {
     }
 
     function isValidRating() {
-      let allowedFields = ['userId', 'userName', 'userPhoto', 'rating', 'comment', 'createdAt', 'status'];
+      let allowedFields = ['id', 'userId', 'userName', 'userPhoto', 'rating', 'comment', 'createdAt', 'status'];
       let requiredFields = ['userId', 'userName', 'rating', 'createdAt', 'status'];
       
       return hasOnlyAllowedFields(allowedFields) &&
              hasRequiredFields(requiredFields) &&
+             (!('id' in request.resource.data) || (request.resource.data.id is string && request.resource.data.id.size() <= 128)) &&
              request.resource.data.userId is string && request.resource.data.userId.size() > 0 && request.resource.data.userId.size() <= 128 &&
              request.resource.data.userName is string && request.resource.data.userName.size() > 0 && request.resource.data.userName.size() <= 100 &&
              (!('userPhoto' in request.resource.data) || (request.resource.data.userPhoto is string && request.resource.data.userPhoto.size() <= 1000)) &&

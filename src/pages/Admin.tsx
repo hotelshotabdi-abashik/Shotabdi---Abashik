@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, doc, updateDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { notifyBookingStatus, notifyExclusiveOffer } from '../services/NotificationService';
 
 interface Room {
   id: string;
@@ -45,7 +46,7 @@ interface Booking {
 export default function Admin() {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'rooms' | 'users' | 'bookings' | 'content' | 'ratings'>('rooms');
+  const [activeTab, setActiveTab] = useState<'rooms' | 'users' | 'bookings' | 'content' | 'ratings' | 'offers'>('rooms');
   
   // Rooms State
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -61,6 +62,9 @@ export default function Admin() {
 
   // Ratings State
   const [ratings, setRatings] = useState<any[]>([]);
+
+  // Offers State
+  const [offerForm, setOfferForm] = useState({ title: '', description: '' });
 
   // Content Upload State
   const [file, setFile] = useState<File | null>(null);
@@ -256,6 +260,18 @@ export default function Admin() {
     try {
       const bookingRef = doc(db, 'bookings', id);
       await updateDoc(bookingRef, { status: newStatus });
+      
+      // Find booking in state to send notification
+      const booking = bookings.find(b => b.id === id);
+      if (booking && booking.userEmail && (newStatus === 'accepted' || newStatus === 'rejected')) {
+        notifyBookingStatus(
+          booking.userEmail,
+          booking.userName || 'User',
+          booking.roomName || 'Room',
+          newStatus
+        ).catch(console.error);
+      }
+      
       fetchBookings();
       toast.success(t("বুকিং স্ট্যাটাস আপডেট করা হয়েছে!", "Booking status updated!"));
     } catch (error) {
@@ -385,12 +401,12 @@ export default function Admin() {
   }
 
   return (
-    <div className="bg-slate-50 py-10 min-h-screen">
+    <div className="bg-slate-50 py-6 md:py-10 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold text-slate-900 mb-8">{t('অ্যাডমিন প্যানেল', 'Admin Dashboard')}</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 md:mb-8">{t('অ্যাডমিন প্যানেল', 'Admin Dashboard')}</h1>
         
         {/* Tabs */}
-        <div className="flex space-x-2 mb-8 overflow-x-auto pb-2">
+        <div className="flex space-x-2 mb-6 md:mb-8 overflow-x-auto pb-2 scrollbar-hide">
           <button 
             onClick={() => setActiveTab('rooms')}
             className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'rooms' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
@@ -421,6 +437,12 @@ export default function Admin() {
           >
             <Star className="w-5 h-5 mr-2" /> {t('রেটিং পরিচালনা', 'Manage Ratings')}
           </button>
+          <button 
+            onClick={() => setActiveTab('offers')}
+            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'offers' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+          >
+            <Megaphone className="w-5 h-5 mr-2" /> {t('অফার পাঠান', 'Send Offers')}
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -435,8 +457,73 @@ export default function Admin() {
                 <Plus className="w-5 h-5 mr-2" /> {t('নতুন রুম', 'Add Room')}
               </button>
             </div>
-            {/* Rooms Table */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            {/* Rooms Content */}
+            <div className="md:hidden space-y-4">
+              {rooms.map((room) => (
+                <div key={room.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-slate-900">{room.name}</h3>
+                      <p className="text-xs text-slate-500">{room.type}</p>
+                    </div>
+                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${room.isAvailable ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {room.isAvailable ? t('Available', 'Available') : t('Unavailable', 'Unavailable')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600">৳{room.price}</span>
+                    <span className="text-slate-400">Order: {room.order || '-'}</span>
+                  </div>
+                  <div className="flex justify-end space-x-2 pt-2 border-t border-slate-50">
+                    <button 
+                      onClick={() => {
+                        setIsEditing(room.id);
+                        setEditForm(room);
+                      }} 
+                      className="p-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => handleDeleteRoom(room.id, room.name)} className="p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  {isEditing === room.id && (
+                    <div className="mt-4 p-4 bg-slate-50 rounded-lg space-y-3">
+                      <input 
+                        type="text" 
+                        value={editForm.name || ''} 
+                        onChange={(e) => setEditForm({...editForm, name: e.target.value})}
+                        className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+                        placeholder="Room Name"
+                      />
+                      <select 
+                        value={editForm.type || ''} 
+                        onChange={(e) => setEditForm({...editForm, type: e.target.value})}
+                        className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+                      >
+                        <option value="Single Delux">Single Delux</option>
+                        <option value="Double Delux">Double Delux</option>
+                        <option value="Family Suit">Family Suit</option>
+                        <option value="Super Delux">Super Delux</option>
+                      </select>
+                      <input 
+                        type="number" 
+                        value={editForm.price || 0} 
+                        onChange={(e) => setEditForm({...editForm, price: Number(e.target.value)})}
+                        className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+                        placeholder="Price"
+                      />
+                      <div className="flex space-x-2">
+                        <button onClick={() => handleUpdateRoom(room.id)} className="flex-1 py-2 bg-green-600 text-white rounded font-bold text-sm">Save</button>
+                        <button onClick={() => setIsEditing(null)} className="flex-1 py-2 bg-slate-200 text-slate-700 rounded font-bold text-sm">Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -562,7 +649,37 @@ export default function Admin() {
         {activeTab === 'users' && (
           <div>
             <h2 className="text-xl font-bold text-slate-800 mb-6">{t('ইউজার তালিকা', 'User List')}</h2>
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            {/* Users Content */}
+            <div className="md:hidden space-y-4">
+              {users.map((u) => (
+                <div key={u.uid} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-slate-900">{u.displayName || '-'}</h3>
+                      <p className="text-xs text-slate-500">{u.email}</p>
+                    </div>
+                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${u.role === 'admin' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-700'}`}>
+                      {u.role}
+                    </span>
+                  </div>
+                  <div className="text-sm text-slate-600">
+                    {u.phone || '-'}
+                  </div>
+                  <div className="pt-2 border-t border-slate-50">
+                    <select 
+                      value={u.role}
+                      onChange={(e) => handleUpdateUserRole(u.uid, e.target.value, u.email)}
+                      disabled={user?.uid === u.uid}
+                      className={`w-full px-3 py-2 border border-slate-300 rounded text-sm ${user?.uid === u.uid ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <option value="user">User</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -611,7 +728,66 @@ export default function Admin() {
         {activeTab === 'bookings' && (
           <div>
             <h2 className="text-xl font-bold text-slate-800 mb-6">{t('বুকিং তালিকা', 'Booking List')}</h2>
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            {/* Bookings Content */}
+            <div className="md:hidden space-y-4">
+              {bookings.map((b) => (
+                <div key={b.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-slate-900">{b.roomName || b.roomId}</h3>
+                      <p className="text-[10px] text-slate-400 font-mono">ID: {b.id}</p>
+                    </div>
+                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider 
+                      ${b.status === 'confirmed' || b.status === 'accepted' ? 'bg-green-100 text-green-700' : 
+                        b.status === 'cancelled' || b.status === 'rejected' ? 'bg-red-100 text-red-700' : 
+                        b.status === 'completed' ? 'bg-blue-100 text-blue-700' : 
+                        'bg-amber-100 text-amber-700'}`}>
+                      {b.status}
+                    </span>
+                  </div>
+                  <div className="text-sm space-y-1">
+                    <p className="font-bold text-slate-800">{b.userName || 'Unknown'}</p>
+                    <p className="text-slate-600">{b.userEmail}</p>
+                    {b.userPhone && (
+                      <div className="flex items-center">
+                        <span className="text-slate-600 mr-2">{b.userPhone}</span>
+                        <a href={`tel:${b.userPhone}`} className="p-1.5 bg-green-100 text-green-700 rounded-full"><Phone className="w-3 h-3" /></a>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-500 pt-2 border-t border-slate-50">
+                    <div>
+                      <p>In: {new Date(b.checkIn).toLocaleDateString()}</p>
+                      <p>Out: {new Date(b.checkOut).toLocaleDateString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-red-600 text-sm">৳{b.totalAmount}</p>
+                    </div>
+                  </div>
+                  <div className="pt-2">
+                    {b.status === 'pending' ? (
+                      <div className="flex space-x-2">
+                        <button onClick={() => handleUpdateBookingStatus(b.id, 'accepted')} className="flex-1 py-2 bg-green-600 text-white text-xs font-bold rounded">Accept</button>
+                        <button onClick={() => handleUpdateBookingStatus(b.id, 'rejected')} className="flex-1 py-2 bg-red-600 text-white text-xs font-bold rounded">Reject</button>
+                      </div>
+                    ) : (
+                      <select 
+                        value={b.status}
+                        onChange={(e) => handleUpdateBookingStatus(b.id, e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="accepted">Accepted</option>
+                        <option value="completed">Completed</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -783,7 +959,43 @@ export default function Admin() {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-slate-800">{t('রেটিং তালিকা', 'Rating List')}</h2>
             </div>
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            {/* Ratings Content */}
+            <div className="md:hidden space-y-4">
+              {ratings.map((rating) => (
+                <div key={rating.id} className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-bold text-slate-900">{rating.userName || 'Guest'}</h3>
+                      <div className="flex items-center mt-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className={`w-3 h-3 ${i < rating.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200'}`} />
+                        ))}
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${rating.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {rating.status}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-600 italic">"{rating.comment}"</p>
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-50">
+                    <span className="text-[10px] text-slate-400">
+                      {rating.createdAt?.toMillis ? new Date(rating.createdAt.toMillis()).toLocaleDateString() : 'N/A'}
+                    </span>
+                    <div className="flex space-x-2">
+                      {rating.status === 'pending' && (
+                        <button onClick={() => handleUpdateRatingStatus(rating.id, 'approved')} className="p-1.5 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors">
+                          <Check className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button onClick={() => handleDeleteRating(rating.id)} className="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -865,6 +1077,70 @@ export default function Admin() {
           </div>
         )}
 
+        {activeTab === 'offers' && (
+          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 max-w-2xl">
+            <h2 className="text-xl font-bold text-slate-800 mb-6">{t('এক্সক্লুসিভ অফার পাঠান', 'Send Exclusive Offer')}</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('অফার টাইটেল', 'Offer Title')}</label>
+                <input 
+                  type="text" 
+                  value={offerForm.title}
+                  onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })}
+                  className="w-full border border-slate-300 rounded-lg p-2"
+                  placeholder="e.g. 20% Discount on Family Suit"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">{t('অফার বিবরণ', 'Offer Description')}</label>
+                <textarea 
+                  value={offerForm.description}
+                  onChange={(e) => setOfferForm({ ...offerForm, description: e.target.value })}
+                  className="w-full border border-slate-300 rounded-lg p-2"
+                  rows={4}
+                  placeholder="Describe the offer details..."
+                />
+              </div>
+              <button 
+                onClick={async () => {
+                  if (!offerForm.title || !offerForm.description) {
+                    toast.error('Please fill in both title and description');
+                    return;
+                  }
+                  
+                  try {
+                    setLoading(true);
+                    // Fetch all users to send email
+                    const usersRef = collection(db, 'users');
+                    const snapshot = await getDocs(usersRef);
+                    const userEmails = snapshot.docs.map(doc => doc.data().email).filter(Boolean);
+                    
+                    if (userEmails.length === 0) {
+                      toast.error('No users found to send offers to.');
+                      return;
+                    }
+                    
+                    // Send emails
+                    const promises = userEmails.map(email => notifyExclusiveOffer(email, offerForm.title, offerForm.description));
+                    await Promise.all(promises);
+                    
+                    toast.success(`Offer sent to ${userEmails.length} users!`);
+                    setOfferForm({ title: '', description: '' });
+                  } catch (error) {
+                    console.error('Error sending offers:', error);
+                    toast.error('Failed to send offers');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+                className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {loading ? 'Sending...' : t('সবাইকে অফার পাঠান', 'Send Offer to All Users')}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       <ConfirmModal
         isOpen={confirmModal.isOpen}

@@ -3,6 +3,7 @@ import { collection, getDocs, query, orderBy, setDoc, doc, serverTimestamp } fro
 import { db, auth } from '../firebase';
 import { useLanguage } from '../context/LanguageContext';
 import { EditableText } from '../components/EditableText';
+import { notifyAdminNewReview } from '../services/NotificationService';
 import { Star, User, Loader2, Link as LinkIcon, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
@@ -65,6 +66,13 @@ export const Reviews: React.FC = () => {
         status: 'approved', // Auto-approve for now
         createdAt: serverTimestamp()
       });
+      
+      // Notify Admin
+      notifyAdminNewReview({
+        userName: auth.currentUser.displayName || 'Guest User',
+        rating: newRating,
+        comment: newComment.trim()
+      }).catch(console.error);
       
       toast.success(t('আপনার রেটিং সফলভাবে জমা হয়েছে!', 'Your rating has been submitted successfully!'));
       setNewComment('');
@@ -172,7 +180,7 @@ export const Reviews: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-3 gap-4 md:gap-6 mb-12">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-12">
               {currentRatings.length > 0 ? (
                 currentRatings.map((rating) => (
                   <div key={rating.id} className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
@@ -184,8 +192,8 @@ export const Reviews: React.FC = () => {
                           <User className="w-5 h-5 md:w-6 md:h-6" />
                         </div>
                       )}
-                      <div className="min-w-0">
-                        <h4 className="font-bold text-slate-900 text-sm md:text-base truncate">{rating.userName}</h4>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-slate-900 text-sm md:text-base leading-tight break-words">{rating.userName}</h4>
                         <div className="flex items-center gap-1 mt-1">
                           {renderStars(rating.rating)}
                         </div>

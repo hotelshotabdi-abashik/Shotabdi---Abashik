@@ -4,6 +4,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../firebase';
 import { toast } from 'sonner';
 import { useLanguage } from './LanguageContext';
+import { notifyLogin } from '../services/NotificationService';
 
 declare global {
   interface Window {
@@ -107,6 +108,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setProfile(snapshot.data() as UserProfile);
       }
+      
+      // Send login notification
+      if (user.email) {
+        notifyLogin(user.email, user.displayName || 'User').catch(console.error);
+      }
+      
       toast.success(t("সফলভাবে লগইন হয়েছে!", "Logged in successfully!"));
     } catch (error: any) {
       console.error("One Tap Login error:", error);
@@ -122,7 +129,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           document.cookie = "g_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
           
           window.google.accounts.id.initialize({
-            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID',
+            // Note: Client Secret is configured in the Firebase Console (Authentication -> Sign-in method -> Google)
+            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '63077246647-u3i2uh7p0vlbj1ou9krs6ee82b5apjvp.apps.googleusercontent.com',
             callback: handleGoogleOneTapResponse,
             cancel_on_tap_outside: false,
             context: 'use',
@@ -162,6 +170,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setProfile(snapshot.data() as UserProfile);
       }
+      
+      // Send login notification
+      if (user.email) {
+        notifyLogin(user.email, user.displayName || 'User').catch(console.error);
+      }
+      
       toast.success(t("সফলভাবে লগইন হয়েছে!", "Logged in successfully!"));
     } catch (error: any) {
       console.error("Login error:", error);
