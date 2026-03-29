@@ -246,8 +246,8 @@ service cloud.firestore {
     }
 
     function isValidGallery() {
-      let allowedFields = ['id', 'title', 'description', 'imageUrl', 'category', 'createdAt', 'authorId'];
-      let requiredFields = ['id', 'imageUrl', 'createdAt'];
+      let allowedFields = ['id', 'title', 'description', 'imageUrl', 'category', 'createdAt', 'authorId', 'status', 'order'];
+      let requiredFields = ['id', 'imageUrl', 'createdAt', 'status'];
       
       return hasOnlyAllowedFields(allowedFields) &&
              hasRequiredFields(requiredFields) &&
@@ -257,7 +257,9 @@ service cloud.firestore {
              request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 1000 &&
              (!('category' in request.resource.data) || (request.resource.data.category is string)) &&
              request.resource.data.createdAt is timestamp &&
-             (!('authorId' in request.resource.data) || (request.resource.data.authorId is string));
+             (!('authorId' in request.resource.data) || (request.resource.data.authorId is string)) &&
+             request.resource.data.status in ['active', 'hidden', 'archived'] &&
+             (!('order' in request.resource.data) || (request.resource.data.order is number));
     }
 
     function isValidSocialLink() {

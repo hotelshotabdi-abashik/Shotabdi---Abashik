@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BedDouble, CheckCircle2, MapPin, Percent, Utensils, Compass, PhoneCall, ArrowRight, Star, Camera, Calendar, Search, Edit2, X, Upload, Trash2, Loader2, Wifi, Wind, Coffee, Shield, Clock } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { BedDouble, CheckCircle2, MapPin, Percent, Utensils, Compass, PhoneCall, ArrowRight, Star, Camera, Calendar, Search, Edit2, X, Upload, Trash2, Loader2, Wifi, Wind, Coffee, Shield, Clock, Navigation } from 'lucide-react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { collection, getDocs, query, limit, orderBy, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useLanguage } from '../context/LanguageContext';
@@ -13,6 +13,8 @@ import { ImageViewModal } from '../components/ImageViewModal';
 import { uploadToR2, deleteFromR2 } from '../lib/r2';
 import { toast } from 'sonner';
 
+import { Helmet } from 'react-helmet-async';
+
 export default function Home() {
   const { t } = useLanguage();
   const { content, editMode, updateContent } = useContent();
@@ -23,6 +25,7 @@ export default function Home() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [isHoveringHero, setIsHoveringHero] = useState(false);
+  const [isHoveringGallery, setIsHoveringGallery] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
@@ -46,6 +49,23 @@ export default function Home() {
   }, []);
 
   const websiteName = settings?.websiteName || t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik');
+
+  const defaultRestaurants = [
+    { name: 'Al-Modina Restaurant', location: 'Kumargaon Bus Stand', distance: '0.1 km', type: 'Local Bengali', imageUrl: 'https://picsum.photos/seed/almodina/400/300', mapUrl: '' },
+    { name: 'Bismillah Hotel & Restaurant', location: 'Kumargaon', distance: '0.2 km', type: 'Local Bengali', imageUrl: 'https://picsum.photos/seed/bismillah/400/300', mapUrl: '' },
+    { name: 'SUST Food Court', location: 'SUST Campus', distance: '1.5 km', type: 'Snacks / Fast Food', imageUrl: 'https://picsum.photos/seed/sust/400/300', mapUrl: '' },
+    { name: 'Cafe SUST', location: 'SUST Campus', distance: '1.5 km', type: 'Cafe', imageUrl: 'https://picsum.photos/seed/cafesust/400/300', mapUrl: '' },
+  ];
+
+  const defaultTourSpots = [
+    { id: '1', name: 'SUST Campus & Shahid Minar', location: 'Kumargaon', distance: '1.5 km', type: 'University / Monument', imageUrl: 'https://picsum.photos/seed/sust/400/300', mapUrl: '' },
+    { id: '2', name: 'Hazrat Shahjalal Mazar Sharif', location: 'Dargah Mahalla', distance: '6.0 km', type: 'Religious / Historical', imageUrl: 'https://picsum.photos/seed/shahjalal/400/300', mapUrl: '' },
+    { id: '3', name: 'Hazrat Shah Paran Mazar Sharif', location: 'Khadim Nagar', distance: '13.0 km', type: 'Religious / Historical', imageUrl: 'https://picsum.photos/seed/shahparan/400/300', mapUrl: '' },
+    { id: '4', name: 'Ali Amjad\'s Clock & Keane Bridge', location: 'Surma River', distance: '6.5 km', type: 'Historical Landmark', imageUrl: 'https://picsum.photos/seed/keane/400/300', mapUrl: '' },
+  ];
+
+  const restaurants = content.restaurants || defaultRestaurants;
+  const tourSpots = content.tourSpots || defaultTourSpots;
 
   const globalDiscountRate = parseInt(content.global_discount_rate || '0', 10);
 
@@ -140,13 +160,13 @@ export default function Home() {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHoveringHero(false);
-    }, 3000);
+    }, 5000);
   };
 
   const variants = {
     enter: (direction: number) => ({
       x: direction > 0 ? '100%' : '-100%',
-      opacity: 1
+      opacity: 0
     }),
     center: {
       zIndex: 1,
@@ -155,8 +175,8 @@ export default function Home() {
     },
     exit: (direction: number) => ({
       zIndex: 0,
-      x: direction < 0 ? '100%' : '-100%',
-      opacity: 1
+      x: direction < 0 ? '50%' : '-50%',
+      opacity: 0
     })
   };
 
@@ -218,11 +238,21 @@ export default function Home() {
 
   return (
     <div className="bg-slate-50">
+      <Helmet>
+        <title>{websiteName} | Best Hotel in Bogura</title>
+        <meta name="description" content={`Welcome to ${websiteName}. Experience luxury and comfort in the heart of Bogura. 24h Residential Service.`} />
+        <meta property="og:title" content={`${websiteName} | Best Hotel in Bogura`} />
+        <meta property="og:description" content={`Welcome to ${websiteName}. Experience luxury and comfort in the heart of Bogura. 24h Residential Service.`} />
+        <meta property="og:image" content={content[activeHeroImages[0]?.key] || activeHeroImages[0]?.default || ''} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+      </Helmet>
+      
       {/* SEO H1 - Hidden but present for crawlers */}
       <h1 className="sr-only">{websiteName}</h1>
 
       {/* Hero Section */}
-      <section className="relative bg-white text-slate-900 h-[100dvh] flex items-center justify-center overflow-hidden select-none pt-20 pb-10">
+      <section className="relative bg-black text-slate-900 min-h-[100dvh] flex items-center justify-center overflow-hidden select-none pt-20 pb-10">
         {editMode && (
           <button
             onClick={() => setIsHeroEditModalOpen(true)}
@@ -238,37 +268,47 @@ export default function Home() {
              onMouseLeave={() => setIsHoveringHero(false)}
              onTouchStart={handleHeroInteraction}
         >
-          <motion.div
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.2}
-            onDragEnd={(e, { offset, velocity }) => {
-              const swipe = swipePower(offset.x, velocity.x);
-              if (swipe < -swipeConfidenceThreshold) {
-                paginate(1);
-              } else if (swipe > swipeConfidenceThreshold) {
-                paginate(-1);
-              }
-            }}
-            animate={{ x: `-${currentImageIndex * 100}%` }}
-            transition={{
-              x: { type: "spring", stiffness: 300, damping: 30 }
-            }}
-            className="absolute inset-0 flex h-full w-full cursor-grab active:cursor-grabbing"
-          >
-            {activeHeroImages.map((slot) => (
-              <div key={slot.key} className="w-full h-full flex-shrink-0 relative">
-                <img 
-                  src={content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : slot.default} 
+          <AnimatePresence initial={false} custom={direction}>
+            <motion.div
+              key={currentImageIndex}
+              custom={direction}
+              variants={variants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{
+                x: { type: "spring", stiffness: 300, damping: 30 },
+                opacity: { duration: 0.5 }
+              }}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={1}
+              onDragEnd={(e, { offset, velocity }) => {
+                const swipe = swipePower(offset.x, velocity.x);
+                if (swipe < -swipeConfidenceThreshold) {
+                  paginate(1);
+                } else if (swipe > swipeConfidenceThreshold) {
+                  paginate(-1);
+                }
+              }}
+              className="absolute inset-0 w-full h-full"
+            >
+              <div className="relative w-full h-full overflow-hidden">
+                <motion.img 
+                  src={content[activeHeroImages[currentImageIndex]?.key] && content[activeHeroImages[currentImageIndex]?.key] !== 'deleted' ? content[activeHeroImages[currentImageIndex]?.key] : activeHeroImages[currentImageIndex]?.default} 
                   alt="Hotel Hero" 
                   className="w-full h-full object-cover pointer-events-none" 
                   referrerPolicy="no-referrer"
                   draggable={false}
+                  style={{
+                    scale: 1.1,
+                    y: useTransform(useScroll().scrollY, [0, 500], [0, 150])
+                  }}
                 />
                 <div className="absolute inset-0 bg-black/50 pointer-events-none"></div>
               </div>
-            ))}
-          </motion.div>
+            </motion.div>
+          </AnimatePresence>
         </div>
         
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center pt-16 pb-8 pointer-events-none flex flex-col justify-center h-full">
@@ -276,7 +316,7 @@ export default function Home() {
           
           {/* 24h Service Text Above Filter */}
           <div className="mb-2 pointer-events-auto">
-            <span className="inline-block bg-red-600/90 backdrop-blur-sm text-white px-4 py-1 rounded-full text-xs sm:text-sm font-bold tracking-wide shadow-lg animate-pulse">
+            <span className="inline-block bg-black/40 text-white px-4 py-1 rounded-full text-xs sm:text-sm font-bold tracking-wide shadow-lg animate-pulse border border-white/20">
               <EditableText contentKey="hero_top_badge" defaultText={t('২৪ ঘণ্টা আবাসিক সেবা', '24h Residential Service')} />
             </span>
           </div>
@@ -343,31 +383,40 @@ export default function Home() {
           </div>
 
           {/* Feature Buttons */}
-          <div className="flex flex-wrap justify-center gap-2 pointer-events-auto">
-            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
-              <Clock className="w-3 h-3" />
-              <EditableText contentKey="home_feature_service" defaultText={t('২৪ ঘণ্টা আবাসিক সেবা', '24h Residential Service')} />
-            </div>
-            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
+          <div className="flex flex-wrap justify-center gap-2 pointer-events-auto mb-6">
+            <div className="bg-white/20 border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
               <Wifi className="w-3 h-3" />
               <EditableText contentKey="home_feature_wifi" defaultText={t('ফ্রি ওয়াইফাই', 'Free WiFi')} />
             </div>
-            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
+            <div className="bg-white/20 border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
               <Wind className="w-3 h-3" />
               <EditableText contentKey="home_feature_ac" defaultText={t('এসি রুম', 'AC Rooms')} />
             </div>
-            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
+            <div className="bg-white/20 border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
               <Coffee className="w-3 h-3" />
               <EditableText contentKey="home_feature_restaurant" defaultText={t('রেস্টুরেন্ট', 'Restaurant')} />
             </div>
-            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
+            <div className="bg-white/20 border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
               <Shield className="w-3 h-3" />
               <EditableText contentKey="home_feature_safe" defaultText={t('নিরাপদ পরিবেশ', 'Safe Environment')} />
             </div>
-            <div className="bg-white/20 backdrop-blur-md border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
+            <div className="bg-white/20 border border-white/30 text-white px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-medium shadow-lg">
               <MapPin className="w-3 h-3" />
               <EditableText contentKey="home_feature_location" defaultText={t('দুর্দান্ত লোকেশন', 'Great Location')} />
             </div>
+          </div>
+
+          {/* Location Button */}
+          <div className="pointer-events-auto mt-4">
+            <a 
+              href="https://maps.app.goo.gl/UJZHgQbTk5X9VCcu6" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-all hover:scale-105 active:scale-95 group"
+            >
+              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 group-hover:animate-bounce" />
+              <span className="text-[10px] sm:text-xs md:text-sm font-medium">Kumargaon Bus Terminal, Sunamganj Road, Sylhet, Bangladesh</span>
+            </a>
           </div>
         </div>
 
@@ -401,9 +450,20 @@ export default function Home() {
             <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 opacity-20 blur-xl group-hover:opacity-40 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
             <div className="relative flex flex-col md:flex-row items-center justify-center md:justify-between z-10 gap-6">
               <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-                <div className="bg-white text-red-700 font-black text-4xl px-5 py-3 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.3)] transform -rotate-3 hover:rotate-0 transition-transform duration-300 flex items-center">
+                <motion.div 
+                  animate={{ 
+                    scale: [1, 1.05, 1],
+                    rotate: [-3, 0, -3]
+                  }}
+                  transition={{ 
+                    repeat: Infinity, 
+                    duration: 3,
+                    ease: "easeInOut"
+                  }}
+                  className="bg-white text-red-700 font-black text-4xl px-5 py-3 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center"
+                >
                   <EditableText contentKey="global_discount_rate" defaultText="0" />% OFF
-                </div>
+                </motion.div>
                 <div>
                   <h3 className="text-2xl md:text-3xl font-bold tracking-tight text-white drop-shadow-md">
                     <EditableText contentKey="global_discount_title" defaultText="Special Offer!" />
@@ -424,7 +484,7 @@ export default function Home() {
 
 
       {/* Gallery Shortcut Section */}
-      <section className="py-16 bg-white text-slate-900 overflow-hidden">
+      <section className="py-16 bg-white text-slate-900 overflow-hidden w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">{t('গ্যালারি', 'Gallery')}</h2>
@@ -435,38 +495,25 @@ export default function Home() {
           </div>
 
           {galleryImages.length > 0 ? (
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-10">
-              {galleryImages.slice(0, 20).map((img, index) => (
-                <motion.div 
+            <div className="columns-2 md:columns-4 gap-2 space-y-2 w-full mb-10">
+              {galleryImages.map((img, index) => (
+                <Link 
                   key={index}
-                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                  whileInView={{ opacity: 1, scale: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-50px" }}
-                  transition={{ 
-                    duration: 0.5, 
-                    delay: index * 0.05,
-                    type: "spring",
-                    stiffness: 100
-                  }}
-                  whileHover={{ scale: 1.05, zIndex: 10 }}
-                  onClick={() => {
-                    setSelectedImage(img);
-                    setIsViewModalOpen(true);
-                  }}
-                  className="rounded-lg sm:rounded-xl overflow-hidden shadow-md sm:shadow-lg relative group cursor-pointer"
+                  to={`/gallery/${img.id || index}`}
+                  className="relative overflow-hidden shadow-md group cursor-pointer w-full rounded-lg break-inside-avoid mb-2 block"
                 >
-                  <div className="aspect-w-1 aspect-h-1 h-full">
-                    <img 
-                      src={img.url} 
-                      alt={img.title || `Gallery ${index + 1}`} 
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                      referrerPolicy="no-referrer" 
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-2 sm:p-4">
-                      <Camera className="w-4 h-4 sm:w-6 sm:h-6 text-white/80" />
+                  <img 
+                    src={img.url} 
+                    alt={img.title || `Gallery ${index + 1}`} 
+                    className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110" 
+                    referrerPolicy="no-referrer" 
+                  />
+                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <div className="bg-white/20 p-3 rounded-full text-white transform scale-0 group-hover:scale-100 transition-transform duration-300">
+                      <Search className="w-6 h-6" />
                     </div>
                   </div>
-                </motion.div>
+                </Link>
               ))}
             </div>
           ) : (
@@ -503,15 +550,19 @@ export default function Home() {
           </div>
           
           {rooms.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
               {rooms.map((room) => (
                 <div key={room.id} className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col hover:shadow-xl transition-shadow relative group">
                   <div className="relative h-48 sm:h-64">
                     <img src={room.imageUrl || room.images?.[0] || 'https://picsum.photos/seed/room/800/600'} alt={room.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     {getDiscountPercentage(room) > 0 ? (
-                      <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs sm:text-sm font-bold shadow-md animate-bounce">
+                      <motion.div 
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                        className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs sm:text-sm font-bold shadow-md"
+                      >
                         {getDiscountPercentage(room)}% OFF
-                      </div>
+                      </motion.div>
                     ) : null}
                   </div>
                   <div className="p-5 sm:p-8 flex-grow flex flex-col">
@@ -567,6 +618,94 @@ export default function Home() {
             <Link to="/rooms" className="inline-flex items-center text-red-600 font-bold hover:text-red-700 transition-colors">
               <EditableText contentKey="home_rooms_view_all" defaultText={t('সব রুম দেখুন', 'View All Rooms')} /> <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Restaurant Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-end mb-12">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900 mb-4">
+                <EditableText contentKey="home_restaurant_title" defaultText={t('জনপ্রিয় রেস্টুরেন্টসমূহ', 'Popular Restaurants')} />
+              </h2>
+              <div className="w-24 h-1 bg-red-600 rounded-full"></div>
+            </div>
+            <Link to="/restaurant" className="hidden sm:inline-flex items-center text-red-600 font-bold hover:text-red-700 transition-colors">
+              {t('সব দেখুন', 'View All')} <ArrowRight className="ml-2 w-5 h-5" />
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {restaurants.slice(0, 4).map((res: any, index: number) => (
+              <div key={index} className="bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 group hover:shadow-xl transition-all duration-300">
+                <div className="relative h-48 overflow-hidden">
+                  <img src={res.imageUrl} alt={res.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" referrerPolicy="no-referrer" />
+                  <div className="absolute top-4 right-4 bg-white/90 px-2 py-1 rounded text-[10px] font-bold text-red-700 shadow-sm">
+                    {res.type}
+                  </div>
+                </div>
+                <div className="p-5">
+                  <h3 className="font-bold text-slate-900 mb-2 line-clamp-1">{res.name}</h3>
+                  <div className="flex items-center text-xs text-slate-500 mb-3">
+                    <MapPin className="w-3 h-3 mr-1 text-red-500" />
+                    <span className="truncate">{res.location} ({res.distance})</span>
+                  </div>
+                  <a 
+                    href={res.mapUrl || `https://www.google.com/maps/search/${encodeURIComponent(res.name + ' ' + res.location)}`} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="flex items-center justify-center w-full py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                  >
+                    <Navigation className="w-3 h-3 mr-1.5" /> {t('ম্যাপে দেখুন', 'View on Map')}
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Tour Desk Section */}
+      <section className="py-20 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-end mb-12">
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900 mb-4">
+                <EditableText contentKey="home_tour_title" defaultText={t('আশেপাশের দর্শনীয় স্থান', 'Nearby Attractions')} />
+              </h2>
+              <div className="w-24 h-1 bg-red-600 rounded-full"></div>
+            </div>
+            <Link to="/tour-desk" className="hidden sm:inline-flex items-center text-red-600 font-bold hover:text-red-700 transition-colors">
+              {t('সব দেখুন', 'View All')} <ArrowRight className="ml-2 w-5 h-5" />
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {tourSpots.slice(0, 4).map((spot: any, index: number) => (
+              <div key={index} className="bg-white rounded-2xl overflow-hidden border border-slate-100 group hover:shadow-xl transition-all duration-300">
+                <div className="relative h-48 overflow-hidden">
+                  <img src={spot.imageUrl} alt={spot.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" referrerPolicy="no-referrer" />
+                  <div className="absolute top-4 right-4 bg-red-700 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm">
+                    {spot.distance}
+                  </div>
+                </div>
+                <div className="p-5">
+                  <h3 className="font-bold text-slate-900 mb-2 line-clamp-1">{spot.name}</h3>
+                  <div className="flex items-center text-xs text-slate-500 mb-3">
+                    <Compass className="w-3 h-3 mr-1 text-red-500" />
+                    <span className="truncate">{spot.type}</span>
+                  </div>
+                  <Link 
+                    to="/tour-desk"
+                    className="flex items-center justify-center w-full py-2 bg-red-50 text-red-700 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
+                  >
+                    {t('বিস্তারিত দেখুন', 'View Details')}
+                  </Link>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -202,7 +202,7 @@ export default function Restaurant() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {filteredRestaurants.map((restaurant, index) => (
               <div key={index} className="bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow flex flex-col h-full relative group overflow-hidden">
                 {editMode && (

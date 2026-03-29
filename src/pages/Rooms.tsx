@@ -11,7 +11,7 @@ import { ImageUploader } from '../components/ImageUploader';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { notifyBookingSubmitted, notifyAdminNewBooking } from '../services/NotificationService';
 import { collection, getDocs, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 
 interface Room {
   id: string;
@@ -239,7 +239,7 @@ export default function Rooms() {
           }
           toast.success('Default rooms restored successfully');
         } catch (error) {
-          console.error('Error restoring default rooms:', error);
+          handleFirestoreError(error, OperationType.WRITE, 'rooms');
           toast.error('Failed to restore default rooms');
         }
       }
@@ -264,7 +264,7 @@ export default function Rooms() {
       });
       toast.success('Room added successfully');
     } catch (error) {
-      console.error("Error adding room:", error);
+      handleFirestoreError(error, OperationType.WRITE, 'rooms');
       toast.error('Failed to add room');
     }
   };
@@ -380,7 +380,7 @@ export default function Rooms() {
           )}
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-2 gap-3 sm:gap-10">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-10">
           {loading ? (
             <div className="col-span-full text-center py-12 text-slate-500">Loading rooms...</div>
           ) : rooms.length === 0 ? (

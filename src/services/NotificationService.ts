@@ -1,23 +1,41 @@
-import { collection, doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export interface EmailParams {
   to: string;
   subject: string;
   html: string;
+  type?: string;
+  metadata?: any;
 }
+
+const logEmail = async (params: EmailParams, status: 'sent' | 'failed', error?: string) => {
+  try {
+    await addDoc(collection(db, 'emailLogs'), {
+      to: params.to,
+      subject: params.subject,
+      type: params.type || 'general',
+      status,
+      error: error || null,
+      sentAt: serverTimestamp(),
+      metadata: params.metadata || {}
+    });
+  } catch (err) {
+    console.error("Error logging email:", err);
+  }
+};
 
 const getLogoUrl = async () => {
   try {
-    const docRef = doc(db, 'content', 'site_logo');
+    const docRef = doc(db, 'settings', 'general');
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-      return docSnap.data().value;
+      return docSnap.data().logoUrl;
     }
   } catch (error) {
     console.error("Error fetching logo for email:", error);
   }
-  return 'https://picsum.photos/seed/hotel/200/80'; // Fallback
+  return 'https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png'; // Fallback
 };
 
 const wrapEmail = (html: string, logoUrl: string) => `
@@ -50,12 +68,17 @@ export const sendEmail = async (params: EmailParams) => {
     });
 
     if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      await logEmail(params, 'failed', errorData.error || 'Failed to send email');
       throw new Error('Failed to send email');
     }
 
-    return await response.json();
+    const result = await response.json();
+    await logEmail(params, 'sent');
+    return result;
   } catch (error) {
     console.error('Error in sendEmail:', error);
+    await logEmail(params, 'failed', error instanceof Error ? error.message : String(error));
     throw error;
   }
 };
@@ -64,6 +87,8 @@ export const notifyLogin = async (email: string, name: string) => {
   return sendEmail({
     to: email,
     subject: 'Login Notification - Hotel Shotabdi Abashik',
+    type: 'login',
+    metadata: { name },
     html: `
       <h2 style="color: #dc2626; margin-top: 0;">Welcome back, ${name}!</h2>
       <p>You have successfully logged into your account at Hotel Shotabdi Abashik.</p>
@@ -79,6 +104,8 @@ export const notifyBookingSubmitted = async (email: string, name: string, roomNa
   return sendEmail({
     to: email,
     subject: 'Booking Received - Hotel Shotabdi Abashik',
+    type: 'booking_submitted',
+    metadata: { name, roomName, totalAmount },
     html: `
       <h2 style="color: #dc2626; margin-top: 0;">Booking Received!</h2>
       <p>Hello ${name},</p>
@@ -99,6 +126,8 @@ export const notifyBookingStatus = async (email: string, name: string, roomName:
   return sendEmail({
     to: email,
     subject: `Booking ${statusText} - Hotel Shotabdi Abashik`,
+    type: 'booking_status',
+    metadata: { name, roomName, status },
     html: `
       <h2 style="color: ${color}; margin-top: 0;">Booking ${statusText}</h2>
       <p>Hello ${name},</p>
@@ -123,6 +152,8 @@ export const notifyExclusiveOffer = async (email: string, title: string, descrip
   return sendEmail({
     to: email,
     subject: `Exclusive Offer: ${title}`,
+    type: 'exclusive_offer',
+    metadata: { title, discountPrice },
     html: `
       <h2 style="color: #dc2626; margin-top: 0;">${title}</h2>
       ${imageUrl ? `<img src="${imageUrl}" alt="${title}" style="width: 100%; height: auto; border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0;" />` : ''}
@@ -147,6 +178,8 @@ export const notifyAdminNewBooking = async (bookingData: any) => {
   return sendEmail({
     to: ADMIN_EMAIL,
     subject: 'New Booking Received - Action Required',
+    type: 'admin_alert',
+    metadata: { bookingId: bookingData.id },
     html: `
       <h2 style="color: #dc2626; margin-top: 0;">New Booking Alert!</h2>
       <p>A new booking has been submitted on the website.</p>
@@ -169,6 +202,8 @@ export const notifyAdminNewReview = async (reviewData: any) => {
   return sendEmail({
     to: ADMIN_EMAIL,
     subject: 'New Guest Review Received',
+    type: 'admin_alert',
+    metadata: { reviewId: reviewData.id },
     html: `
       <h2 style="color: #dc2626; margin-top: 0;">New Review Alert!</h2>
       <p>A guest has left a new review on the website.</p>
@@ -181,3 +216,4 @@ export const notifyAdminNewReview = async (reviewData: any) => {
     `,
   });
 };
+

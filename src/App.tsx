@@ -19,6 +19,7 @@ const About = lazy(() => import('./pages/About'));
 const Restaurant = lazy(() => import('./pages/Restaurant'));
 const TourDesk = lazy(() => import('./pages/TourDesk'));
 const Gallery = lazy(() => import('./pages/Gallery'));
+const GalleryPost = lazy(() => import('./pages/GalleryPost'));
 const Reviews = lazy(() => import('./pages/Reviews').then(module => ({ default: module.Reviews })));
 const MyStays = lazy(() => import('./pages/MyStays'));
 const HelpDesk = lazy(() => import('./pages/HelpDesk'));
@@ -114,7 +115,7 @@ export default function App() {
                       <Route path="/restaurant" element={<Restaurant />} />
                       <Route path="/tour-desk" element={<TourDesk />} />
                       <Route path="/gallery" element={<Gallery />} />
-                      <Route path="/gallery/:id" element={<Gallery />} />
+                      <Route path="/gallery/:id" element={<GalleryPost />} />
                       <Route path="/logo" element={<Navigate to="/" />} />
                       <Route path="/rooms/:id" element={<Rooms />} />
                       <Route path="/restaurant/:id" element={<Restaurant />} />

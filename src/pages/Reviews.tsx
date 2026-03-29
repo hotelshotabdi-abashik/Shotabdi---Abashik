@@ -18,6 +18,54 @@ export const Reviews: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [copied, setCopied] = useState(false);
   const itemsPerPage = 30;
+  
+  const demoReviews = [
+    {
+      id: 'demo-1',
+      userName: 'Ariful Islam',
+      userPhoto: 'https://i.pravatar.cc/150?u=ariful',
+      rating: 5,
+      comment: 'The hospitality was exceptional. The rooms were clean and the staff was very helpful. Highly recommended for families.',
+      status: 'approved',
+      createdAt: { toDate: () => new Date('2024-03-20') }
+    },
+    {
+      id: 'demo-2',
+      userName: 'Sumaiya Akter',
+      userPhoto: 'https://i.pravatar.cc/150?u=sumaiya',
+      rating: 5,
+      comment: 'Great location near the bus terminal. Very convenient for travelers. The restaurant food was delicious too!',
+      status: 'approved',
+      createdAt: { toDate: () => new Date('2024-03-22') }
+    },
+    {
+      id: 'demo-3',
+      userName: 'Tanvir Ahmed',
+      userPhoto: 'https://i.pravatar.cc/150?u=tanvir',
+      rating: 4,
+      comment: 'Affordable and comfortable. The AC was working perfectly. Good value for money in Sylhet.',
+      status: 'approved',
+      createdAt: { toDate: () => new Date('2024-03-25') }
+    },
+    {
+      id: 'demo-4',
+      userName: 'Nusrat Jahan',
+      userPhoto: 'https://i.pravatar.cc/150?u=nusrat',
+      rating: 5,
+      comment: 'Safe and secure environment for solo female travelers. The management is very professional.',
+      status: 'approved',
+      createdAt: { toDate: () => new Date('2024-03-26') }
+    },
+    {
+      id: 'demo-5',
+      userName: 'Kamrul Hasan',
+      userPhoto: 'https://i.pravatar.cc/150?u=kamrul',
+      rating: 5,
+      comment: 'Best residential hotel in this area. Clean bathrooms and fresh linens. Will definitely come back.',
+      status: 'approved',
+      createdAt: { toDate: () => new Date('2024-03-28') }
+    }
+  ];
 
   useEffect(() => {
     fetchRatings();
@@ -32,7 +80,9 @@ export const Reviews: React.FC = () => {
       const snapshot = await getDocs(q);
       const allRatings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       const approvedRatings = allRatings.filter((r: any) => r.status === 'approved');
-      setRatings(approvedRatings);
+      
+      // Combine with demo reviews
+      setRatings([...approvedRatings, ...demoReviews]);
     } catch (error) {
       console.error("Error fetching ratings:", error);
     } finally {

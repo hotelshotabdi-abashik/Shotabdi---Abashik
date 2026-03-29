@@ -1,4 +1,4 @@
-export const uploadToR2 = async (file: File): Promise<string> => {
+export const uploadToR2 = async (file: File, folder: string = 'shotabdi-abashik'): Promise<string> => {
   const WORKER_URL = import.meta.env.VITE_CLOUDFLARE_WORKER_URL || 'https://shotabdi-abashik.hotelshotabdiabashik.workers.dev';
   const AUTH_KEY = import.meta.env.VITE_CLOUDFLARE_WORKER_SECRET || '123456@';
   
@@ -6,7 +6,7 @@ export const uploadToR2 = async (file: File): Promise<string> => {
     throw new Error("Cloudflare R2 credentials are not configured.");
   }
 
-  const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '-')}`;
+  const fileName = `${folder}/${Date.now()}_${file.name.replace(/\s+/g, '-')}`;
   
   const response = await fetch(`${WORKER_URL}/${fileName}`, {
     method: 'PUT',

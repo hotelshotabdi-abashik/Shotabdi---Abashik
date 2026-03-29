@@ -97,10 +97,12 @@
         "description": { "type": "string" },
         "imageUrl": { "type": "string" },
         "category": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "hidden", "archived"] },
+        "order": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
         "authorId": { "type": "string" }
       },
-      "required": ["id", "imageUrl", "createdAt"]
+      "required": ["id", "imageUrl", "createdAt", "status"]
     },
     "SocialLink": {
       "title": "SocialLink",

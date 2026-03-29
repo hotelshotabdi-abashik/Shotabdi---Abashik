@@ -3,10 +3,11 @@ import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
 import { EditableText } from '../components/EditableText';
 import { uploadToR2, deleteFromR2 } from '../lib/r2';
-import { Trash2, Upload, Loader2, X, Image as ImageIcon, Edit2 } from 'lucide-react';
+import { Trash2, Upload, Loader2, X, Image as ImageIcon, Edit2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Helmet } from 'react-helmet-async';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { Link } from 'react-router-dom';
 
 export interface GalleryImage {
   id: string;
@@ -17,8 +18,6 @@ export interface GalleryImage {
   createdAt: number;
 }
 
-import { ImageViewModal } from '../components/ImageViewModal';
-
 export default function Gallery() {
   const { t } = useLanguage();
   const { content, editMode, updateContent } = useContent();
@@ -26,8 +25,6 @@ export default function Gallery() {
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, message: string, onConfirm: () => void }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   
   const [formData, setFormData] = useState({
@@ -163,20 +160,12 @@ export default function Gallery() {
           newImages.splice(index, 1);
           await updateContent('galleryImages', newImages);
           toast.success('Image deleted successfully');
-          if (selectedImage?.id === images[index].id) {
-            setIsViewModalOpen(false);
-          }
         } catch (error) {
           console.error(error);
           toast.error('Failed to delete image');
         }
       }
     });
-  };
-
-  const openImageView = (img: GalleryImage) => {
-    setSelectedImage(img);
-    setIsViewModalOpen(true);
   };
 
   const allKeywords = Array.from(new Set(images.flatMap(img => img.keywords ? img.keywords.split(',').map(k => k.trim()) : []))).filter(Boolean).join(', ');
@@ -188,6 +177,11 @@ export default function Gallery() {
         <title>Gallery | Hotel Shotabdi Abashik</title>
         <meta name="description" content="View photos of Hotel Shotabdi Abashik. See our rooms, facilities, and the beautiful surroundings in Sylhet." />
         <meta name="keywords" content={metaKeywords} />
+        <meta property="og:title" content="Gallery | Hotel Shotabdi Abashik" />
+        <meta property="og:description" content="View photos of Hotel Shotabdi Abashik. See our rooms, facilities, and the beautiful surroundings in Sylhet." />
+        <meta property="og:image" content={images[0]?.url || ''} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
       </Helmet>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
@@ -212,14 +206,14 @@ export default function Gallery() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 w-full">
           {images.map((img, index) => (
-            <div 
+            <Link 
               key={img.id} 
-              className="rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all aspect-w-1 aspect-h-1 relative group cursor-pointer bg-white"
-              onClick={() => openImageView(img)}
+              to={`/gallery/${img.id || index}`}
+              className="relative overflow-hidden shadow-md hover:shadow-xl transition-all group cursor-pointer bg-white rounded-2xl break-inside-avoid mb-4 block"
             >
-              <img src={img.url} alt={img.title || `Gallery ${index + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <img src={img.url} alt={img.title || `Gallery ${index + 1}`} className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
               
               {/* SEO Hidden Text */}
               <div className="sr-only">
@@ -231,31 +225,31 @@ export default function Gallery() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
                 {img.title && <h3 className="text-white font-bold text-lg truncate">{img.title}</h3>}
                 {img.description && <p className="text-slate-200 text-sm line-clamp-2 mt-1">{img.description}</p>}
+                <div className="mt-2 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="bg-white/20 backdrop-blur-md p-2 rounded-full text-white">
+                    <Search className="w-5 h-5" />
+                  </div>
+                </div>
               </div>
 
               {editMode && (
                 <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button 
-                    onClick={(e) => { e.stopPropagation(); handleOpenUploadModal(index); }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenUploadModal(index); }}
                     className="bg-white/90 text-blue-600 p-2 rounded-full hover:bg-white transform hover:scale-110 transition-all shadow-lg"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button 
-                    onClick={(e) => handleDelete(index, img.url, e)}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(index, img.url, e); }}
                     className="bg-red-600/90 text-white p-2 rounded-full hover:bg-red-600 transform hover:scale-110 transition-all shadow-lg"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               )}
-            </div>
+            </Link>
           ))}
-          {images.length === 0 && !uploading && (
-            <div className="col-span-full text-center py-12 text-slate-500">
-              {t('কোনো ছবি পাওয়া যায়নি।', 'No images found.')}
-            </div>
-          )}
         </div>
       </div>
 
@@ -347,13 +341,6 @@ export default function Gallery() {
           </div>
         </div>
       )}
-
-      {/* View Modal (Instagram-like Post View) */}
-      <ImageViewModal 
-        isOpen={isViewModalOpen} 
-        onClose={() => setIsViewModalOpen(false)} 
-        selectedImage={selectedImage} 
-      />
 
       <ConfirmModal
         isOpen={confirmModal.isOpen}

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MapPin, Phone, Mail, Globe, Facebook, Instagram, Twitter, Youtube, Linkedin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useLanguage } from '../context/LanguageContext';
 
 const iconMap: { [key: string]: any } = {
@@ -26,7 +26,7 @@ export default function Footer() {
         const links = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setSocialLinks(links);
       } catch (error) {
-        console.error("Error fetching social links:", error);
+        handleFirestoreError(error, OperationType.GET, 'socialLinks');
       }
     };
     fetchSocialLinks();

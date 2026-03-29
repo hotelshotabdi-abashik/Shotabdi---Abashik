@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, query, orderBy, limit } from 'firebase/firestore';
-import { db } from '../firebase';
+import { collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, query, orderBy, limit, addDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone, Send, Facebook, Mail } from 'lucide-react';
 import { toast } from 'sonner';
+import { uploadToR2, deleteFromR2 } from '../lib/r2';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -101,7 +102,7 @@ export default function Admin() {
       const snapshot = await getDocs(q);
       setSocialLinks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (error) {
-      console.error("Error fetching social links:", error);
+      handleFirestoreError(error, OperationType.GET, 'socialLinks');
     } finally {
       setLoading(false);
     }
@@ -116,7 +117,7 @@ export default function Admin() {
         setSettings(snapshot.data() as any);
       }
     } catch (error) {
-      console.error("Error fetching settings:", error);
+      handleFirestoreError(error, OperationType.GET, 'settings/general');
     } finally {
       setLoading(false);
     }
@@ -140,7 +141,7 @@ export default function Admin() {
       await setDoc(doc(db, 'settings', 'general'), settings);
       toast.success("Settings updated successfully!");
     } catch (error) {
-      console.error("Error updating settings:", error);
+      handleFirestoreError(error, OperationType.WRITE, 'settings/general');
       toast.error("Failed to update settings.");
     }
   };
@@ -153,7 +154,7 @@ export default function Admin() {
       fetchSocialLinks();
       toast.success("Social link added!");
     } catch (error) {
-      console.error("Error adding social link:", error);
+      handleFirestoreError(error, OperationType.WRITE, 'socialLinks');
       toast.error("Failed to add social link.");
     }
   };
@@ -164,7 +165,7 @@ export default function Admin() {
       fetchSocialLinks();
       toast.success("Social link deleted!");
     } catch (error) {
-      console.error("Error deleting social link:", error);
+      handleFirestoreError(error, OperationType.DELETE, `socialLinks/${id}`);
       toast.error("Failed to delete social link.");
     }
   };
@@ -192,7 +193,7 @@ export default function Admin() {
         setRatings([]);
       }
     } catch (error) {
-      console.error("Error fetching ratings:", error);
+      handleFirestoreError(error, OperationType.GET, 'ratings');
     } finally {
       setLoading(false);
     }
@@ -213,7 +214,7 @@ export default function Admin() {
         setRooms([]);
       }
     } catch (error) {
-      console.error("Error fetching rooms:", error);
+      handleFirestoreError(error, OperationType.GET, 'rooms');
     } finally {
       setLoading(false);
     }
@@ -234,7 +235,7 @@ export default function Admin() {
         setUsers([]);
       }
     } catch (error) {
-      console.error("Error fetching users:", error);
+      handleFirestoreError(error, OperationType.GET, 'users');
     } finally {
       setLoading(false);
     }
@@ -279,7 +280,7 @@ export default function Admin() {
         setBookings([]);
       }
     } catch (error) {
-      console.error("Error fetching bookings:", error);
+      handleFirestoreError(error, OperationType.GET, 'bookings');
     } finally {
       setLoading(false);
     }
@@ -305,7 +306,7 @@ export default function Admin() {
       fetchRooms();
       toast.success(t("নতুন রুম যোগ করা হয়েছে!", "New room added successfully!"));
     } catch (error) {
-      console.error("Error adding room:", error);
+      handleFirestoreError(error, OperationType.WRITE, 'rooms');
       toast.error(t("রুম যোগ করতে সমস্যা হয়েছে।", "Failed to add room."));
     }
   };
@@ -318,7 +319,7 @@ export default function Admin() {
       fetchRooms();
       toast.success(t("রুম আপডেট করা হয়েছে!", "Room updated successfully!"));
     } catch (error) {
-      console.error("Error updating room:", error);
+      handleFirestoreError(error, OperationType.UPDATE, `rooms/${id}`);
       toast.error(t("রুম আপডেট করতে সমস্যা হয়েছে।", "Failed to update room."));
     }
   };
@@ -335,7 +336,7 @@ export default function Admin() {
           fetchRooms();
           toast.success(t("রুম মুছে ফেলা হয়েছে!", "Room deleted successfully!"));
         } catch (error) {
-          console.error("Error deleting room:", error);
+          handleFirestoreError(error, OperationType.DELETE, `rooms/${id}`);
           toast.error(t("রুম মুছতে সমস্যা হয়েছে।", "Failed to delete room."));
         }
       }
@@ -361,7 +362,7 @@ export default function Admin() {
       fetchBookings();
       toast.success(t("বুকিং স্ট্যাটাস আপডেট করা হয়েছে!", "Booking status updated!"));
     } catch (error) {
-      console.error("Error updating booking:", error);
+      handleFirestoreError(error, OperationType.UPDATE, `bookings/${id}`);
       toast.error(t("বুকিং আপডেট করতে সমস্যা হয়েছে।", "Failed to update booking."));
     }
   };
@@ -373,7 +374,7 @@ export default function Admin() {
       fetchRatings();
       toast.success(t("রেটিং স্ট্যাটাস আপডেট করা হয়েছে!", "Rating status updated!"));
     } catch (error) {
-      console.error("Error updating rating:", error);
+      handleFirestoreError(error, OperationType.UPDATE, `ratings/${id}`);
       toast.error(t("রেটিং আপডেট করতে সমস্যা হয়েছে।", "Failed to update rating."));
     }
   };
@@ -390,7 +391,7 @@ export default function Admin() {
           fetchRatings();
           toast.success(t("রেটিং মুছে ফেলা হয়েছে!", "Rating deleted successfully!"));
         } catch (error) {
-          console.error("Error deleting rating:", error);
+          handleFirestoreError(error, OperationType.DELETE, `ratings/${id}`);
           toast.error(t("রেটিং মুছতে সমস্যা হয়েছে।", "Failed to delete rating."));
         }
       }
@@ -429,7 +430,7 @@ export default function Admin() {
       fetchUsers();
       toast.success(t("ইউজার রোল আপডেট করা হয়েছে!", "User role updated!"));
     } catch (error) {
-      console.error("Error updating user:", error);
+      handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
       toast.error(t("ইউজার আপডেট করতে সমস্যা হয়েছে।", "Failed to update user."));
     }
   };
@@ -443,6 +444,52 @@ export default function Admin() {
     executeRoleUpdate(roleModal.uid, roleModal.newRole);
   };
 
+  const cleanupGallery = async () => {
+    try {
+      const contentRef = doc(db, 'content', 'galleryImages');
+      const contentSnap = await getDoc(contentRef);
+      
+      if (contentSnap.exists()) {
+        const images = contentSnap.data().value || [];
+        const threshold = settings.galleryCleanupThreshold || 50;
+        
+        if (images.length > threshold) {
+          const toDelete = images.slice(threshold);
+          const toKeep = images.slice(0, threshold);
+          
+          // Delete from R2
+          for (const img of toDelete) {
+            const url = typeof img === 'string' ? img : img.url;
+            if (url) {
+              await deleteFromR2(url).catch(err => console.error("Error deleting from R2:", err));
+            }
+          }
+          
+          // Update Firestore
+          await updateDoc(contentRef, { value: toKeep });
+          
+          // Notify Admin
+          await addDoc(collection(db, 'emailLogs'), {
+            to: 'hotelshotabdiabashik@gmail.com',
+            subject: 'Gallery Cleanup Notification',
+            type: 'admin_alert',
+            status: 'sent',
+            sentAt: serverTimestamp(),
+            metadata: { 
+              deletedCount: toDelete.length,
+              threshold: threshold,
+              message: `Old gallery posts (after recent ${threshold} posts) have been deleted automatically.`
+            }
+          });
+          
+          toast.info(`Gallery cleaned up: ${toDelete.length} old images removed.`);
+        }
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, 'content/galleryImages');
+    }
+  };
+
   const handleUpload = async () => {
     if (!file) {
       toast.error('Please select a file first!');
@@ -451,32 +498,31 @@ export default function Admin() {
 
     setUploadStatus('Uploading...');
     
-    const cleanFileName = file.name.replace(/\s+/g, '-');
-    const fileName = uploadFolder ? `${uploadFolder}/${Date.now()}_${cleanFileName}` : `${Date.now()}_${cleanFileName}`;
-    const WORKER_URL = import.meta.env.VITE_CLOUDFLARE_WORKER_URL || 'https://shotabdi-abashik.hotelshotabdiabashik.workers.dev';
-    const AUTH_KEY = import.meta.env.VITE_CLOUDFLARE_WORKER_SECRET || '123456@';
-
     try {
-      const response = await fetch(`${WORKER_URL}/${fileName}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${AUTH_KEY}`,
-          'Content-Type': file.type || 'application/octet-stream',
-        },
-        body: file,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Upload failed with status ${response.status}`);
-      }
-      
-      const fileUrl = `${WORKER_URL}/${fileName}`;
+      const fileUrl = await uploadToR2(file, uploadFolder);
       
       setUploadStatus('Upload successful!');
       setUploadedUrl(fileUrl);
       toast.success('File uploaded successfully to Cloudflare R2!');
+
+      // If uploading to gallery, add to galleryImages content
+      if (uploadFolder.includes('gallery')) {
+        const contentRef = doc(db, 'content', 'galleryImages');
+        const contentSnap = await getDoc(contentRef);
+        let currentImages = [];
+        if (contentSnap.exists()) {
+          currentImages = contentSnap.data().value || [];
+        }
+        
+        // Add to the beginning (ranking top to bottom)
+        const newImages = [{ url: fileUrl, createdAt: new Date().toISOString() }, ...currentImages];
+        await setDoc(contentRef, { value: newImages }, { merge: true });
+        
+        // Trigger cleanup
+        await cleanupGallery();
+      }
     } catch (error: any) {
-      console.error(error);
+      handleFirestoreError(error, OperationType.WRITE, 'content/galleryImages');
       setUploadStatus(`Upload failed: ${error.message}`);
       toast.error('Error uploading file.');
     }
