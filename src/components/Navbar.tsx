@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
 import { Menu, X, LogIn, LogOut, User, Globe, Edit, Bell, Calendar, Home, Bed, Utensils, Map, Star, Headphones, Info } from 'lucide-react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 import { EditableImage } from './EditableImage';
@@ -20,10 +20,23 @@ export default function Navbar() {
   const [notificationCount, setNotificationCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [scrolled, setScrolled] = useState(false);
+  const [settings, setSettings] = useState<any>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
   const notificationDropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'settings', 'general'), (doc) => {
+      if (doc.exists()) {
+        setSettings(doc.data());
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const websiteName = settings?.websiteName || t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik');
+  const logoUrl = settings?.logoUrl || "https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png";
 
   const navLinks = [
     { name: t('হোম', 'Home'), path: '/' },
@@ -183,13 +196,13 @@ export default function Navbar() {
             <Link to="/" className="flex items-center gap-2 min-w-0" onClick={handleLogoClick}>
               <EditableImage 
                 contentKey="site_logo" 
-                defaultSrc="https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png" 
+                defaultSrc={logoUrl} 
                 className="h-6 sm:h-8 w-auto flex-shrink-0 object-contain" 
-                alt="Hotel Shotabdi Abashik Logo"
+                alt={`${websiteName} Logo`}
                 folder="shotabdi-abashik/logo"
               />
               <span className="font-bold text-[10px] sm:text-xs md:text-sm lg:text-base text-slate-900 leading-tight truncate">
-                {t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik')}
+                {websiteName}
               </span>
             </Link>
           </div>
@@ -481,13 +494,13 @@ export default function Navbar() {
             <Link to="/" className="flex items-center gap-2 min-w-0" onClick={handleLogoClick}>
               <EditableImage 
                 contentKey="site_logo" 
-                defaultSrc="https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png" 
+                defaultSrc={logoUrl} 
                 className="h-6 w-auto flex-shrink-0 object-contain" 
-                alt="Hotel Shotabdi Abashik Logo"
+                alt={`${websiteName} Logo`}
                 folder="shotabdi-abashik/logo"
               />
               <span className="font-bold text-xs text-slate-900 leading-tight truncate">
-                {t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik')}
+                {websiteName}
               </span>
             </Link>
             <button onClick={() => setIsOpen(false)} className="p-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors">

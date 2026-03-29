@@ -38,19 +38,21 @@ export default function Gallery() {
   });
 
   const rawImages: any[] = content.galleryImages || [];
-  const images: GalleryImage[] = rawImages.map((img, idx) => {
-    if (typeof img === 'string') {
-      return {
-        id: `img-${idx}-${Date.now()}`,
-        url: img,
-        title: '',
-        description: '',
-        keywords: '',
-        createdAt: Date.now()
-      };
-    }
-    return img;
-  });
+  const images: GalleryImage[] = rawImages
+    .map((img, idx) => {
+      if (typeof img === 'string') {
+        return {
+          id: `img-${idx}-${Date.now()}`,
+          url: img,
+          title: '',
+          description: '',
+          keywords: '',
+          createdAt: Date.now() - (idx * 1000) // Ensure different timestamps for old data
+        };
+      }
+      return img;
+    })
+    .sort((a, b) => b.createdAt - a.createdAt);
 
   const handleOpenUploadModal = (index: number | null = null) => {
     if (index !== null) {
@@ -97,11 +99,42 @@ export default function Gallery() {
         createdAt: editingIndex !== null ? images[editingIndex].createdAt : Date.now()
       };
 
-      const newImages = [...images];
+      let newImages = [...images];
       if (editingIndex !== null) {
         newImages[editingIndex] = newImage;
       } else {
-        newImages.push(newImage);
+        newImages.unshift(newImage); // Add to top
+      }
+
+      // Enforce 50 image limit
+      if (newImages.length > 50) {
+        const imagesToDelete = newImages.slice(50);
+        newImages = newImages.slice(0, 50);
+        
+        // Delete from R2
+        for (const img of imagesToDelete) {
+          if (img.url.includes('workers.dev')) {
+            await deleteFromR2(img.url).catch(console.error);
+          }
+        }
+        
+        // Notify admin (simulated via toast for now, could be an email log)
+        toast.info(`Gallery limit reached. ${imagesToDelete.length} oldest posts were automatically deleted to save space.`);
+        
+        // Log to emailLogs if possible
+        try {
+          await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: 'hotelshotabdiabashik@gmail.com',
+              subject: 'Gallery Cleanup Notification',
+              text: `The gallery cleanup process has run. ${imagesToDelete.length} old posts were deleted to maintain the 50-image limit.`
+            })
+          });
+        } catch (err) {
+          console.error("Failed to send cleanup notification:", err);
+        }
       }
 
       await updateContent('galleryImages', newImages);

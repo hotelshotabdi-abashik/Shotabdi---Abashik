@@ -71,6 +71,45 @@ service cloud.firestore {
     //   - createdAt: timestamp (required, immutable)
     //   - status: string (required, 'approved', 'pending', 'rejected')
     //
+    // Collection: gallery
+    // Document ID: {postId}
+    // Fields:
+    //   - id: string (required)
+    //   - title: string (optional)
+    //   - description: string (optional)
+    //   - imageUrl: string (required)
+    //   - category: string (optional)
+    //   - createdAt: timestamp (required, immutable)
+    //   - authorId: string (optional)
+    //
+    // Collection: socialLinks
+    // Document ID: {linkId}
+    // Fields:
+    //   - id: string (required)
+    //   - platform: string (required)
+    //   - url: string (required)
+    //   - icon: string (required)
+    //   - order: number (optional)
+    //
+    // Collection: emailLogs
+    // Document ID: {logId}
+    // Fields:
+    //   - id: string (required)
+    //   - to: string (required)
+    //   - subject: string (required)
+    //   - body: string (optional)
+    //   - sentAt: timestamp (required)
+    //   - status: string (optional)
+    //
+    // Collection: settings
+    // Document ID: {settingId}
+    // Fields:
+    //   - id: string (required)
+    //   - logoUrl: string (optional)
+    //   - websiteName: string (optional)
+    //   - galleryCleanupThreshold: number (optional)
+    //   - lastCleanupDate: timestamp (optional)
+    //
     // ===============================================================
 
     // ===============================================================
@@ -146,7 +185,7 @@ service cloud.firestore {
              hasRequiredFields(requiredFields) &&
              request.resource.data.id is string && request.resource.data.id.size() > 0 && request.resource.data.id.size() <= 128 &&
              request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100 &&
-             request.resource.data.type in ['Single Delux', 'Double Delux', 'Family Suit', 'Super Delux'] &&
+             request.resource.data.type in ['Single Delux', 'Double Delux', 'Family Suite', 'Super Deluxe'] &&
              request.resource.data.price is number && request.resource.data.price >= 0 &&
              (!('cutPrice' in request.resource.data) || (request.resource.data.cutPrice is number && request.resource.data.cutPrice >= 0)) &&
              request.resource.data.isAvailable is bool &&
@@ -204,6 +243,59 @@ service cloud.firestore {
              (!('comment' in request.resource.data) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 2000)) &&
              request.resource.data.createdAt is timestamp &&
              request.resource.data.status in ['approved', 'pending', 'rejected'];
+    }
+
+    function isValidGallery() {
+      let allowedFields = ['id', 'title', 'description', 'imageUrl', 'category', 'createdAt', 'authorId'];
+      let requiredFields = ['id', 'imageUrl', 'createdAt'];
+      
+      return hasOnlyAllowedFields(allowedFields) &&
+             hasRequiredFields(requiredFields) &&
+             request.resource.data.id is string &&
+             (!('title' in request.resource.data) || (request.resource.data.title is string && request.resource.data.title.size() <= 200)) &&
+             (!('description' in request.resource.data) || (request.resource.data.description is string && request.resource.data.description.size() <= 1000)) &&
+             request.resource.data.imageUrl is string && request.resource.data.imageUrl.size() <= 1000 &&
+             (!('category' in request.resource.data) || (request.resource.data.category is string)) &&
+             request.resource.data.createdAt is timestamp &&
+             (!('authorId' in request.resource.data) || (request.resource.data.authorId is string));
+    }
+
+    function isValidSocialLink() {
+      let allowedFields = ['id', 'platform', 'url', 'icon', 'order'];
+      let requiredFields = ['id', 'platform', 'url', 'icon'];
+      
+      return hasOnlyAllowedFields(allowedFields) &&
+             hasRequiredFields(requiredFields) &&
+             request.resource.data.id is string &&
+             request.resource.data.platform is string &&
+             request.resource.data.url is string && request.resource.data.url.size() <= 500 &&
+             request.resource.data.icon is string &&
+             (!('order' in request.resource.data) || (request.resource.data.order is number));
+    }
+
+    function isValidEmailLog() {
+      let allowedFields = ['id', 'to', 'subject', 'body', 'sentAt', 'status'];
+      let requiredFields = ['id', 'to', 'subject', 'sentAt'];
+      
+      return hasOnlyAllowedFields(allowedFields) &&
+             hasRequiredFields(requiredFields) &&
+             request.resource.data.id is string &&
+             request.resource.data.to is string &&
+             request.resource.data.subject is string &&
+             request.resource.data.sentAt is timestamp;
+    }
+
+    function isValidSettings() {
+      let allowedFields = ['id', 'logoUrl', 'websiteName', 'galleryCleanupThreshold', 'lastCleanupDate'];
+      let requiredFields = ['id'];
+      
+      return hasOnlyAllowedFields(allowedFields) &&
+             hasRequiredFields(requiredFields) &&
+             request.resource.data.id is string &&
+             (!('logoUrl' in request.resource.data) || (request.resource.data.logoUrl is string)) &&
+             (!('websiteName' in request.resource.data) || (request.resource.data.websiteName is string)) &&
+             (!('galleryCleanupThreshold' in request.resource.data) || (request.resource.data.galleryCleanupThreshold is number)) &&
+             (!('lastCleanupDate' in request.resource.data) || (request.resource.data.lastCleanupDate is timestamp));
     }
 
     // ===============================================================
@@ -267,6 +359,37 @@ service cloud.firestore {
                     (request.resource.data.status == 'approved' || isAdmin()); // Auto-approve all reviews
       allow update: if isAdmin() && isValidRating() && areImmutableFieldsUnchanged(['userId', 'createdAt']);
       allow delete: if isAdmin() || (isAuthenticated() && isOwner(resource.data.userId));
+    }
+
+    match /gallery/{postId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidGallery() && isRecent(request.resource.data.createdAt);
+      allow update: if isAdmin() && isValidGallery() && areImmutableFieldsUnchanged(['id', 'createdAt']);
+      allow delete: if isAdmin();
+    }
+
+    match /socialLinks/{linkId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidSocialLink();
+      allow update: if isAdmin() && isValidSocialLink() && areImmutableFieldsUnchanged(['id']);
+      allow delete: if isAdmin();
+    }
+
+    match /emailLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if false; // Only server should create logs (but we'll use client SDK for now if needed, or just server)
+      // Actually, if server logs it, we don't need client rules. 
+      // But if we log from client (after calling server), we need:
+      allow create: if isAdmin() && isValidEmailLog(); 
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidSettings();
+      allow update: if isAdmin() && isValidSettings() && areImmutableFieldsUnchanged(['id']);
+      allow delete: if isAdmin();
     }
   }
 }

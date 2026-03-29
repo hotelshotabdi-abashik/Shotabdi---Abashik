@@ -4,11 +4,28 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Resend } from 'resend';
 import dotenv from 'dotenv';
+import { initializeApp, cert, getApp, getApps } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import fs from 'fs';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize Firebase Admin
+const firebaseConfigPath = path.join(process.cwd(), 'firebase-applet-config.json');
+let db: any = null;
+
+if (fs.existsSync(firebaseConfigPath)) {
+  const firebaseConfig = JSON.parse(fs.readFileSync(firebaseConfigPath, 'utf-8'));
+  if (!getApps().length) {
+    initializeApp({
+      projectId: firebaseConfig.projectId,
+    });
+  }
+  db = getFirestore(getApp(), firebaseConfig.firestoreDatabaseId || '(default)');
+}
 
 let resendClient: Resend | null = null;
 
@@ -42,6 +59,22 @@ async function startServer() {
         subject,
         html,
       });
+
+      // Log to Firestore
+      if (db) {
+        try {
+          await db.collection('emailLogs').add({
+            to,
+            subject,
+            body: html,
+            sentAt: FieldValue.serverTimestamp(),
+            status: 'sent',
+            resendId: data.data?.id
+          });
+        } catch (logError) {
+          console.error('Error logging email to Firestore:', logError);
+        }
+      }
 
       res.json(data);
     } catch (error) {

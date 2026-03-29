@@ -1,9 +1,43 @@
-import { MapPin, Phone, Mail, Globe } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { MapPin, Phone, Mail, Globe, Facebook, Instagram, Twitter, Youtube, Linkedin } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '../firebase';
 import { useLanguage } from '../context/LanguageContext';
+
+const iconMap: { [key: string]: any } = {
+  Facebook,
+  Instagram,
+  Twitter,
+  Youtube,
+  Linkedin,
+  Globe
+};
 
 export default function Footer() {
   const { t } = useLanguage();
+  const [socialLinks, setSocialLinks] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchSocialLinks = async () => {
+      try {
+        const q = query(collection(db, 'socialLinks'), orderBy('order', 'asc'));
+        const snapshot = await getDocs(q);
+        const links = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setSocialLinks(links);
+      } catch (error) {
+        console.error("Error fetching social links:", error);
+      }
+    };
+    fetchSocialLinks();
+  }, []);
+
+  const defaultSocialLinks = [
+    { id: 'default-fb', platform: 'Facebook', url: 'https://www.facebook.com/hotelshotabdi', icon: 'Facebook' }
+  ];
+
+  const displayLinks = socialLinks.length > 0 ? socialLinks : defaultSocialLinks;
+
   return (
     <footer className="bg-slate-900 text-slate-300 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -32,10 +66,17 @@ export default function Footer() {
                 <a href="mailto:hotelshotabdiabashik@gmail.com" className="hover:text-white transition-colors">hotelshotabdiabashik@gmail.com</a>
               </div>
             </li>
-            <li className="flex items-center">
-              <Globe className="w-5 h-5 mr-2 text-red-500 flex-shrink-0" />
-              <a href="https://hotelshotabdiabashik.bd" target="_blank" rel="noreferrer" className="hover:text-white transition-colors">hotelshotabdiabashik.bd</a>
-            </li>
+            {displayLinks.map((link) => {
+              const IconComponent = iconMap[link.icon] || Globe;
+              return (
+                <li key={link.id} className="flex items-center">
+                  <IconComponent className="w-5 h-5 mr-2 text-red-500 flex-shrink-0" />
+                  <a href={link.url} target="_blank" rel="noreferrer" className="hover:text-white transition-colors">
+                    {link.url.replace('https://', '').replace('www.', '')}
+                  </a>
+                </li>
+              );
+            })}
           </ul>
         </div>
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase';
-import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone, Send } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone, Send, Facebook, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -46,9 +46,17 @@ interface Booking {
 export default function Admin() {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'rooms' | 'users' | 'bookings' | 'content' | 'ratings' | 'offers'>('rooms');
+  const [activeTab, setActiveTab] = useState<'rooms' | 'users' | 'bookings' | 'content' | 'ratings' | 'offers' | 'social' | 'settings' | 'emails'>('rooms');
   
-  // Rooms State
+  // Social Links State
+  const [socialLinks, setSocialLinks] = useState<any[]>([]);
+  const [newSocialLink, setNewSocialLink] = useState({ platform: '', url: '', icon: 'Facebook', order: 0 });
+
+  // Settings State
+  const [settings, setSettings] = useState({ websiteName: '', logoUrl: '', galleryCleanupThreshold: 50 });
+
+  // Email Logs State
+  const [emailLogs, setEmailLogs] = useState<any[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState<string | null>(null);
@@ -81,7 +89,85 @@ export default function Admin() {
     else if (activeTab === 'users') fetchUsers();
     else if (activeTab === 'bookings') fetchBookings();
     else if (activeTab === 'ratings') fetchRatings();
+    else if (activeTab === 'social') fetchSocialLinks();
+    else if (activeTab === 'settings') fetchSettings();
+    else if (activeTab === 'emails') fetchEmailLogs();
   }, [activeTab]);
+
+  const fetchSocialLinks = async () => {
+    setLoading(true);
+    try {
+      const q = query(collection(db, 'socialLinks'), orderBy('order', 'asc'));
+      const snapshot = await getDocs(q);
+      setSocialLinks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (error) {
+      console.error("Error fetching social links:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSettings = async () => {
+    setLoading(true);
+    try {
+      const docRef = doc(db, 'settings', 'general');
+      const snapshot = await getDoc(docRef);
+      if (snapshot.exists()) {
+        setSettings(snapshot.data() as any);
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchEmailLogs = async () => {
+    setLoading(true);
+    try {
+      const q = query(collection(db, 'emailLogs'), orderBy('sentAt', 'desc'), limit(50));
+      const snapshot = await getDocs(q);
+      setEmailLogs(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    } catch (error) {
+      console.error("Error fetching email logs:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateSettings = async () => {
+    try {
+      await setDoc(doc(db, 'settings', 'general'), settings);
+      toast.success("Settings updated successfully!");
+    } catch (error) {
+      console.error("Error updating settings:", error);
+      toast.error("Failed to update settings.");
+    }
+  };
+
+  const handleAddSocialLink = async () => {
+    try {
+      const docRef = doc(collection(db, 'socialLinks'));
+      await setDoc(docRef, { ...newSocialLink, id: docRef.id });
+      setNewSocialLink({ platform: '', url: '', icon: 'Facebook', order: socialLinks.length + 1 });
+      fetchSocialLinks();
+      toast.success("Social link added!");
+    } catch (error) {
+      console.error("Error adding social link:", error);
+      toast.error("Failed to add social link.");
+    }
+  };
+
+  const handleDeleteSocialLink = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'socialLinks', id));
+      fetchSocialLinks();
+      toast.success("Social link deleted!");
+    } catch (error) {
+      console.error("Error deleting social link:", error);
+      toast.error("Failed to delete social link.");
+    }
+  };
 
   const fetchRatings = async () => {
     setLoading(true);
@@ -442,6 +528,24 @@ export default function Admin() {
             className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'offers' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
           >
             <Megaphone className="w-5 h-5 mr-2" /> {t('অফার পাঠান', 'Send Offers')}
+          </button>
+          <button 
+            onClick={() => setActiveTab('social')}
+            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'social' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+          >
+            <Facebook className="w-5 h-5 mr-2" /> {t('সোশ্যাল লিংক', 'Social Links')}
+          </button>
+          <button 
+            onClick={() => setActiveTab('settings')}
+            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'settings' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+          >
+            <Globe className="w-5 h-5 mr-2" /> {t('সেটিংস', 'Settings')}
+          </button>
+          <button 
+            onClick={() => setActiveTab('emails')}
+            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'emails' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+          >
+            <Mail className="w-5 h-5 mr-2" /> {t('ইমেইল লগ', 'Email Logs')}
           </button>
         </div>
 
@@ -1190,6 +1294,150 @@ export default function Admin() {
                 <Send className="w-5 h-5" />
                 {loading ? 'Sending...' : t('সবাইকে স্পেশাল অফার পাঠান', 'Send Special Offer to All')}
               </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'social' && (
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+              <h2 className="text-xl font-bold text-slate-800 mb-4">{t('নতুন সোশ্যাল লিংক', 'Add Social Link')}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input 
+                  type="text" 
+                  placeholder="Platform (e.g. Facebook)" 
+                  value={newSocialLink.platform}
+                  onChange={(e) => setNewSocialLink({...newSocialLink, platform: e.target.value})}
+                  className="px-4 py-2 border border-slate-300 rounded-lg"
+                />
+                <input 
+                  type="text" 
+                  placeholder="URL" 
+                  value={newSocialLink.url}
+                  onChange={(e) => setNewSocialLink({...newSocialLink, url: e.target.value})}
+                  className="px-4 py-2 border border-slate-300 rounded-lg"
+                />
+                <select 
+                  value={newSocialLink.icon}
+                  onChange={(e) => setNewSocialLink({...newSocialLink, icon: e.target.value})}
+                  className="px-4 py-2 border border-slate-300 rounded-lg"
+                >
+                  <option value="Facebook">Facebook</option>
+                  <option value="Instagram">Instagram</option>
+                  <option value="Twitter">Twitter</option>
+                  <option value="Youtube">Youtube</option>
+                  <option value="Linkedin">Linkedin</option>
+                  <option value="Globe">Globe</option>
+                </select>
+                <button 
+                  onClick={handleAddSocialLink}
+                  className="bg-red-700 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-800 transition-colors"
+                >
+                  {t('যোগ করুন', 'Add Link')}
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-600 text-sm uppercase tracking-wider">
+                    <th className="p-4 font-bold border-b">Platform</th>
+                    <th className="p-4 font-bold border-b">URL</th>
+                    <th className="p-4 font-bold border-b">Icon</th>
+                    <th className="p-4 font-bold border-b text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {socialLinks.map((link) => (
+                    <tr key={link.id}>
+                      <td className="p-4 font-medium">{link.platform}</td>
+                      <td className="p-4 text-slate-600 truncate max-w-xs">{link.url}</td>
+                      <td className="p-4">{link.icon}</td>
+                      <td className="p-4 text-right">
+                        <button onClick={() => handleDeleteSocialLink(link.id)} className="text-red-600 hover:text-red-800 p-2">
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 max-w-2xl">
+            <h2 className="text-xl font-bold text-slate-800 mb-6">{t('সাধারণ সেটিংস', 'General Settings')}</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Website Name</label>
+                <input 
+                  type="text" 
+                  value={settings.websiteName}
+                  onChange={(e) => setSettings({...settings, websiteName: e.target.value})}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Logo URL</label>
+                <input 
+                  type="text" 
+                  value={settings.logoUrl}
+                  onChange={(e) => setSettings({...settings, logoUrl: e.target.value})}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Gallery Cleanup Threshold (Max Images)</label>
+                <input 
+                  type="number" 
+                  value={settings.galleryCleanupThreshold}
+                  onChange={(e) => setSettings({...settings, galleryCleanupThreshold: Number(e.target.value)})}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg"
+                />
+              </div>
+              <button 
+                onClick={handleUpdateSettings}
+                className="w-full bg-red-700 text-white font-bold py-3 rounded-lg hover:bg-red-800 transition-colors"
+              >
+                {t('সেভ করুন', 'Save Settings')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'emails' && (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-600 text-sm uppercase tracking-wider">
+                    <th className="p-4 font-bold border-b">Recipient</th>
+                    <th className="p-4 font-bold border-b">Subject</th>
+                    <th className="p-4 font-bold border-b">Sent At</th>
+                    <th className="p-4 font-bold border-b">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {emailLogs.map((log) => (
+                    <tr key={log.id} className="text-sm">
+                      <td className="p-4">{log.to}</td>
+                      <td className="p-4 font-medium">{log.subject}</td>
+                      <td className="p-4 text-slate-500">
+                        {log.sentAt?.toMillis ? new Date(log.sentAt.toMillis()).toLocaleString() : new Date(log.sentAt).toLocaleString()}
+                      </td>
+                      <td className="p-4">
+                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase">Sent</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {emailLogs.length === 0 && (
+                <div className="p-8 text-center text-slate-500">No email logs found.</div>
+              )}
             </div>
           </div>
         )}

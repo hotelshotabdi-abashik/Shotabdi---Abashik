@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BedDouble, CheckCircle2, MapPin, Percent, Utensils, Compass, PhoneCall, ArrowRight, Star, Camera, Calendar, Search, Edit2, X, Upload, Trash2, Loader2, Wifi, Wind, Coffee, Shield, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { collection, getDocs, query, limit, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, limit, orderBy, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
@@ -22,6 +22,8 @@ export default function Home() {
   
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [isHoveringHero, setIsHoveringHero] = useState(false);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [roomType, setRoomType] = useState('');
@@ -32,6 +34,18 @@ export default function Home() {
   const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const [rooms, setRooms] = useState<any[]>([]);
+  const [settings, setSettings] = useState<any>(null);
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'settings', 'general'), (doc) => {
+      if (doc.exists()) {
+        setSettings(doc.data());
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const websiteName = settings?.websiteName || t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik');
 
   const globalDiscountRate = parseInt(content.global_discount_rate || '0', 10);
 
@@ -114,12 +128,20 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (activeHeroImages.length <= 1) return;
+    if (activeHeroImages.length <= 1 || isHoveringHero) return;
     const interval = setInterval(() => {
       paginate(1);
     }, 5000);
     return () => clearInterval(interval);
-  }, [activeHeroImages.length]);
+  }, [activeHeroImages.length, isHoveringHero]);
+
+  const handleHeroInteraction = () => {
+    setIsHoveringHero(true);
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = setTimeout(() => {
+      setIsHoveringHero(false);
+    }, 3000);
+  };
 
   const variants = {
     enter: (direction: number) => ({
@@ -196,6 +218,9 @@ export default function Home() {
 
   return (
     <div className="bg-slate-50">
+      {/* SEO H1 - Hidden but present for crawlers */}
+      <h1 className="sr-only">{websiteName}</h1>
+
       {/* Hero Section */}
       <section className="relative bg-white text-slate-900 h-[100dvh] flex items-center justify-center overflow-hidden select-none pt-20 pb-10">
         {editMode && (
@@ -208,7 +233,11 @@ export default function Home() {
           </button>
         )}
 
-        <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="absolute inset-0 z-0 overflow-hidden" 
+             onMouseEnter={() => setIsHoveringHero(true)}
+             onMouseLeave={() => setIsHoveringHero(false)}
+             onTouchStart={handleHeroInteraction}
+        >
           <motion.div
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
@@ -243,6 +272,15 @@ export default function Home() {
         </div>
         
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center pt-16 pb-8 pointer-events-none flex flex-col justify-center h-full">
+          <h1 className="sr-only">Hotel Shotabdi Abashik</h1>
+          
+          {/* 24h Service Text Above Filter */}
+          <div className="mb-2 pointer-events-auto">
+            <span className="inline-block bg-red-600/90 backdrop-blur-sm text-white px-4 py-1 rounded-full text-xs sm:text-sm font-bold tracking-wide shadow-lg animate-pulse">
+              <EditableText contentKey="hero_top_badge" defaultText={t('২৪ ঘণ্টা আবাসিক সেবা', '24h Residential Service')} />
+            </span>
+          </div>
+
           {/* Booking Shortcut Form */}
           <div className="max-w-4xl mx-auto bg-white p-5 md:p-6 rounded-2xl shadow-xl border border-slate-200 mb-6 transform hover:-translate-y-1 transition-transform duration-300 pointer-events-auto w-full">
             <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 items-end">

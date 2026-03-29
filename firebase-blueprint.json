@@ -86,6 +86,61 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "userName", "rating", "status", "createdAt"]
+    },
+    "Gallery": {
+      "title": "Gallery",
+      "description": "An image or post in the gallery.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "authorId": { "type": "string" }
+      },
+      "required": ["id", "imageUrl", "createdAt"]
+    },
+    "SocialLink": {
+      "title": "SocialLink",
+      "description": "A social media link for the footer.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "platform": { "type": "string" },
+        "url": { "type": "string" },
+        "icon": { "type": "string" },
+        "order": { "type": "number" }
+      },
+      "required": ["id", "platform", "url", "icon"]
+    },
+    "EmailLog": {
+      "title": "EmailLog",
+      "description": "A log of an email sent by the system.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "to": { "type": "string" },
+        "subject": { "type": "string" },
+        "body": { "type": "string" },
+        "sentAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "to", "subject", "sentAt"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Global application settings.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "websiteName": { "type": "string" },
+        "galleryCleanupThreshold": { "type": "number" },
+        "lastCleanupDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id"]
     }
   },
   "firestore": {
@@ -108,6 +163,22 @@
     "/ratings/{ratingId}": {
       "schema": { "$ref": "#/entities/Rating" },
       "description": "Stores guest reviews and ratings."
+    },
+    "/gallery/{postId}": {
+      "schema": { "$ref": "#/entities/Gallery" },
+      "description": "Stores gallery posts."
+    },
+    "/socialLinks/{linkId}": {
+      "schema": { "$ref": "#/entities/SocialLink" },
+      "description": "Stores social media links."
+    },
+    "/emailLogs/{logId}": {
+      "schema": { "$ref": "#/entities/EmailLog" },
+      "description": "Stores logs of sent emails."
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/Settings" },
+      "description": "Stores global settings."
     }
   }
 }

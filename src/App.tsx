@@ -114,6 +114,11 @@ export default function App() {
                       <Route path="/restaurant" element={<Restaurant />} />
                       <Route path="/tour-desk" element={<TourDesk />} />
                       <Route path="/gallery" element={<Gallery />} />
+                      <Route path="/gallery/:id" element={<Gallery />} />
+                      <Route path="/logo" element={<Navigate to="/" />} />
+                      <Route path="/rooms/:id" element={<Rooms />} />
+                      <Route path="/restaurant/:id" element={<Restaurant />} />
+                      <Route path="/tour-desk/:id" element={<TourDesk />} />
                       <Route path="/reviews" element={<Reviews />} />
                       <Route path="/help-desk" element={<HelpDesk />} />
                       <Route path="/profile" element={<Profile />} />
