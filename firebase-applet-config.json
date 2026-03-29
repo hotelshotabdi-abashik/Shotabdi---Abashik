@@ -1,10 +1,11 @@
 {
-  "projectId": "utility-canto-485622-n5",
-  "appId": "1:89561317448:web:9fcad6f2bca04d19c0187d",
-  "apiKey": "AIzaSyAXCmORg4CKPQD9Tjlv3zzQ0pPd8Vad6Uk",
-  "authDomain": "utility-canto-485622-n5.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-ae414cd6-803b-406f-a283-004456a6e7d8",
-  "storageBucket": "utility-canto-485622-n5.firebasestorage.app",
-  "messagingSenderId": "89561317448",
+  "projectId": "helical-realm-476704-m0",
+  "appId": "1:63077246647:web:30dce5df02e4a1b9b98f32",
+  "apiKey": "AIzaSyDaFBM1dJRof0tO-VuF_u6biGUgsBv1p2E",
+  "authDomain": "helical-realm-476704-m0.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-f14820b0-2a32-464e-8aca-957a8401f25f",
+  "storageBucket": "helical-realm-476704-m0.firebasestorage.app",
+  "messagingSenderId": "63077246647",
+  "databaseURL": "https://helical-realm-476704-m0-default-rtdb.asia-southeast1.firebasedatabase.app",
   "measurementId": ""
 }
