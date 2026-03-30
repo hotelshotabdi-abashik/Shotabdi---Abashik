@@ -681,10 +681,10 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="p-5">
-                  <h3 className="font-bold text-slate-900 mb-2 line-clamp-1">{res.name}</h3>
+                  <h3 className="font-bold text-slate-900 mb-2">{res.name}</h3>
                   <div className="flex items-center text-xs text-slate-500 mb-3">
                     <MapPin className="w-3 h-3 mr-1 text-red-500" />
-                    <span className="truncate">{res.location} ({res.distance})</span>
+                    <span>{res.location} ({res.distance})</span>
                   </div>
                   <a 
                     href={res.mapUrl || `https://www.google.com/maps/search/${encodeURIComponent(res.name + ' ' + res.location)}`} 
@@ -726,10 +726,10 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="p-5">
-                  <h3 className="font-bold text-slate-900 mb-2 line-clamp-1">{spot.name}</h3>
+                  <h3 className="font-bold text-slate-900 mb-2">{spot.name}</h3>
                   <div className="flex items-center text-xs text-slate-500 mb-3">
                     <Compass className="w-3 h-3 mr-1 text-red-500" />
-                    <span className="truncate">{spot.type}</span>
+                    <span>{spot.type}</span>
                   </div>
                   <Link 
                     to="/tour-desk"

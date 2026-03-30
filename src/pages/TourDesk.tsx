@@ -280,7 +280,7 @@ export default function TourDesk() {
                     <div className="p-3 sm:p-6 flex-grow flex flex-col">
                       <div className="flex-grow">
                         <div className="flex flex-col sm:flex-row justify-between items-start mb-1 sm:mb-2">
-                          <h3 className="text-xs sm:text-lg font-bold text-slate-900 pr-1 sm:pr-8 leading-tight truncate w-full">{spot.name}</h3>
+                          <h3 className="text-xs sm:text-lg font-bold text-slate-900 pr-1 sm:pr-8 leading-tight w-full">{spot.name}</h3>
                           <span className="bg-red-50 text-red-700 text-[8px] sm:text-xs font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap mt-1 sm:mt-0 sm:ml-2">
                             {spot.distance}
                           </span>
@@ -288,7 +288,7 @@ export default function TourDesk() {
                         <p className="text-[9px] sm:text-sm text-slate-500 mb-2 sm:mb-4">{spot.type}</p>
                         <div className="flex items-center text-slate-600 text-[9px] sm:text-sm mb-3 sm:mb-6">
                           <MapPin className="w-2.5 h-2.5 sm:w-4 sm:h-4 mr-1 text-slate-400 flex-shrink-0" />
-                          <span className="truncate">{spot.location}</span>
+                          <span>{spot.location}</span>
                         </div>
                       </div>
                       <a 
