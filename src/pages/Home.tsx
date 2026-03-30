@@ -112,11 +112,11 @@ export default function Home() {
   }, []);
 
   const heroSlots = [
-    { key: 'home_hero_bg_1', default: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1920&q=80' },
-    { key: 'home_hero_bg_2', default: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1920&q=80' },
-    { key: 'home_hero_bg_3', default: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1920&q=80' },
-    { key: 'home_hero_bg_4', default: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1920&q=80' },
-    { key: 'home_hero_bg_5', default: 'https://images.unsplash.com/photo-1542314831-c6a4d14d8373?auto=format&fit=crop&w=1920&q=80' },
+    { key: 'home_hero_bg_1', default: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1280&q=70' },
+    { key: 'home_hero_bg_2', default: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1280&q=70' },
+    { key: 'home_hero_bg_3', default: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1280&q=70' },
+    { key: 'home_hero_bg_4', default: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1280&q=70' },
+    { key: 'home_hero_bg_5', default: 'https://images.unsplash.com/photo-1542314831-c6a4d14d8373?auto=format&fit=crop&w=1280&q=70' },
   ];
 
   const activeHeroImages = heroSlots.filter(slot => {
@@ -125,6 +125,14 @@ export default function Home() {
     if (val === 'deleted') return false;
     return true; // Show if it has a custom URL or falls back to default
   });
+
+  // Pre-load images
+  useEffect(() => {
+    activeHeroImages.forEach(slot => {
+      const img = new Image();
+      img.src = content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : slot.default;
+    });
+  }, [activeHeroImages, content]);
 
   // If somehow all are deleted, show at least one default so it's not empty
   if (activeHeroImages.length === 0 && !editMode) {
@@ -290,13 +298,17 @@ export default function Home() {
               }}
               className="absolute inset-0 w-full h-full"
             >
-              <div className="relative w-full h-full overflow-hidden">
+              <div className="relative w-full h-full overflow-hidden bg-slate-900">
                 <motion.img 
                   src={content[activeHeroImages[currentImageIndex]?.key] && content[activeHeroImages[currentImageIndex]?.key] !== 'deleted' ? content[activeHeroImages[currentImageIndex]?.key] : activeHeroImages[currentImageIndex]?.default} 
                   alt="Hotel Hero" 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.5 }}
                   className="absolute inset-0 w-[101%] h-full object-cover pointer-events-none left-[-0.5%]" 
                   referrerPolicy="no-referrer"
                   draggable={false}
+                  loading="eager"
                   style={{
                     scale: 1.1,
                     y: useTransform(useScroll().scrollY, [0, 500], [0, 150])
