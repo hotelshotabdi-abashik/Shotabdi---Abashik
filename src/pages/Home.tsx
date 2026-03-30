@@ -27,6 +27,7 @@ export default function Home() {
   const [isHoveringGallery, setIsHoveringGallery] = useState(false);
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [showHeroContent, setShowHeroContent] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
@@ -147,6 +148,7 @@ export default function Home() {
   }, [activeHeroImages.length, currentImageIndex]);
 
   const paginate = (newDirection: number) => {
+    setLastActivity(Date.now());
     setCurrentImageIndex((prev) => {
       let nextIndex = prev + newDirection;
       if (nextIndex < 0) nextIndex = activeHeroImages.length - 1;
@@ -154,6 +156,22 @@ export default function Home() {
       return nextIndex;
     });
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only navigate if not typing in an input/textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      
+      if (e.key === 'ArrowRight') {
+        paginate(1);
+      } else if (e.key === 'ArrowLeft') {
+        paginate(-1);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeHeroImages.length]);
 
   useEffect(() => {
     const handleActivity = () => {
@@ -179,13 +197,13 @@ export default function Home() {
       const now = Date.now();
       const inactiveTime = now - lastActivity;
       
-      // Auto-play after 3 seconds of inactivity
-      if (inactiveTime > 3000 && activeHeroImages.length > 1) {
+      // Auto-play after 7 seconds of inactivity
+      if (inactiveTime > 7000 && activeHeroImages.length > 1 && !isDragging) {
         paginate(1);
       }
 
-      // Hide content after 5 seconds of inactivity
-      if (inactiveTime > 5000) {
+      // Hide content after 20 seconds of inactivity
+      if (inactiveTime > 20000) {
         setShowHeroContent(false);
       }
     }, 1000);
@@ -294,15 +312,21 @@ export default function Home() {
           <motion.div 
             className="flex h-full w-full"
             animate={{ x: `-${currentImageIndex * 100}%` }}
-            transition={{ type: "tween", duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
+            transition={{ type: "tween", duration: 2.0, ease: [0.25, 1, 0.5, 1] }}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.2}
+            dragElastic={0.5}
+            onDragStart={() => {
+              setLastActivity(Date.now());
+              setIsDragging(true);
+            }}
             onDragEnd={(e, { offset, velocity }) => {
-              const swipe = swipePower(offset.x, velocity.x);
-              if (swipe < -swipeConfidenceThreshold) {
+              setIsDragging(false);
+              const swipe = offset.x;
+              const threshold = 50; // pixels
+              if (swipe < -threshold) {
                 paginate(1);
-              } else if (swipe > swipeConfidenceThreshold) {
+              } else if (swipe > threshold) {
                 paginate(-1);
               }
             }}
@@ -450,34 +474,6 @@ export default function Home() {
       )}
     </AnimatePresence>
   </div>
-
-        {/* Navigation Dots */}
-        <AnimatePresence>
-          {showHeroContent && activeHeroImages.length > 1 && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-20 pointer-events-auto"
-            >
-              {activeHeroImages.map((slot, idx) => (
-                <button
-                  key={slot.key}
-                  onClick={() => {
-                    setCurrentImageIndex(idx);
-                    setLastActivity(Date.now());
-                  }}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    idx === currentImageIndex 
-                      ? 'bg-white scale-125' 
-                      : 'bg-white/50 hover:bg-white/75'
-                  }`}
-                  aria-label={`Go to slide ${idx + 1}`}
-                />
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </section>
 
       {/* Special Offer Section */}
