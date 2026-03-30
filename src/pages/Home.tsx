@@ -169,12 +169,12 @@ export default function Home() {
       zIndex: 1
     }),
     center: {
-      zIndex: 1,
       x: 0,
+      zIndex: 1
     },
     exit: (direction: number) => ({
-      zIndex: 0,
-      x: direction > 0 ? '-30%' : '30%',
+      x: direction > 0 ? '-100%' : '100%',
+      zIndex: 0
     })
   };
 
@@ -275,11 +275,11 @@ export default function Home() {
               animate="center"
               exit="exit"
               transition={{
-                x: { type: "tween", duration: 0.7, ease: [0.4, 0, 0.2, 1] }
+                x: { type: "tween", duration: 0.4, ease: [0.25, 1, 0.5, 1] }
               }}
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={1}
+              dragElastic={0.05}
               onDragEnd={(e, { offset, velocity }) => {
                 const swipe = swipePower(offset.x, velocity.x);
                 if (swipe < -swipeConfidenceThreshold) {
@@ -294,7 +294,7 @@ export default function Home() {
                 <motion.img 
                   src={content[activeHeroImages[currentImageIndex]?.key] && content[activeHeroImages[currentImageIndex]?.key] !== 'deleted' ? content[activeHeroImages[currentImageIndex]?.key] : activeHeroImages[currentImageIndex]?.default} 
                   alt="Hotel Hero" 
-                  className="w-full h-full object-cover pointer-events-none" 
+                  className="absolute inset-0 w-[101%] h-full object-cover pointer-events-none left-[-0.5%]" 
                   referrerPolicy="no-referrer"
                   draggable={false}
                   style={{

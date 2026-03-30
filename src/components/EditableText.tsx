@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useContent } from '../context/ContentContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Edit2, Check, X } from 'lucide-react';
 import Editor from 'react-simple-wysiwyg';
 
@@ -12,22 +13,40 @@ interface EditableTextProps {
 
 export const EditableText: React.FC<EditableTextProps> = ({ contentKey, defaultText, className = '', multiline = false }) => {
   const { content, editMode, updateContent } = useContent();
+  const { language } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
-  const [value, setValue] = useState('');
+  const [values, setValues] = useState({ en: '', bn: '' });
 
-  const currentText = content[contentKey] || defaultText;
+  const currentContent = content[contentKey];
+  
+  // Parse content if it's a JSON string, otherwise handle as plain string (legacy)
+  const getInitialValues = () => {
+    if (!currentContent) return { en: defaultText, bn: '' };
+    try {
+      const parsed = typeof currentContent === 'string' ? JSON.parse(currentContent) : currentContent;
+      if (parsed && typeof parsed === 'object' && (parsed.en || parsed.bn)) {
+        return { en: parsed.en || defaultText, bn: parsed.bn || '' };
+      }
+    } catch (e) {
+      // Not JSON, treat as English
+    }
+    return { en: currentContent || defaultText, bn: '' };
+  };
+
+  const initialValues = getInitialValues();
+  const displayText = language === 'bn' ? (initialValues.bn || initialValues.en) : initialValues.en;
 
   useEffect(() => {
-    setValue(currentText);
-  }, [currentText]);
+    setValues(initialValues);
+  }, [currentContent, defaultText]);
 
   const handleSave = async () => {
-    await updateContent(contentKey, value);
+    await updateContent(contentKey, values);
     setIsEditing(false);
   };
 
   const handleCancel = () => {
-    setValue(currentText);
+    setValues(initialValues);
     setIsEditing(false);
   };
 
@@ -35,30 +54,56 @@ export const EditableText: React.FC<EditableTextProps> = ({ contentKey, defaultT
     if (isEditing) {
       return (
         <span className={`relative inline-block w-full ${className}`}>
-          {multiline ? (
-            <div className="bg-white text-black p-1 rounded-md border-2 border-red-500">
-              <Editor
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                className="min-h-[150px]"
-              />
+          <div className="space-y-4 p-4 bg-white rounded-xl border-2 border-red-500 shadow-2xl min-w-[300px]">
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">English</label>
+              {multiline ? (
+                <div className="bg-slate-50 text-black p-1 rounded-md border border-slate-200">
+                  <Editor
+                    value={values.en}
+                    onChange={(e) => setValues(prev => ({ ...prev, en: e.target.value }))}
+                    className="min-h-[100px]"
+                  />
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={values.en}
+                  onChange={(e) => setValues(prev => ({ ...prev, en: e.target.value }))}
+                  className="w-full p-2 border border-slate-200 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="English text"
+                />
+              )}
             </div>
-          ) : (
-            <input
-              type="text"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              className="w-full p-2 border-2 border-red-500 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-          )}
-          <span className="absolute -top-10 right-0 flex space-x-1 bg-white shadow-md rounded-md p-1 z-10">
-            <button onClick={handleSave} className="p-1 text-green-600 hover:bg-green-50 rounded">
-              <Check className="w-4 h-4" />
-            </button>
-            <button onClick={handleCancel} className="p-1 text-red-600 hover:bg-red-50 rounded">
-              <X className="w-4 h-4" />
-            </button>
-          </span>
+            <div>
+              <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Bangla (Optional)</label>
+              {multiline ? (
+                <div className="bg-slate-50 text-black p-1 rounded-md border border-slate-200">
+                  <Editor
+                    value={values.bn}
+                    onChange={(e) => setValues(prev => ({ ...prev, bn: e.target.value }))}
+                    className="min-h-[100px]"
+                  />
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  value={values.bn}
+                  onChange={(e) => setValues(prev => ({ ...prev, bn: e.target.value }))}
+                  className="w-full p-2 border border-slate-200 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="Bangla translation (leave empty for fallback)"
+                />
+              )}
+            </div>
+            <div className="flex justify-end space-x-2 pt-2 border-t border-slate-100">
+              <button onClick={handleCancel} className="px-3 py-1 text-sm font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleSave} className="px-4 py-1 text-sm font-bold bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors shadow-md">
+                Save Changes
+              </button>
+            </div>
+          </div>
         </span>
       );
     }
@@ -68,7 +113,7 @@ export const EditableText: React.FC<EditableTextProps> = ({ contentKey, defaultT
         <span 
           className="cursor-pointer hover:opacity-80" 
           onClick={() => setIsEditing(true)}
-          dangerouslySetInnerHTML={{ __html: currentText }}
+          dangerouslySetInnerHTML={{ __html: displayText }}
         />
         <button
           onClick={() => setIsEditing(true)}
@@ -80,5 +125,5 @@ export const EditableText: React.FC<EditableTextProps> = ({ contentKey, defaultT
     );
   }
 
-  return <span className={className} dangerouslySetInnerHTML={{ __html: currentText }} />;
+  return <span className={className} dangerouslySetInnerHTML={{ __html: displayText }} />;
 };
