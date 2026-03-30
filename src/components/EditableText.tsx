@@ -9,9 +9,10 @@ interface EditableTextProps {
   defaultText: string;
   className?: string;
   multiline?: boolean;
+  onSave?: (values: { en: string; bn: string }) => void;
 }
 
-export const EditableText: React.FC<EditableTextProps> = ({ contentKey, defaultText, className = '', multiline = false }) => {
+export const EditableText: React.FC<EditableTextProps> = ({ contentKey, defaultText, className = '', multiline = false, onSave }) => {
   const { content, editMode, updateContent } = useContent();
   const { language } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
@@ -42,6 +43,9 @@ export const EditableText: React.FC<EditableTextProps> = ({ contentKey, defaultT
 
   const handleSave = async () => {
     await updateContent(contentKey, values);
+    if (onSave) {
+      onSave(values);
+    }
     setIsEditing(false);
   };
 

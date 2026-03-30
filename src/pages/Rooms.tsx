@@ -86,6 +86,23 @@ export default function Rooms() {
   const [editForm, setEditForm] = useState<any>({});
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, message: string, onConfirm: () => void }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
+  const updateAllRoomDiscounts = async (newRate: string) => {
+    try {
+      const roomsRef = collection(db, 'rooms');
+      const snapshot = await getDocs(roomsRef);
+      const updatePromises = snapshot.docs.map(docSnapshot => 
+        updateDoc(doc(db, 'rooms', docSnapshot.id), {
+          discount: `${newRate}% Off`
+        })
+      );
+      await Promise.all(updatePromises);
+      toast.success(t('সকল রুমের ডিসকাউন্ট আপডেট করা হয়েছে।', 'All room discounts updated successfully.'));
+    } catch (error) {
+      console.error('Error updating all room discounts:', error);
+      toast.error(t('ডিসকাউন্ট আপডেট করতে সমস্যা হয়েছে।', 'Failed to update discounts.'));
+    }
+  };
+
   // Global Discount
   const globalDiscountRateStr = content?.global_discount_rate || '0';
   const globalDiscountRate = parseInt(globalDiscountRateStr, 10) || 0;
@@ -352,7 +369,11 @@ export default function Rooms() {
             <div className="relative flex flex-col sm:flex-row items-center justify-center sm:justify-between z-10 gap-6">
               <div className="flex items-center gap-4">
                 <div className="bg-white text-red-700 font-black text-4xl px-5 py-3 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.3)] transform -rotate-3 hover:rotate-0 transition-transform duration-300 flex items-center">
-                  <EditableText contentKey="global_discount_rate" defaultText="0" />% OFF
+                  <EditableText 
+                    contentKey="global_discount_rate" 
+                    defaultText="0" 
+                    onSave={(values) => updateAllRoomDiscounts(values.en)}
+                  />% OFF
                 </div>
                 <div className="text-left">
                   <h3 className="text-2xl font-bold tracking-tight text-white drop-shadow-md">

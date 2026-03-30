@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BedDouble, CheckCircle2, MapPin, Percent, Utensils, Compass, PhoneCall, ArrowRight, Star, Camera, Calendar, Search, Edit2, X, Upload, Trash2, Loader2, Wifi, Wind, Coffee, Shield, Clock, Navigation } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
-import { collection, getDocs, query, limit, orderBy, onSnapshot, doc } from 'firebase/firestore';
+import { collection, getDocs, query, limit, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
@@ -40,6 +40,23 @@ export default function Home() {
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const [rooms, setRooms] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
+
+  const updateAllRoomDiscounts = async (newRate: string) => {
+    try {
+      const roomsRef = collection(db, 'rooms');
+      const snapshot = await getDocs(roomsRef);
+      const updatePromises = snapshot.docs.map(docSnapshot => 
+        updateDoc(doc(db, 'rooms', docSnapshot.id), {
+          discount: `${newRate}% Off`
+        })
+      );
+      await Promise.all(updatePromises);
+      toast.success(t('সকল রুমের ডিসকাউন্ট আপডেট করা হয়েছে।', 'All room discounts updated successfully.'));
+    } catch (error) {
+      console.error('Error updating all room discounts:', error);
+      toast.error(t('ডিসকাউন্ট আপডেট করতে সমস্যা হয়েছে।', 'Failed to update discounts.'));
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, 'settings', 'general'), (doc) => {
@@ -476,7 +493,11 @@ export default function Home() {
                   }}
                   className="bg-white text-red-700 font-black text-4xl px-5 py-3 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center"
                 >
-                  <EditableText contentKey="global_discount_rate" defaultText="0" />% OFF
+                  <EditableText 
+                    contentKey="global_discount_rate" 
+                    defaultText="0" 
+                    onSave={(values) => updateAllRoomDiscounts(values.en)}
+                  />% OFF
                 </motion.div>
                 <div>
                   <h3 className="text-2xl md:text-3xl font-bold tracking-tight text-white drop-shadow-md">
