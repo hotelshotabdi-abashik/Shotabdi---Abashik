@@ -111,6 +111,7 @@ export default function Rooms() {
   const [checkIn, setCheckIn] = useState(new Date().toISOString().split('T')[0]);
   const [checkOut, setCheckOut] = useState(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
   const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   useEffect(() => {
     const roomsRef = collection(db, 'rooms');
@@ -152,6 +153,7 @@ export default function Rooms() {
     setBookingRoom(room);
     setCheckIn(new Date().toISOString().split('T')[0]);
     setCheckOut(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
+    setShowConfirmation(false);
   };
 
   const submitBooking = async () => {
@@ -196,7 +198,10 @@ export default function Rooms() {
           user.email,
           profile?.displayName || user?.displayName || 'User',
           bookingRoom?.name || 'Room',
-          totalAmount
+          totalAmount,
+          profile?.phone || 'N/A',
+          inDate,
+          outDate
         ).catch(console.error);
       }
       
@@ -204,6 +209,7 @@ export default function Rooms() {
       notifyAdminNewBooking({
         userName: profile?.displayName || user?.displayName || 'User',
         userEmail: user?.email || 'Unknown',
+        userPhone: profile?.phone || 'N/A',
         roomName: bookingRoom?.name || 'Room',
         totalAmount,
         checkIn: inDate,
@@ -211,6 +217,7 @@ export default function Rooms() {
       }).catch(console.error);
       
       setBookingRoom(null);
+      setShowConfirmation(false);
       setBookingSuccess(true);
     } catch (error) {
       console.error("Error submitting booking:", error);
@@ -543,58 +550,121 @@ export default function Rooms() {
       {bookingRoom && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-2xl font-bold text-slate-900">{t('রুম বুকিং', 'Book Room')}</h3>
-              <button onClick={() => setBookingRoom(null)} className="text-slate-500 hover:text-slate-700">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="mb-4">
-              <p className="font-bold text-lg">{bookingRoom.name}</p>
-              <p className="text-slate-600">
-                {t('মূল্য:', 'Price:')} ৳{bookingRoom.price} / {t('রাত', 'Night')}
-              </p>
-            </div>
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('চেক-ইন তারিখ', 'Check-in Date')}</label>
-                <input 
-                  type="date" 
-                  value={checkIn}
-                  min={new Date().toISOString().split('T')[0]}
-                  onChange={(e) => setCheckIn(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg p-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">{t('চেক-আউট তারিখ', 'Check-out Date')}</label>
-                <input 
-                  type="date" 
-                  value={checkOut}
-                  min={checkIn || new Date().toISOString().split('T')[0]}
-                  onChange={(e) => setCheckOut(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg p-2"
-                />
-              </div>
-              {checkIn && checkOut && new Date(checkIn) < new Date(checkOut) && (
-                <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-slate-600">{t('মোট রাত:', 'Total Nights:')}</span>
-                    <span className="font-bold">{Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24))}</span>
+            {!showConfirmation ? (
+              <>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-2xl font-bold text-slate-900">{t('রুম বুকিং', 'Book Room')}</h3>
+                  <button onClick={() => setBookingRoom(null)} className="text-slate-500 hover:text-slate-700">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                <div className="mb-4">
+                  <p className="font-bold text-lg">{bookingRoom.name}</p>
+                  <p className="text-slate-600">
+                    {t('মূল্য:', 'Price:')} ৳{bookingRoom.price} / {t('রাত', 'Night')}
+                  </p>
+                </div>
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('চেক-ইন তারিখ', 'Check-in Date')}</label>
+                    <input 
+                      type="date" 
+                      value={checkIn}
+                      min={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setCheckIn(e.target.value)}
+                      className="w-full border border-slate-300 rounded-lg p-2"
+                    />
                   </div>
-                  <div className="flex justify-between text-lg font-bold text-red-700">
-                    <span>{t('মোট বিল:', 'Total Bill:')}</span>
-                    <span>৳{Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)) * bookingRoom.price}</span>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('চেক-আউট তারিখ', 'Check-out Date')}</label>
+                    <input 
+                      type="date" 
+                      value={checkOut}
+                      min={checkIn || new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setCheckOut(e.target.value)}
+                      className="w-full border border-slate-300 rounded-lg p-2"
+                    />
+                  </div>
+                  {checkIn && checkOut && new Date(checkIn) < new Date(checkOut) && (
+                    <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-slate-600">{t('মোট রাত:', 'Total Nights:')}</span>
+                        <span className="font-bold">{Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24))}</span>
+                      </div>
+                      <div className="flex justify-between text-lg font-bold text-red-700">
+                        <span>{t('মোট বিল:', 'Total Bill:')}</span>
+                        <span>৳{Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)) * bookingRoom.price}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <button 
+                  onClick={() => {
+                    if (!checkIn || !checkOut || new Date(checkIn) >= new Date(checkOut)) {
+                      toast.error(t('অনুগ্রহ করে সঠিক তারিখ নির্বাচন করুন।', 'Please select valid dates.'));
+                      return;
+                    }
+                    setShowConfirmation(true);
+                  }}
+                  className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-xl transition-colors"
+                >
+                  {t('বুকিং এগিয়ে যান', 'Continue to Booking')}
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-2xl font-bold text-slate-900">{t('তথ্য যাচাই করুন', 'Verify Information')}</h3>
+                  <button onClick={() => setShowConfirmation(false)} className="text-slate-500 hover:text-slate-700">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                <p className="text-slate-600 mb-6 text-sm">
+                  {t('অনুগ্রহ করে আপনার বুকিং তথ্য পুনরায় যাচাই করুন। বুকিং নিশ্চিত করার পর এই তথ্যগুলো ইমেইলে পাঠানো হবে।', 'Please re-check your booking information. These details will be sent to your email after confirmation.')}
+                </p>
+                
+                <div className="space-y-4 mb-8 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="text-slate-500">{t('নাম:', 'Name:')}:</span>
+                    <span className="font-bold text-slate-900">{profile?.displayName || user?.displayName}</span>
+                    
+                    <span className="text-slate-500">{t('ইমেইল:', 'Email:')}:</span>
+                    <span className="font-bold text-slate-900 truncate">{user?.email}</span>
+                    
+                    <span className="text-slate-500">{t('ফোন:', 'Phone:')}:</span>
+                    <span className="font-bold text-slate-900">{profile?.phone || 'N/A'}</span>
+                    
+                    <span className="text-slate-500">{t('রুম:', 'Room:')}:</span>
+                    <span className="font-bold text-slate-900">{bookingRoom.name}</span>
+                    
+                    <span className="text-slate-500">{t('চেক-ইন:', 'Check-in:')}:</span>
+                    <span className="font-bold text-slate-900">{new Date(checkIn).toLocaleDateString()}</span>
+                    
+                    <span className="text-slate-500">{t('চেক-আউট:', 'Check-out:')}:</span>
+                    <span className="font-bold text-slate-900">{new Date(checkOut).toLocaleDateString()}</span>
+                  </div>
+                  <div className="border-t border-slate-200 pt-3 flex justify-between items-center">
+                    <span className="text-slate-600 font-bold">{t('মোট বিল:', 'Total Bill:')}</span>
+                    <span className="text-xl font-black text-red-700">৳{Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)) * bookingRoom.price}</span>
                   </div>
                 </div>
-              )}
-            </div>
-            <button 
-              onClick={submitBooking}
-              className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-xl transition-colors"
-            >
-              {t('নিশ্চিত করুন', 'Confirm Booking')}
-            </button>
+
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => setShowConfirmation(false)}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors"
+                  >
+                    {t('পিছনে', 'Back')}
+                  </button>
+                  <button 
+                    onClick={submitBooking}
+                    className="flex-[2] bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-xl transition-colors"
+                  >
+                    {t('নিশ্চিত করুন', 'Confirm & Book')}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

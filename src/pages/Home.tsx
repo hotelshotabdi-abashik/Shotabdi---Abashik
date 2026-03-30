@@ -166,17 +166,15 @@ export default function Home() {
   const variants = {
     enter: (direction: number) => ({
       x: direction > 0 ? '100%' : '-100%',
-      opacity: 0
+      zIndex: 1
     }),
     center: {
       zIndex: 1,
       x: 0,
-      opacity: 1
     },
     exit: (direction: number) => ({
       zIndex: 0,
-      x: direction < 0 ? '50%' : '-50%',
-      opacity: 0
+      x: direction > 0 ? '-30%' : '30%',
     })
   };
 
@@ -277,8 +275,7 @@ export default function Home() {
               animate="center"
               exit="exit"
               transition={{
-                x: { type: "spring", stiffness: 300, damping: 30 },
-                opacity: { duration: 0.5 }
+                x: { type: "tween", duration: 0.7, ease: [0.4, 0, 0.2, 1] }
               }}
               drag="x"
               dragConstraints={{ left: 0, right: 0 }}
@@ -305,10 +302,10 @@ export default function Home() {
                     y: useTransform(useScroll().scrollY, [0, 500], [0, 150])
                   }}
                 />
-                <div className="absolute inset-0 bg-black/50 pointer-events-none"></div>
               </div>
             </motion.div>
           </AnimatePresence>
+          <div className="absolute inset-0 bg-black/50 pointer-events-none z-10"></div>
         </div>
         
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center pt-16 pb-8 pointer-events-none flex flex-col justify-center h-full">
@@ -495,12 +492,12 @@ export default function Home() {
           </div>
 
           {galleryImages.length > 0 ? (
-            <div className="columns-2 md:columns-4 gap-2 space-y-2 w-full mb-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full mb-10">
               {galleryImages.map((img, index) => (
                 <Link 
                   key={index}
                   to={`/gallery/${img.id || index}`}
-                  className="relative overflow-hidden shadow-md group cursor-pointer w-full rounded-lg break-inside-avoid mb-2 block"
+                  className="relative overflow-hidden shadow-md group cursor-pointer w-full rounded-lg block"
                 >
                   <img 
                     src={img.url} 
@@ -759,7 +756,7 @@ export default function Home() {
                             className="hidden" 
                             onChange={(e) => handleHeroImageUpload(slot.key, e)}
                             disabled={uploadingSlot === slot.key}
-                            ref={(el) => fileInputRefs.current[slot.key] = el}
+                            ref={(el) => { fileInputRefs.current[slot.key] = el; }}
                           />
                         </label>
                         {currentUrl && !isDeleted && (

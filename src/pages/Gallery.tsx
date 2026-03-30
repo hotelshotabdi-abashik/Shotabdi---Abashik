@@ -206,12 +206,12 @@ export default function Gallery() {
           </div>
         )}
 
-        <div className="columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 w-full">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
           {images.map((img, index) => (
             <Link 
               key={img.id} 
               to={`/gallery/${img.id || index}`}
-              className="relative overflow-hidden shadow-md hover:shadow-xl transition-all group cursor-pointer bg-white rounded-2xl break-inside-avoid mb-4 block"
+              className="relative overflow-hidden shadow-md hover:shadow-xl transition-all group cursor-pointer bg-white rounded-2xl block"
             >
               <img src={img.url} alt={img.title || `Gallery ${index + 1}`} className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
               

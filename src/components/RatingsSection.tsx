@@ -110,7 +110,7 @@ export const RatingsSection: React.FC = () => {
     try {
       await addDoc(collection(db, 'ratings'), {
         userId: user.uid,
-        userName: profile?.name || user.displayName || 'Guest',
+        userName: profile?.displayName || profile?.legalName || user.displayName || 'Guest',
         userPhoto: profile?.photoURL || user.photoURL || '',
         rating: newRating,
         comment: newComment,

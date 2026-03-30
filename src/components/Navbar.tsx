@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
-import { Menu, X, LogIn, LogOut, User, Globe, Edit, Bell, Calendar, Home, Bed, Utensils, Map, Star, Headphones, Info } from 'lucide-react';
+import { Menu, X, LogIn, LogOut, User, Globe, Edit, Bell, Calendar, Home, Bed, Utensils, Map, Star, Headphones, Info, ArrowLeft } from 'lucide-react';
 import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -14,6 +14,7 @@ export default function Navbar() {
   const { language, setLanguage, t } = useLanguage();
   const { editMode, setEditMode } = useContent();
   const [isOpen, setIsOpen] = useState(false);
+  const [mobileMenuSection, setMobileMenuSection] = useState<'main' | 'profile'>('main');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isFullScreenNotification, setIsFullScreenNotification] = useState(false);
@@ -24,6 +25,7 @@ export default function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
   const notificationDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileNotificationDropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -52,6 +54,7 @@ export default function Navbar() {
 
   useEffect(() => {
     setIsOpen(false);
+    setMobileMenuSection('main');
     setIsProfileOpen(false);
     setIsNotificationOpen(false);
     setIsFullScreenNotification(false);
@@ -81,13 +84,23 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      
+      // Profile dropdowns
+      const isOutsideProfile = 
+        (!dropdownRef.current || !dropdownRef.current.contains(target)) &&
+        (!mobileDropdownRef.current || !mobileDropdownRef.current.contains(target));
+      
+      if (isOutsideProfile) {
         setIsProfileOpen(false);
       }
-      if (mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target as Node)) {
-        setIsProfileOpen(false);
-      }
-      if (notificationDropdownRef.current && !notificationDropdownRef.current.contains(event.target as Node)) {
+
+      // Notification dropdowns
+      const isOutsideNotification = 
+        (!notificationDropdownRef.current || !notificationDropdownRef.current.contains(target)) &&
+        (!mobileNotificationDropdownRef.current || !mobileNotificationDropdownRef.current.contains(target));
+
+      if (isOutsideNotification) {
         setIsNotificationOpen(false);
       }
     };
@@ -200,7 +213,7 @@ export default function Navbar() {
   const isSolid = scrolled || !isHome;
 
   return (
-    <nav className={`fixed w-full top-0 z-[100] transition-all duration-500 ${isSolid ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-transparent shadow-none'} ${isSolid ? 'text-slate-900' : 'text-white'}`}>
+    <nav className={`fixed w-full top-0 z-[9999] transition-all duration-500 ${isSolid ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-transparent shadow-none'} ${isSolid ? 'text-slate-900' : 'text-white'}`}>
       <div className="w-full px-2 sm:px-4 lg:px-6">
         <div className="flex justify-between h-14 py-1 items-center">
           <div className="flex items-center flex-1 mr-2 sm:mr-4 min-w-0">
@@ -430,7 +443,7 @@ export default function Navbar() {
               </button>
             )}
 
-            <div className="relative" ref={notificationDropdownRef}>
+            <div className="relative" ref={mobileNotificationDropdownRef}>
               <button 
                 onClick={user ? handleNotificationClick : login}
                 className={`relative inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md transition-colors focus:outline-none flex-shrink-0 ${isSolid ? 'text-slate-900 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}
@@ -495,70 +508,105 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden fixed inset-0 z-[100] bg-white flex flex-col">
+        <div className="md:hidden fixed inset-0 z-[9999] bg-white flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white sticky top-0">
-            <Link to="/" className="flex items-center gap-2 min-w-0" onClick={(e) => handleNavClick('/', e)}>
-              <EditableImage 
-                contentKey="site_logo" 
-                defaultSrc={logoUrl} 
-                className="h-6 w-auto flex-shrink-0 object-contain" 
-                alt={`${websiteName} Logo`}
-                folder="shotabdi-abashik/logo"
-              />
-              <span className="font-bold text-xs text-slate-900 leading-tight truncate">
-                {websiteName}
-              </span>
-            </Link>
+            {mobileMenuSection === 'main' ? (
+              <Link to="/" className="flex items-center gap-2 min-w-0" onClick={(e) => handleNavClick('/', e)}>
+                <EditableImage 
+                  contentKey="site_logo" 
+                  defaultSrc={logoUrl} 
+                  className="h-6 w-auto flex-shrink-0 object-contain" 
+                  alt={`${websiteName} Logo`}
+                  folder="shotabdi-abashik/logo"
+                />
+                <span className="font-bold text-xs text-slate-900 leading-tight truncate">
+                  {websiteName}
+                </span>
+              </Link>
+            ) : (
+              <button 
+                onClick={() => setMobileMenuSection('main')}
+                className="flex items-center gap-2 text-slate-900 font-bold"
+              >
+                <ArrowLeft className="w-6 h-6" />
+                <span>{t('পিছনে', 'Back')}</span>
+              </button>
+            )}
             <button onClick={() => setIsOpen(false)} className="p-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
               <X className="w-6 h-6" />
             </button>
           </div>
+          
           <div className="flex-1 overflow-y-auto px-4 py-6 space-y-2">
-            {(!user || profile?.profileCompleted) && navLinks.map((link) => (
-              <Link key={link.name} to={link.path} onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-3 rounded-xl text-lg font-medium transition-colors">
-                {link.name}
-              </Link>
-            ))}
-            {profile?.role === 'admin' && (
-              <button 
-                onClick={() => { setEditMode(!editMode); setIsOpen(false); }} 
-                className={`block w-full text-left px-4 py-3 rounded-xl text-lg font-bold mt-4 flex items-center ${editMode ? 'bg-red-600 text-white hover:bg-red-700' : 'text-amber-800 bg-amber-50 hover:bg-amber-100'}`}
-              >
-                <Edit className="w-5 h-5 mr-3" /> {editMode ? t('সম্পাদনা বন্ধ করুন', 'Stop Editing') : t('ওয়েব সম্পাদনা', 'Edit Web')}
-              </button>
-            )}
-            {loading ? (
-              <div className="w-full h-12 bg-slate-100 animate-pulse rounded-xl mt-4"></div>
-            ) : user ? (
-              <div className="border-t border-slate-100 pt-6 mt-6 space-y-2">
-                <div className="px-4 py-2 text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center">
-                  <User className="w-4 h-4 mr-2" /> {t('প্রোফাইল', 'Profile')}
+            {mobileMenuSection === 'main' ? (
+              <>
+                {(!user || profile?.profileCompleted) && navLinks.map((link) => (
+                  <Link key={link.name} to={link.path} onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-3 rounded-xl text-lg font-medium transition-colors">
+                    {link.name}
+                  </Link>
+                ))}
+                
+                {profile?.role === 'admin' && (
+                  <button 
+                    onClick={() => { setEditMode(!editMode); setIsOpen(false); }} 
+                    className={`block w-full text-left px-4 py-3 rounded-xl text-lg font-bold mt-4 flex items-center ${editMode ? 'bg-red-600 text-white hover:bg-red-700' : 'text-amber-800 bg-amber-50 hover:bg-amber-100'}`}
+                  >
+                    <Edit className="w-5 h-5 mr-3" /> {editMode ? t('সম্পাদনা বন্ধ করুন', 'Stop Editing') : t('ওয়েব সম্পাদনা', 'Edit Web')}
+                  </button>
+                )}
+
+                {user && (
+                  <div className="border-t border-slate-100 pt-6 mt-6">
+                    <button 
+                      onClick={() => setMobileMenuSection('profile')}
+                      className="w-full flex items-center justify-between text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-4 rounded-xl text-lg font-bold transition-colors bg-slate-50"
+                    >
+                      <div className="flex items-center">
+                        <User className="w-6 h-6 mr-3 text-red-700" />
+                        <span>{t('প্রোফাইল মেনু', 'Profile Menu')}</span>
+                      </div>
+                      <ArrowLeft className="w-5 h-5 rotate-180 text-slate-400" />
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="space-y-2 animate-in slide-in-from-right duration-200">
+                <div className="px-4 py-2 text-sm font-bold text-slate-400 uppercase tracking-wider flex items-center mb-2">
+                  <User className="w-4 h-4 mr-2" /> {t('আপনার অ্যাকাউন্ট', 'Your Account')}
                 </div>
-                <Link to="/my-stays" onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-3 rounded-xl text-lg font-medium transition-colors">
+                
+                <Link to="/my-stays" onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-4 rounded-xl text-lg font-medium transition-colors border border-slate-100">
                   {t('আমার বুকিং', 'My Stays')}
                 </Link>
+                
                 {profile?.profileCompleted && (
-                  <Link to="/profile" onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-3 rounded-xl text-lg font-medium transition-colors">
+                  <Link to="/profile" onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-4 rounded-xl text-lg font-medium transition-colors border border-slate-100">
                     {t('অ্যাকাউন্ট পরিচালনা', 'Manage Account')}
                   </Link>
                 )}
+                
                 {profile?.role === 'admin' && (
-                  <Link to="/admin" onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-3 rounded-xl text-lg font-medium transition-colors">
+                  <Link to="/admin" onClick={() => setIsOpen(false)} className="block text-slate-700 hover:bg-red-50 hover:text-red-700 px-4 py-4 rounded-xl text-lg font-medium transition-colors border border-slate-100">
                     {t('অ্যাডমিন প্যানেল', 'Admin Panel')}
                   </Link>
                 )}
-                <button onClick={() => { logout(); setIsOpen(false); }} className="w-full text-left flex items-center text-red-600 hover:bg-red-50 px-4 py-3 rounded-xl text-lg font-medium transition-colors mt-2">
-                  <LogOut className="w-5 h-5 mr-3" /> {t('লগআউট', 'Logout')}
+                
+                <button 
+                  onClick={() => { logout(); setIsOpen(false); }} 
+                  className="w-full text-left flex items-center text-red-600 hover:bg-red-50 px-4 py-4 rounded-xl text-lg font-bold transition-colors mt-8 border border-red-100 bg-red-50/30"
+                >
+                  <LogOut className="w-6 h-6 mr-3" /> {t('লগআউট', 'Logout')}
                 </button>
               </div>
-            ) : null}
+            )}
           </div>
         </div>
       )}
 
       {/* Full Screen Notifications Modal */}
       {isFullScreenNotification && (
-        <div className="fixed inset-0 z-[100] bg-white flex flex-col">
+        <div className="fixed inset-0 z-[9999] bg-white flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white sticky top-0">
             <h2 className="text-xl font-bold text-slate-900">{t('সব নোটিফিকেশন', 'All Notifications')}</h2>
             <button 

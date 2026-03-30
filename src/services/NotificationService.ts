@@ -100,18 +100,23 @@ export const notifyLogin = async (email: string, name: string) => {
   });
 };
 
-export const notifyBookingSubmitted = async (email: string, name: string, roomName: string, totalAmount: number) => {
+export const notifyBookingSubmitted = async (email: string, name: string, roomName: string, totalAmount: number, phone: string, checkIn: Date, checkOut: Date) => {
   return sendEmail({
     to: email,
     subject: 'Booking Received - Hotel Shotabdi Abashik',
     type: 'booking_submitted',
-    metadata: { name, roomName, totalAmount },
+    metadata: { name, roomName, totalAmount, phone, checkIn, checkOut },
     html: `
       <h2 style="color: #dc2626; margin-top: 0;">Booking Received!</h2>
       <p>Hello ${name},</p>
       <p>We have received your booking request for <strong>${roomName}</strong>.</p>
-      <div style="background-color: #f1f5f9; padding: 20px; border-radius: 12px; margin: 20px 0;">
-        <p style="margin: 0;">Total Amount: <strong style="color: #dc2626; font-size: 18px;">৳${totalAmount}</strong></p>
+      <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px solid #e2e8f0;">
+        <p style="margin: 5px 0;"><strong>Guest:</strong> ${name}</p>
+        <p style="margin: 5px 0;"><strong>Phone:</strong> ${phone}</p>
+        <p style="margin: 5px 0;"><strong>Room:</strong> ${roomName}</p>
+        <p style="margin: 5px 0;"><strong>Check-in:</strong> ${checkIn.toLocaleDateString()}</p>
+        <p style="margin: 5px 0;"><strong>Check-out:</strong> ${checkOut.toLocaleDateString()}</p>
+        <p style="margin: 15px 0 0 0;">Total Amount: <strong style="color: #dc2626; font-size: 18px;">৳${totalAmount}</strong></p>
       </div>
       <p>Our team will review your booking and contact you shortly for confirmation.</p>
       <p>Thank you for choosing Hotel Shotabdi Abashik.</p>
@@ -185,6 +190,7 @@ export const notifyAdminNewBooking = async (bookingData: any) => {
       <p>A new booking has been submitted on the website.</p>
       <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
         <p style="margin: 5px 0;"><strong>Guest:</strong> ${bookingData.userName} (${bookingData.userEmail})</p>
+        <p style="margin: 5px 0;"><strong>Phone:</strong> ${bookingData.userPhone}</p>
         <p style="margin: 5px 0;"><strong>Room:</strong> ${bookingData.roomName}</p>
         <p style="margin: 5px 0;"><strong>Amount:</strong> ৳${bookingData.totalAmount}</p>
         <p style="margin: 5px 0;"><strong>Check-in:</strong> ${bookingData.checkIn.toLocaleDateString()}</p>

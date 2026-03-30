@@ -9,7 +9,7 @@ import { Toaster } from 'sonner';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
-import { ContentProvider } from './context/ContentContext';
+import { ContentProvider, useContent } from './context/ContentContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
@@ -65,13 +65,20 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-export default function App() {
+const SEO = () => {
+  const { content } = useContent();
+  const logoUrl = content.site_logo || "https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png";
+  const websiteName = "Hotel Shotabdi Abashik";
+  const description = "24h Residential Service in Sylhet. Best hotel in Kumargaon, Sylhet.";
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Hotel",
-    "name": "Hotel Shotabdi Abashik",
-    "description": "24h Residential Service in Sylhet. Best hotel in Kumargaon, Sylhet.",
+    "name": websiteName,
+    "description": description,
     "url": "https://shotabdi-abashik.bd",
+    "logo": logoUrl,
+    "image": logoUrl,
     "telephone": "+8801717425702",
     "address": {
       "@type": "PostalAddress",
@@ -92,16 +99,39 @@ export default function App() {
   };
 
   return (
+    <Helmet>
+      <title>{websiteName}</title>
+      <meta name="description" content={description} />
+      <link rel="icon" type="image/png" href={logoUrl} />
+      <link rel="apple-touch-icon" href={logoUrl} />
+      
+      {/* Open Graph / Facebook */}
+      <meta property="og:type" content="website" />
+      <meta property="og:title" content={websiteName} />
+      <meta property="og:description" content={description} />
+      <meta property="og:image" content={logoUrl} />
+
+      {/* Twitter */}
+      <meta property="twitter:card" content="summary_large_image" />
+      <meta property="twitter:title" content={websiteName} />
+      <meta property="twitter:description" content={description} />
+      <meta property="twitter:image" content={logoUrl} />
+
+      <script type="application/ld+json">
+        {JSON.stringify(structuredData)}
+      </script>
+    </Helmet>
+  );
+};
+
+export default function App() {
+  return (
     <HelmetProvider>
       <LanguageProvider>
         <AuthProvider>
           <ContentProvider>
             <Router>
-              <Helmet>
-                <script type="application/ld+json">
-                  {JSON.stringify(structuredData)}
-                </script>
-              </Helmet>
+              <SEO />
               <ScrollToTop />
               <ProfileEnforcer />
               <div className="flex flex-col min-h-screen font-sans bg-slate-50 text-slate-900">
