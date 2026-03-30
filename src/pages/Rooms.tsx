@@ -19,7 +19,6 @@ interface Room {
   type: string;
   price: number;
   cutPrice?: number;
-  discount?: string;
   amenities: string[];
   imageUrl: string;
   description: string;
@@ -85,34 +84,6 @@ export default function Rooms() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, message: string, onConfirm: () => void }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
-
-  const updateAllRoomDiscounts = async (newRate: string) => {
-    try {
-      const roomsRef = collection(db, 'rooms');
-      const snapshot = await getDocs(roomsRef);
-      const updatePromises = snapshot.docs.map(docSnapshot => 
-        updateDoc(doc(db, 'rooms', docSnapshot.id), {
-          discount: `${newRate}% Off`
-        })
-      );
-      await Promise.all(updatePromises);
-      toast.success(t('সকল রুমের ডিসকাউন্ট আপডেট করা হয়েছে।', 'All room discounts updated successfully.'));
-    } catch (error) {
-      console.error('Error updating all room discounts:', error);
-      toast.error(t('ডিসকাউন্ট আপডেট করতে সমস্যা হয়েছে।', 'Failed to update discounts.'));
-    }
-  };
-
-  // Global Discount
-  const globalDiscountRateStr = content?.global_discount_rate || '0';
-  const globalDiscountRate = parseInt(globalDiscountRateStr, 10) || 0;
-  
-  const getDiscountPercentage = (room: Room) => {
-    if (room.cutPrice && room.cutPrice > room.price) {
-      return Math.round(((room.cutPrice - room.price) / room.cutPrice) * 100);
-    }
-    return 0;
-  };
 
   const getStrikethroughPrice = (room: Room) => {
     if (room.cutPrice && room.cutPrice > room.price) {
@@ -330,7 +301,6 @@ export default function Rooms() {
         cutPrice: Number(editForm.cutPrice) || 0,
         amenities: editForm.amenities.split(',').map((a: string) => a.trim()).filter(Boolean)
       };
-      delete updatedRoom.discount; // Clean up old field if it exists
       await updateDoc(doc(db, 'rooms', id), updatedRoom);
       setEditingId(null);
       toast.success('Room updated successfully');
@@ -372,7 +342,6 @@ export default function Rooms() {
                   <EditableText 
                     contentKey="global_discount_rate" 
                     defaultText="0" 
-                    onSave={(values) => updateAllRoomDiscounts(values.en)}
                   />% OFF
                 </div>
                 <div className="text-left">
@@ -463,13 +432,6 @@ export default function Rooms() {
                     className="w-full p-2 border rounded"
                     placeholder="Cut Price (Original Price)"
                   />
-                  <input
-                    type="text"
-                    value={editForm.discount || ''}
-                    onChange={(e) => setEditForm({ ...editForm, discount: e.target.value })}
-                    className="w-full p-2 border rounded"
-                    placeholder="Discount (e.g. 20% Off)"
-                  />
                   <textarea
                     value={editForm.description}
                     onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
@@ -511,21 +473,11 @@ export default function Rooms() {
                 <>
                   <div className="relative h-32 sm:h-64 bg-slate-50">
                     <img src={room.imageUrl} alt={room.name} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-                    {room.discount ? (
-                      <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md animate-bounce">
-                        {room.discount}
-                      </div>
-                    ) : getDiscountPercentage(room) > 0 ? (
-                      <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md animate-bounce">
-                        {getDiscountPercentage(room)}% OFF
-                      </div>
-                    ) : null}
                   </div>
                   <div className="p-3 sm:p-8 flex-grow flex flex-col">
                     <div className="flex flex-col sm:flex-row justify-between items-start mb-2 sm:mb-4">
                       <div className="min-w-0 flex-1 pr-1 sm:pr-2">
                         <h2 className="text-sm sm:text-2xl font-bold text-slate-900 truncate">{room.name}</h2>
-                        <span className="inline-block bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[8px] sm:text-xs font-semibold mt-1 sm:mt-2 uppercase tracking-wider">{room.type}</span>
                       </div>
                       <div className="text-left sm:text-right flex-shrink-0 mt-1 sm:mt-0">
                         {getStrikethroughPrice(room) ? (
@@ -543,11 +495,11 @@ export default function Rooms() {
                     
                     <div className="mb-3 sm:mb-8">
                       <h4 className="text-[9px] sm:text-sm font-bold text-slate-900 mb-1.5 sm:mb-3 uppercase tracking-wider">{t('সুবিধাসমূহ', 'Amenities')}</h4>
-                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1">
-                        {room.amenities?.slice(0, 4).map((amenity, index) => (
-                          <li key={index} className="flex items-center text-[9px] sm:text-sm text-slate-600">
-                            <CheckCircle2 className="w-2.5 h-2.5 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-red-500 flex-shrink-0" />
-                            <span className="truncate">{amenity}</span>
+                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
+                        {room.amenities?.map((amenity, index) => (
+                          <li key={index} className="flex items-start text-[9px] sm:text-sm text-slate-600">
+                            <CheckCircle2 className="w-2.5 h-2.5 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-red-500 flex-shrink-0 mt-0.5" />
+                            <span className="leading-tight break-words">{amenity}</span>
                           </li>
                         ))}
                       </ul>

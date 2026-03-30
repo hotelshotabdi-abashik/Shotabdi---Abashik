@@ -379,10 +379,7 @@ service cloud.firestore {
 
     match /emailLogs/{logId} {
       allow read: if isAdmin();
-      allow create: if false; // Only server should create logs (but we'll use client SDK for now if needed, or just server)
-      // Actually, if server logs it, we don't need client rules. 
-      // But if we log from client (after calling server), we need:
-      allow create: if isAdmin() && isValidEmailLog(); 
+      allow create: if isValidEmailLog(); 
       allow update: if false;
       allow delete: if isAdmin();
     }

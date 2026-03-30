@@ -63,7 +63,9 @@ async function startServer() {
       // Log to Firestore
       if (db) {
         try {
-          await db.collection('emailLogs').add({
+          const logRef = db.collection('emailLogs').doc();
+          await logRef.set({
+            id: logRef.id,
             to,
             subject,
             body: html,

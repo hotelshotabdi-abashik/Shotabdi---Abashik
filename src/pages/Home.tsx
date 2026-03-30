@@ -41,23 +41,6 @@ export default function Home() {
   const [rooms, setRooms] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
 
-  const updateAllRoomDiscounts = async (newRate: string) => {
-    try {
-      const roomsRef = collection(db, 'rooms');
-      const snapshot = await getDocs(roomsRef);
-      const updatePromises = snapshot.docs.map(docSnapshot => 
-        updateDoc(doc(db, 'rooms', docSnapshot.id), {
-          discount: `${newRate}% Off`
-        })
-      );
-      await Promise.all(updatePromises);
-      toast.success(t('সকল রুমের ডিসকাউন্ট আপডেট করা হয়েছে।', 'All room discounts updated successfully.'));
-    } catch (error) {
-      console.error('Error updating all room discounts:', error);
-      toast.error(t('ডিসকাউন্ট আপডেট করতে সমস্যা হয়েছে।', 'Failed to update discounts.'));
-    }
-  };
-
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, 'settings', 'general'), (doc) => {
       if (doc.exists()) {
@@ -85,15 +68,6 @@ export default function Home() {
 
   const restaurants = content.restaurants || defaultRestaurants;
   const tourSpots = content.tourSpots || defaultTourSpots;
-
-  const globalDiscountRate = parseInt(content.global_discount_rate || '0', 10);
-
-  const getDiscountPercentage = (room: any) => {
-    if (room.cutPrice && room.cutPrice > room.price) {
-      return Math.round(((room.cutPrice - room.price) / room.cutPrice) * 100);
-    }
-    return 0;
-  };
 
   const getStrikethroughPrice = (room: any) => {
     if (room.cutPrice && room.cutPrice > room.price) {
@@ -496,7 +470,6 @@ export default function Home() {
                   <EditableText 
                     contentKey="global_discount_rate" 
                     defaultText="0" 
-                    onSave={(values) => updateAllRoomDiscounts(values.en)}
                   />% OFF
                 </motion.div>
                 <div>
@@ -590,29 +563,11 @@ export default function Home() {
                 <div key={room.id} className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col hover:shadow-xl transition-shadow relative group">
                   <div className="relative h-48 sm:h-64 bg-slate-50">
                     <img src={room.imageUrl || room.images?.[0] || 'https://picsum.photos/seed/room/800/600'} alt={room.name} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-                    {room.discount ? (
-                      <motion.div 
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ repeat: Infinity, duration: 2 }}
-                        className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs sm:text-sm font-bold shadow-md"
-                      >
-                        {room.discount}
-                      </motion.div>
-                    ) : getDiscountPercentage(room) > 0 ? (
-                      <motion.div 
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ repeat: Infinity, duration: 2 }}
-                        className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs sm:text-sm font-bold shadow-md"
-                      >
-                        {getDiscountPercentage(room)}% OFF
-                      </motion.div>
-                    ) : null}
                   </div>
                   <div className="p-5 sm:p-8 flex-grow flex flex-col">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h2 className="text-lg sm:text-2xl font-bold text-slate-900 leading-tight">{room.name}</h2>
-                        <span className="inline-block bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] sm:text-xs font-semibold mt-2 uppercase tracking-wider">{room.type}</span>
                       </div>
                       <div className="text-right">
                         {getStrikethroughPrice(room) ? (
@@ -631,10 +586,10 @@ export default function Home() {
                     <div className="mb-6 sm:mb-8">
                       <h4 className="text-[10px] sm:text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">{t('সুবিধাসমূহ', 'Amenities')}</h4>
                       <ul className="grid grid-cols-2 gap-2">
-                        {room.amenities?.slice(0, 4).map((amenity: string, index: number) => (
-                          <li key={index} className="flex items-center text-[10px] sm:text-sm text-slate-600">
-                            <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-red-500 flex-shrink-0" />
-                            <span className="truncate">{amenity}</span>
+                        {room.amenities?.map((amenity: string, index: number) => (
+                          <li key={index} className="flex items-start text-[10px] sm:text-sm text-slate-600">
+                            <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-red-500 flex-shrink-0 mt-0.5" />
+                            <span className="leading-tight break-words">{amenity}</span>
                           </li>
                         ))}
                       </ul>
