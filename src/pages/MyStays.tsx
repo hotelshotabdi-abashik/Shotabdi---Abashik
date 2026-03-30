@@ -72,7 +72,7 @@ const defaultRooms = [
   }
 ];
 
-export default function Rooms() {
+export default function MyStays() {
   const { t } = useLanguage();
   const { editMode, content } = useContent();
   const { user, profile } = useAuth();
@@ -466,7 +466,7 @@ export default function Rooms() {
                   <div className="p-8 flex-grow flex flex-col">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h2 className="text-2xl font-bold text-slate-900">{t(room.name, room.type)}</h2>
+                        <h2 className="text-2xl font-bold text-slate-900">{room.name}</h2>
                         <span className="inline-block bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-semibold mt-2 uppercase tracking-wider">{room.type}</span>
                       </div>
                       <div className="text-right">

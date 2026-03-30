@@ -494,7 +494,7 @@ export default function Rooms() {
                   <div className="p-3 sm:p-8 flex-grow flex flex-col">
                     <div className="flex flex-col sm:flex-row justify-between items-start mb-2 sm:mb-4">
                       <div className="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <h2 className="text-sm sm:text-2xl font-bold text-slate-900 truncate">{t(room.name, room.type)}</h2>
+                        <h2 className="text-sm sm:text-2xl font-bold text-slate-900 truncate">{room.name}</h2>
                         <span className="inline-block bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[8px] sm:text-xs font-semibold mt-1 sm:mt-2 uppercase tracking-wider">{room.type}</span>
                       </div>
                       <div className="text-left sm:text-right flex-shrink-0 mt-1 sm:mt-0">

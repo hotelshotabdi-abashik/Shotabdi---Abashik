@@ -1,16 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User as FirebaseUser, onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import { User as FirebaseUser, onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../firebase';
 import { toast } from 'sonner';
 import { useLanguage } from './LanguageContext';
 import { notifyLogin } from '../services/NotificationService';
-
-declare global {
-  interface Window {
-    google?: any;
-  }
-}
 
 export interface UserProfile {
   uid: string;
@@ -82,68 +76,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => unsubscribe();
   }, []);
-
-  const handleGoogleOneTapResponse = async (response: any) => {
-    try {
-      const credential = GoogleAuthProvider.credential(response.credential);
-      const result = await signInWithCredential(auth, credential);
-      const user = result.user;
-      
-      const userRef = doc(db, 'users', user.uid);
-      const snapshot = await getDoc(userRef);
-      
-      if (!snapshot.exists()) {
-        const adminEmails = ['hotelshotabdiabashik@gmail.com', 'selectedlegendbusiness@gmail.com', 'fuadf342@gmail.com'];
-        const newProfile: UserProfile = {
-          uid: user.uid,
-          email: user.email || '',
-          role: adminEmails.includes(user.email || '') ? 'admin' : 'user',
-          profileCompleted: false,
-          displayName: user.displayName || '',
-          photoURL: user.photoURL || '',
-          createdAt: serverTimestamp(),
-        };
-        await setDoc(userRef, newProfile);
-        setProfile(newProfile);
-      } else {
-        setProfile(snapshot.data() as UserProfile);
-      }
-      
-      // Send login notification
-      if (user.email) {
-        notifyLogin(user.email, user.displayName || 'User').catch(console.error);
-      }
-      
-      toast.success(t("সফলভাবে লগইন হয়েছে!", "Logged in successfully!"));
-    } catch (error: any) {
-      console.error("One Tap Login error:", error);
-      toast.error(t(`লগইন করতে সমস্যা হয়েছে: ${error.message}`, `Failed to login: ${error.message}`));
-    }
-  };
-
-  useEffect(() => {
-    if (!loading && !user) {
-      const initializeGoogleOneTap = () => {
-        if (window.google?.accounts?.id) {
-          // Clear the g_state cookie to ensure the prompt shows after every refresh
-          document.cookie = "g_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-          
-          window.google.accounts.id.initialize({
-            // Note: Client Secret is configured in the Firebase Console (Authentication -> Sign-in method -> Google)
-            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '63077246647-u3i2uh7p0vlbj1ou9krs6ee82b5apjvp.apps.googleusercontent.com',
-            callback: handleGoogleOneTapResponse,
-            cancel_on_tap_outside: false,
-            context: 'use',
-            use_fedcm_for_prompt: true,
-          });
-          window.google.accounts.id.prompt();
-        } else {
-          setTimeout(initializeGoogleOneTap, 500);
-        }
-      };
-      initializeGoogleOneTap();
-    }
-  }, [loading, user]);
 
   const login = async () => {
     try {

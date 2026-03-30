@@ -313,23 +313,6 @@ export default function Home() {
             className="flex h-full w-full"
             animate={{ x: `-${currentImageIndex * 100}%` }}
             transition={{ type: "tween", duration: 2.0, ease: [0.25, 1, 0.5, 1] }}
-            drag="x"
-            dragConstraints={{ left: 0, right: 0 }}
-            dragElastic={0.5}
-            onDragStart={() => {
-              setLastActivity(Date.now());
-              setIsDragging(true);
-            }}
-            onDragEnd={(e, { offset, velocity }) => {
-              setIsDragging(false);
-              const swipe = offset.x;
-              const threshold = 50; // pixels
-              if (swipe < -threshold) {
-                paginate(1);
-              } else if (swipe > threshold) {
-                paginate(-1);
-              }
-            }}
           >
             {activeHeroImages.map((slot) => (
               <div key={slot.key} className="min-w-full h-full relative">
@@ -602,7 +585,7 @@ export default function Home() {
                   <div className="p-5 sm:p-8 flex-grow flex flex-col">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h2 className="text-lg sm:text-2xl font-bold text-slate-900 leading-tight">{t(room.name, room.type)}</h2>
+                        <h2 className="text-lg sm:text-2xl font-bold text-slate-900 leading-tight">{room.name}</h2>
                         <span className="inline-block bg-slate-100 text-slate-600 px-2 py-1 rounded text-[10px] sm:text-xs font-semibold mt-2 uppercase tracking-wider">{room.type}</span>
                       </div>
                       <div className="text-right">
