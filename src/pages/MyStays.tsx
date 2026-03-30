@@ -18,6 +18,7 @@ interface Room {
   type: string;
   price: number;
   cutPrice?: number;
+  discount?: string;
   amenities: string[];
   imageUrl: string;
   description: string;
@@ -92,15 +93,12 @@ export default function MyStays() {
     if (room.cutPrice && room.cutPrice > room.price) {
       return Math.round(((room.cutPrice - room.price) / room.cutPrice) * 100);
     }
-    return globalDiscountRate;
+    return 0;
   };
 
   const getStrikethroughPrice = (room: Room) => {
     if (room.cutPrice && room.cutPrice > room.price) {
       return room.cutPrice;
-    }
-    if (globalDiscountRate > 0) {
-      return Math.round(room.price / (1 - globalDiscountRate / 100));
     }
     return null;
   };
@@ -416,6 +414,13 @@ export default function MyStays() {
                     className="w-full p-2 border rounded"
                     placeholder="Cut Price (Original Price)"
                   />
+                  <input
+                    type="text"
+                    value={editForm.discount || ''}
+                    onChange={(e) => setEditForm({ ...editForm, discount: e.target.value })}
+                    className="w-full p-2 border rounded"
+                    placeholder="Discount (e.g. 20% Off)"
+                  />
                   <textarea
                     value={editForm.description}
                     onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
@@ -455,9 +460,13 @@ export default function MyStays() {
                 </div>
               ) : (
                 <>
-                  <div className="relative h-64">
-                    <img src={room.imageUrl} alt={room.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    {getDiscountPercentage(room) > 0 ? (
+                  <div className="relative h-64 bg-slate-50">
+                    <img src={room.imageUrl} alt={room.name} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                    {room.discount ? (
+                      <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md animate-bounce">
+                        {room.discount}
+                      </div>
+                    ) : getDiscountPercentage(room) > 0 ? (
                       <div className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-sm font-bold shadow-md animate-bounce">
                         {getDiscountPercentage(room)}% OFF
                       </div>

@@ -75,15 +75,12 @@ export default function Home() {
     if (room.cutPrice && room.cutPrice > room.price) {
       return Math.round(((room.cutPrice - room.price) / room.cutPrice) * 100);
     }
-    return globalDiscountRate;
+    return 0;
   };
 
   const getStrikethroughPrice = (room: any) => {
     if (room.cutPrice && room.cutPrice > room.price) {
       return room.cutPrice;
-    }
-    if (globalDiscountRate > 0) {
-      return Math.round(room.price / (1 - globalDiscountRate / 100));
     }
     return null;
   };
@@ -570,9 +567,17 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
               {rooms.map((room) => (
                 <div key={room.id} className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col hover:shadow-xl transition-shadow relative group">
-                  <div className="relative h-48 sm:h-64">
-                    <img src={room.imageUrl || room.images?.[0] || 'https://picsum.photos/seed/room/800/600'} alt={room.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                    {getDiscountPercentage(room) > 0 ? (
+                  <div className="relative h-48 sm:h-64 bg-slate-50">
+                    <img src={room.imageUrl || room.images?.[0] || 'https://picsum.photos/seed/room/800/600'} alt={room.name} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                    {room.discount ? (
+                      <motion.div 
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                        className="absolute top-4 left-4 bg-red-600 text-white px-3 py-1 rounded-full text-xs sm:text-sm font-bold shadow-md"
+                      >
+                        {room.discount}
+                      </motion.div>
+                    ) : getDiscountPercentage(room) > 0 ? (
                       <motion.div 
                         animate={{ scale: [1, 1.1, 1] }}
                         transition={{ repeat: Infinity, duration: 2 }}

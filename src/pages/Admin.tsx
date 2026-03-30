@@ -14,6 +14,7 @@ interface Room {
   name: string;
   type: string;
   price: number;
+  discount?: string;
   amenities: string[];
   imageUrl: string;
   description: string;
@@ -291,6 +292,7 @@ export default function Admin() {
       name: 'New Room',
       type: 'Single Delux',
       price: 1500,
+      discount: '20% Off',
       amenities: ['এসি', 'টিভি'],
       imageUrl: 'https://picsum.photos/seed/newroom/800/600',
       description: 'নতুন রুমের বিবরণ।',
@@ -664,6 +666,13 @@ export default function Admin() {
                         className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
                         placeholder="Price"
                       />
+                      <input 
+                        type="text" 
+                        value={editForm.discount || ''} 
+                        onChange={(e) => setEditForm({...editForm, discount: e.target.value})}
+                        className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+                        placeholder="Discount (e.g. 20% Off)"
+                      />
                       <div className="flex space-x-2">
                         <button onClick={() => handleUpdateRoom(room.id)} className="flex-1 py-2 bg-green-600 text-white rounded font-bold text-sm">Save</button>
                         <button onClick={() => setIsEditing(null)} className="flex-1 py-2 bg-slate-200 text-slate-700 rounded font-bold text-sm">Cancel</button>
@@ -681,6 +690,7 @@ export default function Admin() {
                       <th className="p-4 font-bold border-b">{t('রুমের নাম', 'Room Name')}</th>
                       <th className="p-4 font-bold border-b">{t('ধরন', 'Type')}</th>
                       <th className="p-4 font-bold border-b">{t('মূল্য (৳)', 'Price (৳)')}</th>
+                      <th className="p-4 font-bold border-b">{t('ছাড়', 'Discount')}</th>
                       <th className="p-4 font-bold border-b">{t('ক্রম', 'Order')}</th>
                       <th className="p-4 font-bold border-b">{t('অবস্থা', 'Status')}</th>
                       <th className="p-4 font-bold border-b text-right">{t('অ্যাকশন', 'Action')}</th>
@@ -727,6 +737,18 @@ export default function Admin() {
                             />
                           ) : (
                             <span className="text-slate-600">৳{room.price}</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          {isEditing === room.id ? (
+                            <input 
+                              type="text" 
+                              value={editForm.discount || ''} 
+                              onChange={(e) => setEditForm({...editForm, discount: e.target.value})}
+                              className="w-full px-2 py-1 border border-slate-300 rounded"
+                            />
+                          ) : (
+                            <span className="text-slate-600">{room.discount || '-'}</span>
                           )}
                         </td>
                         <td className="p-4">
