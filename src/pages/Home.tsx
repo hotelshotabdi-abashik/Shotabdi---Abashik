@@ -23,9 +23,10 @@ export default function Home() {
   const galleryImages = rawGalleryImages.map(img => typeof img === 'string' ? { url: img } : img);
   
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [direction, setDirection] = useState(0);
   const [isHoveringHero, setIsHoveringHero] = useState(false);
   const [isHoveringGallery, setIsHoveringGallery] = useState(false);
+  const [lastActivity, setLastActivity] = useState(Date.now());
+  const [showHeroContent, setShowHeroContent] = useState(true);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
@@ -146,7 +147,6 @@ export default function Home() {
   }, [activeHeroImages.length, currentImageIndex]);
 
   const paginate = (newDirection: number) => {
-    setDirection(newDirection);
     setCurrentImageIndex((prev) => {
       let nextIndex = prev + newDirection;
       if (nextIndex < 0) nextIndex = activeHeroImages.length - 1;
@@ -156,34 +156,51 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (activeHeroImages.length <= 1 || isHoveringHero) return;
+    const handleActivity = () => {
+      setLastActivity(Date.now());
+      setShowHeroContent(true);
+    };
+
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('touchstart', handleActivity);
+    window.addEventListener('scroll', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+
+    return () => {
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('touchstart', handleActivity);
+      window.removeEventListener('scroll', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+    };
+  }, []);
+
+  useEffect(() => {
     const interval = setInterval(() => {
-      paginate(1);
-    }, 5000);
+      const now = Date.now();
+      const inactiveTime = now - lastActivity;
+      
+      // Auto-play after 3 seconds of inactivity
+      if (inactiveTime > 3000 && activeHeroImages.length > 1) {
+        paginate(1);
+      }
+
+      // Hide content after 5 seconds of inactivity
+      if (inactiveTime > 5000) {
+        setShowHeroContent(false);
+      }
+    }, 1000);
+
     return () => clearInterval(interval);
-  }, [activeHeroImages.length, isHoveringHero]);
+  }, [lastActivity, activeHeroImages.length]);
 
   const handleHeroInteraction = () => {
+    setLastActivity(Date.now());
+    setShowHeroContent(true);
     setIsHoveringHero(true);
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     hoverTimeoutRef.current = setTimeout(() => {
       setIsHoveringHero(false);
     }, 5000);
-  };
-
-  const variants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? '100%' : '-100%',
-      zIndex: 1
-    }),
-    center: {
-      x: 0,
-      zIndex: 1
-    },
-    exit: (direction: number) => ({
-      x: direction > 0 ? '-100%' : '100%',
-      zIndex: 0
-    })
   };
 
   const swipeConfidenceThreshold = 10000;
@@ -274,64 +291,66 @@ export default function Home() {
              onMouseLeave={() => setIsHoveringHero(false)}
              onTouchStart={handleHeroInteraction}
         >
-          <AnimatePresence initial={false} custom={direction}>
-            <motion.div
-              key={currentImageIndex}
-              custom={direction}
-              variants={variants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{
-                x: { type: "tween", duration: 0.4, ease: [0.25, 1, 0.5, 1] }
-              }}
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.05}
-              onDragEnd={(e, { offset, velocity }) => {
-                const swipe = swipePower(offset.x, velocity.x);
-                if (swipe < -swipeConfidenceThreshold) {
-                  paginate(1);
-                } else if (swipe > swipeConfidenceThreshold) {
-                  paginate(-1);
-                }
-              }}
-              className="absolute inset-0 w-full h-full"
-            >
-              <div className="relative w-full h-full overflow-hidden bg-slate-900">
-                <motion.img 
-                  src={content[activeHeroImages[currentImageIndex]?.key] && content[activeHeroImages[currentImageIndex]?.key] !== 'deleted' ? content[activeHeroImages[currentImageIndex]?.key] : activeHeroImages[currentImageIndex]?.default} 
+          <motion.div 
+            className="flex h-full w-full"
+            animate={{ x: `-${currentImageIndex * 100}%` }}
+            transition={{ type: "tween", duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={(e, { offset, velocity }) => {
+              const swipe = swipePower(offset.x, velocity.x);
+              if (swipe < -swipeConfidenceThreshold) {
+                paginate(1);
+              } else if (swipe > swipeConfidenceThreshold) {
+                paginate(-1);
+              }
+            }}
+          >
+            {activeHeroImages.map((slot) => (
+              <div key={slot.key} className="min-w-full h-full relative">
+                <img 
+                  src={content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : slot.default} 
                   alt="Hotel Hero" 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5 }}
-                  className="absolute inset-0 w-[101%] h-full object-cover pointer-events-none left-[-0.5%]" 
+                  className="w-full h-full object-cover pointer-events-none" 
                   referrerPolicy="no-referrer"
                   draggable={false}
                   loading="eager"
-                  style={{
-                    scale: 1.1,
-                    y: useTransform(useScroll().scrollY, [0, 500], [0, 150])
-                  }}
                 />
               </div>
-            </motion.div>
-          </AnimatePresence>
+            ))}
+          </motion.div>
           <div className="absolute inset-0 bg-black/50 pointer-events-none z-10"></div>
         </div>
         
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center pt-16 pb-8 pointer-events-none flex flex-col justify-center h-full">
-          <h1 className="sr-only">Hotel Shotabdi Abashik</h1>
-          
-          {/* 24h Service Text Above Filter */}
-          <div className="mb-2 pointer-events-auto">
-            <span className="inline-block bg-black/40 text-white px-4 py-1 rounded-full text-xs sm:text-sm font-bold tracking-wide shadow-lg animate-pulse border border-white/20">
-              <EditableText contentKey="hero_top_badge" defaultText={t('২৪ ঘণ্টা আবাসিক সেবা', '24h Residential Service')} />
-            </span>
-          </div>
+          <AnimatePresence>
+            {showHeroContent && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5 }}
+                className="w-full"
+              >
+                <h1 className="sr-only">Hotel Shotabdi Abashik</h1>
+                
+                {/* 24h Service Text Above Filter */}
+                <div className="mb-2 pointer-events-auto">
+                  <span className="inline-block text-white px-4 py-1 rounded-full text-xs sm:text-sm font-bold tracking-wide animate-pulse">
+                    <EditableText contentKey="hero_top_badge" defaultText={t('২৪ ঘণ্টা আবাসিক সেবা', '24h Residential Service')} />
+                  </span>
+                </div>
 
-          {/* Booking Shortcut Form */}
-          <div className="max-w-4xl mx-auto bg-white p-5 md:p-6 rounded-2xl shadow-xl border border-slate-200 mb-6 transform hover:-translate-y-1 transition-transform duration-300 pointer-events-auto w-full">
+                {/* Hotel Shotabdi Title */}
+                <div className="mb-6 pointer-events-auto">
+                  <h2 className="text-4xl sm:text-5xl md:text-6xl font-black text-white drop-shadow-2xl tracking-tighter">
+                    <EditableText contentKey="hero_main_title" defaultText={t('হোটেল শতাব্দী', 'Hotel Shotabdi')} />
+                  </h2>
+                </div>
+
+                {/* Booking Shortcut Form */}
+                <div className="max-w-4xl mx-auto bg-white p-5 md:p-6 rounded-2xl shadow-xl border border-slate-200 mb-6 transform hover:-translate-y-1 transition-transform duration-300 pointer-events-auto w-full">
             <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 items-end">
               <div className="flex-1 w-full text-left">
                 <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -427,28 +446,38 @@ export default function Home() {
               <span className="text-[10px] sm:text-xs md:text-sm font-medium">Kumargaon Bus Terminal, Sunamganj Road, Sylhet, Bangladesh</span>
             </a>
           </div>
-        </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
 
         {/* Navigation Dots */}
-        {activeHeroImages.length > 1 && (
-          <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-20 pointer-events-auto">
-            {activeHeroImages.map((slot, idx) => (
-              <button
-                key={slot.key}
-                onClick={() => {
-                  setDirection(idx > currentImageIndex ? 1 : -1);
-                  setCurrentImageIndex(idx);
-                }}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  idx === currentImageIndex 
-                    ? 'bg-white scale-125' 
-                    : 'bg-white/50 hover:bg-white/75'
-                }`}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-        )}
+        <AnimatePresence>
+          {showHeroContent && activeHeroImages.length > 1 && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute bottom-6 left-0 right-0 flex justify-center gap-2 z-20 pointer-events-auto"
+            >
+              {activeHeroImages.map((slot, idx) => (
+                <button
+                  key={slot.key}
+                  onClick={() => {
+                    setCurrentImageIndex(idx);
+                    setLastActivity(Date.now());
+                  }}
+                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                    idx === currentImageIndex 
+                      ? 'bg-white scale-125' 
+                      : 'bg-white/50 hover:bg-white/75'
+                  }`}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </section>
 
       {/* Special Offer Section */}

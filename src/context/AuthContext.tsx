@@ -134,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             callback: handleGoogleOneTapResponse,
             cancel_on_tap_outside: false,
             context: 'use',
+            use_fedcm_for_prompt: true,
           });
           window.google.accounts.id.prompt();
         } else {
