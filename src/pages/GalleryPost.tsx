@@ -100,7 +100,7 @@ export default function GalleryPost() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Image Column */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="relative group bg-slate-100 rounded-3xl overflow-hidden shadow-2xl aspect-video sm:aspect-auto sm:min-h-[500px] flex items-center justify-center">
+            <div className="relative group bg-slate-100 rounded-3xl overflow-hidden shadow-2xl w-full min-h-[50vh] sm:min-h-[500px] flex items-center justify-center">
               <AnimatePresence mode="wait">
                 <motion.img
                   key={currentImage.url}

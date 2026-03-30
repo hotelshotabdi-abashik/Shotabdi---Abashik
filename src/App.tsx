@@ -15,6 +15,7 @@ import Footer from './components/Footer';
 
 const Home = lazy(() => import('./pages/Home'));
 const Rooms = lazy(() => import('./pages/Rooms'));
+const RoomDetails = lazy(() => import('./pages/RoomDetails'));
 const About = lazy(() => import('./pages/About'));
 const Restaurant = lazy(() => import('./pages/Restaurant'));
 const TourDesk = lazy(() => import('./pages/TourDesk'));
@@ -147,7 +148,7 @@ export default function App() {
                       <Route path="/gallery" element={<Gallery />} />
                       <Route path="/gallery/:id" element={<GalleryPost />} />
                       <Route path="/logo" element={<Navigate to="/" />} />
-                      <Route path="/rooms/:id" element={<Rooms />} />
+                      <Route path="/rooms/:title" element={<RoomDetails />} />
                       <Route path="/restaurant/:id" element={<Restaurant />} />
                       <Route path="/tour-desk/:id" element={<TourDesk />} />
                       <Route path="/reviews" element={<Reviews />} />

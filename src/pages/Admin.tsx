@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, query, orderBy, limit, addDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone, Send, Facebook, Mail } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone, Send, Facebook, Mail, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { uploadToR2, deleteFromR2 } from '../lib/r2';
 import { useLanguage } from '../context/LanguageContext';
+import { useContent } from '../context/ContentContext';
 import { useAuth } from '../context/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { notifyBookingStatus, notifyExclusiveOffer } from '../services/NotificationService';
@@ -48,7 +49,8 @@ interface Booking {
 export default function Admin() {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'rooms' | 'users' | 'bookings' | 'content' | 'ratings' | 'offers' | 'social' | 'settings' | 'emails'>('rooms');
+  const { content, updateContent } = useContent();
+  const [activeTab, setActiveTab] = useState<'rooms' | 'users' | 'bookings' | 'content' | 'ratings' | 'offers' | 'social' | 'settings' | 'emails' | 'recommendations'>('rooms');
   
   // Social Links State
   const [socialLinks, setSocialLinks] = useState<any[]>([]);
@@ -56,6 +58,17 @@ export default function Admin() {
 
   // Settings State
   const [settings, setSettings] = useState({ websiteName: '', logoUrl: '', galleryCleanupThreshold: 50 });
+
+  // Recommendations State
+  const [restaurants, setRestaurants] = useState<any[]>([]);
+  const [tourSpots, setTourSpots] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (content) {
+      setRestaurants(content.restaurants || []);
+      setTourSpots(content.tourSpots || []);
+    }
+  }, [content]);
 
   // Email Logs State
   const [emailLogs, setEmailLogs] = useState<any[]>([]);
@@ -144,6 +157,19 @@ export default function Admin() {
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'settings/general');
       toast.error("Failed to update settings.");
+    }
+  };
+
+  const handleSaveRecommendations = async () => {
+    try {
+      await updateContent({
+        restaurants,
+        tourSpots
+      });
+      toast.success('Recommendations updated successfully');
+    } catch (error) {
+      console.error("Error updating recommendations:", error);
+      toast.error('Failed to update recommendations');
     }
   };
 
@@ -582,6 +608,12 @@ export default function Admin() {
             className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'social' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
           >
             <Facebook className="w-5 h-5 mr-2" /> {t('সোশ্যাল লিংক', 'Social Links')}
+          </button>
+          <button 
+            onClick={() => setActiveTab('recommendations')}
+            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'recommendations' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+          >
+            <MapPin className="w-5 h-5 mr-2" /> {t('সুপারিশ', 'Recommendations')}
           </button>
           <button 
             onClick={() => setActiveTab('settings')}
@@ -1437,6 +1469,213 @@ export default function Admin() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'recommendations' && (
+          <div className="space-y-8">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 max-w-4xl">
+              <h2 className="text-xl font-bold text-slate-800 mb-6">{t('প্রস্তাবিত রেস্তোরাঁ (সর্বোচ্চ ৩টি)', 'Recommended Restaurants (Max 3)')}</h2>
+              <div className="space-y-4">
+                {[0, 1, 2].map((index) => (
+                  <div key={index} className="p-4 border border-slate-200 rounded-lg space-y-4">
+                    <h3 className="font-semibold text-slate-700">Restaurant {index + 1}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
+                        <input
+                          type="text"
+                          value={restaurants[index]?.name || ''}
+                          onChange={(e) => {
+                            const newRestaurants = [...restaurants];
+                            newRestaurants[index] = { ...newRestaurants[index], name: e.target.value };
+                            setRestaurants(newRestaurants);
+                          }}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="Restaurant Name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Cuisine/Type</label>
+                        <input
+                          type="text"
+                          value={restaurants[index]?.type || ''}
+                          onChange={(e) => {
+                            const newRestaurants = [...restaurants];
+                            newRestaurants[index] = { ...newRestaurants[index], type: e.target.value };
+                            setRestaurants(newRestaurants);
+                          }}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="e.g., Bengali, Chinese"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                        <input
+                          type="text"
+                          value={restaurants[index]?.location || ''}
+                          onChange={(e) => {
+                            const newRestaurants = [...restaurants];
+                            newRestaurants[index] = { ...newRestaurants[index], location: e.target.value };
+                            setRestaurants(newRestaurants);
+                          }}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="e.g., Nawabbari Road"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Distance</label>
+                        <input
+                          type="text"
+                          value={restaurants[index]?.distance || ''}
+                          onChange={(e) => {
+                            const newRestaurants = [...restaurants];
+                            newRestaurants[index] = { ...newRestaurants[index], distance: e.target.value };
+                            setRestaurants(newRestaurants);
+                          }}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="e.g., 1.2 km"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Image URL</label>
+                        <input
+                          type="text"
+                          value={restaurants[index]?.imageUrl || ''}
+                          onChange={(e) => {
+                            const newRestaurants = [...restaurants];
+                            newRestaurants[index] = { ...newRestaurants[index], imageUrl: e.target.value };
+                            setRestaurants(newRestaurants);
+                          }}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="https://..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Map URL (Optional)</label>
+                        <input
+                          type="text"
+                          value={restaurants[index]?.mapUrl || ''}
+                          onChange={(e) => {
+                            const newRestaurants = [...restaurants];
+                            newRestaurants[index] = { ...newRestaurants[index], mapUrl: e.target.value };
+                            setRestaurants(newRestaurants);
+                          }}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="https://maps.google.com/..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 max-w-4xl">
+              <h2 className="text-xl font-bold text-slate-800 mb-6">{t('ট্যুর ডেস্ক', 'Tour Desk')}</h2>
+              <div className="space-y-4">
+                {[0, 1, 2, 3].map((index) => (
+                  <div key={index} className="p-4 border border-slate-200 rounded-lg space-y-4">
+                    <h3 className="font-semibold text-slate-700">Tour Spot {index + 1}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
+                        <input
+                          type="text"
+                          value={tourSpots[index]?.name || ''}
+                          onChange={(e) => {
+                            const newTourSpots = [...tourSpots];
+                            newTourSpots[index] = { ...newTourSpots[index], name: e.target.value };
+                            setTourSpots(newTourSpots);
+                          }}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="Tour Desk Title"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Badge Text</label>
+                        <input
+                          type="text"
+                          value={tourSpots[index]?.badge || ''}
+                          onChange={(e) => {
+                            const newTourSpots = [...tourSpots];
+                            newTourSpots[index] = { ...newTourSpots[index], badge: e.target.value };
+                            setTourSpots(newTourSpots);
+                          }}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="e.g., Popular, New"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                        <input
+                          type="text"
+                          value={tourSpots[index]?.location || ''}
+                          onChange={(e) => {
+                            const newTourSpots = [...tourSpots];
+                            newTourSpots[index] = { ...newTourSpots[index], location: e.target.value };
+                            setTourSpots(newTourSpots);
+                          }}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="e.g., City Center"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Distance</label>
+                        <input
+                          type="text"
+                          value={tourSpots[index]?.distance || ''}
+                          onChange={(e) => {
+                            const newTourSpots = [...tourSpots];
+                            newTourSpots[index] = { ...newTourSpots[index], distance: e.target.value };
+                            setTourSpots(newTourSpots);
+                          }}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="e.g., 5.0 km"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
+                        <input
+                          type="text"
+                          value={tourSpots[index]?.type || ''}
+                          onChange={(e) => {
+                            const newTourSpots = [...tourSpots];
+                            newTourSpots[index] = { ...newTourSpots[index], type: e.target.value };
+                            setTourSpots(newTourSpots);
+                          }}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="e.g., Historical Site"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Image URL</label>
+                        <input
+                          type="text"
+                          value={tourSpots[index]?.imageUrl || ''}
+                          onChange={(e) => {
+                            const newTourSpots = [...tourSpots];
+                            newTourSpots[index] = { ...newTourSpots[index], imageUrl: e.target.value };
+                            setTourSpots(newTourSpots);
+                          }}
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                          placeholder="https://..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end max-w-4xl">
+              <button
+                onClick={handleSaveRecommendations}
+                className="bg-red-700 text-white px-8 py-3 rounded-lg font-bold hover:bg-red-800 transition-colors shadow-lg"
+              >
+                {t('সেভ করুন', 'Save Recommendations')}
+              </button>
             </div>
           </div>
         )}

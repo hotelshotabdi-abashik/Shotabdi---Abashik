@@ -596,10 +596,10 @@ export default function Home() {
                     </div>
                     
                     <Link 
-                      to={`/rooms`}
+                      to={`/rooms/${room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`}
                       className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center"
                     >
-                      {t('বুক করুন', 'Book Now')}
+                      {t('বিস্তারিত দেখুন', 'View Details')}
                     </Link>
                   </div>
                 </div>
@@ -688,6 +688,11 @@ export default function Home() {
                   <div className="absolute top-4 right-4 bg-red-700 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm">
                     {spot.distance}
                   </div>
+                  {spot.badge && (
+                    <div className="absolute top-4 left-4 bg-yellow-500 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm">
+                      {spot.badge}
+                    </div>
+                  )}
                 </div>
                 <div className="p-5">
                   <h3 className="font-bold text-slate-900 mb-2">{spot.name}</h3>

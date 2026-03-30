@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BedDouble, CheckCircle2, Wifi, Tv, Wind, Plus, Trash2, Edit2, Save, X, Phone, MessageCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '../context/LanguageContext';
@@ -78,12 +78,14 @@ export default function Rooms() {
   const { editMode, content } = useContent();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, message: string, onConfirm: () => void }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+  const [passwordModal, setPasswordModal] = useState<{ isOpen: boolean, passwordInput: string }>({ isOpen: false, passwordInput: '' });
 
   const getStrikethroughPrice = (room: Room) => {
     if (room.cutPrice && room.cutPrice > room.price) {
@@ -98,6 +100,17 @@ export default function Rooms() {
   const [checkOut, setCheckOut] = useState(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.bookRoom && rooms.length > 0) {
+      const roomToBook = rooms.find(r => r.id === location.state.bookRoom);
+      if (roomToBook && roomToBook.isAvailable) {
+        setBookingRoom(roomToBook);
+        // Clear the state so it doesn't reopen on refresh
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state, rooms]);
 
   useEffect(() => {
     const roomsRef = collection(db, 'rooms');
@@ -212,16 +225,52 @@ export default function Rooms() {
   };
 
   const handleRestoreDefaults = async () => {
+    setPasswordModal({ isOpen: true, passwordInput: '' });
+  };
+
+  const confirmRestoreDefaults = async () => {
+    if (passwordModal.passwordInput !== 'kahar02') {
+      toast.error('Incorrect password');
+      return;
+    }
+    
+    setPasswordModal({ isOpen: false, passwordInput: '' });
+    
     setConfirmModal({
       isOpen: true,
       title: 'Restore Default Rooms',
-      message: 'Are you sure you want to restore the default rooms? This will DELETE ALL existing rooms and add the 4 default rooms.',
+      message: 'Are you sure you want to restore the default rooms? This will DELETE ALL existing rooms and their images from storage, then add the default rooms.',
       onConfirm: async () => {
         try {
           const roomsRef = collection(db, 'rooms');
           
           // Delete all existing rooms first
           const snapshot = await getDocs(roomsRef);
+          
+          // Delete images from R2
+          for (const docSnapshot of snapshot.docs) {
+            const roomData = docSnapshot.data();
+            if (roomData.imageUrl && roomData.imageUrl.includes('workers.dev')) {
+              try {
+                const urlObj = new URL(roomData.imageUrl);
+                const pathname = urlObj.pathname;
+                const workerUrl = import.meta.env.VITE_CLOUDFLARE_WORKER_URL;
+                const secret = import.meta.env.VITE_CLOUDFLARE_WORKER_SECRET;
+                
+                if (workerUrl && secret) {
+                  await fetch(`${workerUrl}${pathname}`, {
+                    method: 'DELETE',
+                    headers: {
+                      'Authorization': `Bearer ${secret}`
+                    }
+                  });
+                }
+              } catch (err) {
+                console.error("Failed to delete image from R2:", err);
+              }
+            }
+          }
+          
           const deletePromises = snapshot.docs.map(docSnapshot => deleteDoc(doc(db, 'rooms', docSnapshot.id)));
           await Promise.all(deletePromises);
 
@@ -253,6 +302,7 @@ export default function Rooms() {
         imageUrl: 'https://picsum.photos/seed/newroom/800/600',
         description: 'Room description',
         isAvailable: true,
+        order: rooms.length + 1,
         createdAt: serverTimestamp()
       });
       toast.success('Room added successfully');
@@ -447,6 +497,16 @@ export default function Rooms() {
                     placeholder="Amenities (comma separated)"
                   />
                   <div className="w-full">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">List Placement Order</label>
+                    <input
+                      type="number"
+                      value={editForm.order || ''}
+                      onChange={(e) => setEditForm({ ...editForm, order: Number(e.target.value) })}
+                      className="w-full p-2 border rounded"
+                      placeholder="e.g. 1, 2, 3 (Higher numbers appear later)"
+                    />
+                  </div>
+                  <div className="w-full">
                     <label className="block text-sm font-medium text-slate-700 mb-1">Room Image</label>
                     <ImageUploader
                       value={editForm.imageUrl || ''}
@@ -471,13 +531,15 @@ export default function Rooms() {
                 </div>
               ) : (
                 <>
-                  <div className="relative h-32 sm:h-64 bg-slate-50">
+                  <Link to={`/rooms/${room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`} className="relative h-32 sm:h-64 bg-slate-50 block">
                     <img src={room.imageUrl} alt={room.name} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-                  </div>
+                  </Link>
                   <div className="p-3 sm:p-8 flex-grow flex flex-col">
                     <div className="flex flex-col sm:flex-row justify-between items-start mb-2 sm:mb-4">
                       <div className="min-w-0 flex-1 pr-1 sm:pr-2">
-                        <h2 className="text-sm sm:text-2xl font-bold text-slate-900 truncate">{room.name}</h2>
+                        <Link to={`/rooms/${room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`}>
+                          <h2 className="text-sm sm:text-2xl font-bold text-slate-900 truncate hover:text-red-600 transition-colors">{room.name}</h2>
+                        </Link>
                       </div>
                       <div className="text-left sm:text-right flex-shrink-0 mt-1 sm:mt-0">
                         {getStrikethroughPrice(room) ? (
@@ -505,13 +567,21 @@ export default function Rooms() {
                       </ul>
                     </div>
                     
-                    <button 
-                      onClick={() => handleBook(room)}
-                      className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2 sm:py-3 px-2 sm:px-4 rounded-lg sm:rounded-xl transition-colors flex items-center justify-center text-xs sm:text-base"
-                    >
-                      <BedDouble className="w-3 h-3 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-                      {t('বুক করুন', 'Book Now')}
-                    </button>
+                    <div className="flex gap-2 sm:gap-4">
+                      <Link 
+                        to={`/rooms/${room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`}
+                        className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 sm:py-3 px-2 sm:px-4 rounded-lg sm:rounded-xl transition-colors flex items-center justify-center text-xs sm:text-base"
+                      >
+                        {t('বিস্তারিত', 'Details')}
+                      </Link>
+                      <button 
+                        onClick={() => handleBook(room)}
+                        className="flex-1 bg-red-700 hover:bg-red-800 text-white font-bold py-2 sm:py-3 px-2 sm:px-4 rounded-lg sm:rounded-xl transition-colors flex items-center justify-center text-xs sm:text-base"
+                      >
+                        <BedDouble className="w-3 h-3 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+                        {t('বুক করুন', 'Book Now')}
+                      </button>
+                    </div>
                   </div>
                 </>
               )}
@@ -525,8 +595,39 @@ export default function Rooms() {
         message={confirmModal.message}
         onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-        confirmText="Delete"
+        confirmText="Confirm"
       />
+
+      {/* Password Modal */}
+      {passwordModal.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">Enter Password</h2>
+            <p className="text-slate-600 mb-6">Please enter the password to restore default rooms.</p>
+            <input
+              type="password"
+              value={passwordModal.passwordInput}
+              onChange={(e) => setPasswordModal({ ...passwordModal, passwordInput: e.target.value })}
+              className="w-full p-3 border rounded-xl mb-6 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              placeholder="Password"
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setPasswordModal({ isOpen: false, passwordInput: '' })}
+                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRestoreDefaults}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Booking Modal */}
       {bookingRoom && (

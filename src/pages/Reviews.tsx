@@ -27,7 +27,7 @@ export const Reviews: React.FC = () => {
       rating: 5,
       comment: 'The hospitality was exceptional. The rooms were clean and the staff was very helpful. Highly recommended for families.',
       status: 'approved',
-      createdAt: { toDate: () => new Date('2024-03-20') }
+      createdAt: { toDate: () => new Date('2023-11-15') }
     },
     {
       id: 'demo-2',
@@ -36,7 +36,7 @@ export const Reviews: React.FC = () => {
       rating: 5,
       comment: 'Great location near the bus terminal. Very convenient for travelers. The restaurant food was delicious too!',
       status: 'approved',
-      createdAt: { toDate: () => new Date('2024-03-22') }
+      createdAt: { toDate: () => new Date('2024-01-05') }
     },
     {
       id: 'demo-3',
@@ -45,7 +45,7 @@ export const Reviews: React.FC = () => {
       rating: 4,
       comment: 'Affordable and comfortable. The AC was working perfectly. Good value for money in Sylhet.',
       status: 'approved',
-      createdAt: { toDate: () => new Date('2024-03-25') }
+      createdAt: { toDate: () => new Date('2024-02-12') }
     },
     {
       id: 'demo-4',
@@ -54,7 +54,7 @@ export const Reviews: React.FC = () => {
       rating: 5,
       comment: 'Safe and secure environment for solo female travelers. The management is very professional.',
       status: 'approved',
-      createdAt: { toDate: () => new Date('2024-03-26') }
+      createdAt: { toDate: () => new Date('2024-03-01') }
     },
     {
       id: 'demo-5',
