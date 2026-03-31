@@ -87,7 +87,7 @@ export default function Admin() {
   const [ratings, setRatings] = useState<any[]>([]);
 
   // Offers State
-  const [offerForm, setOfferForm] = useState({ title: '', description: '' });
+  const [offerForm, setOfferForm] = useState({ title: '', description: '', discountRate: '' });
 
   // Content Upload State
   const [file, setFile] = useState<File | null>(null);
@@ -162,10 +162,8 @@ export default function Admin() {
 
   const handleSaveRecommendations = async () => {
     try {
-      await updateContent({
-        restaurants,
-        tourSpots
-      });
+      await updateContent('restaurants', restaurants);
+      await updateContent('tourSpots', tourSpots);
       toast.success('Recommendations updated successfully');
     } catch (error) {
       console.error("Error updating recommendations:", error);
@@ -1297,6 +1295,16 @@ export default function Admin() {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t('ডিসকাউন্ট রেট (%)', 'Discount Rate (%)')}</label>
+                  <input 
+                    type="number" 
+                    value={offerForm.discountRate}
+                    onChange={(e) => setOfferForm({ ...offerForm, discountRate: e.target.value })}
+                    className="w-full border border-slate-300 rounded-lg p-2"
+                    placeholder="e.g. 20"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">{t('অফার বিবরণ', 'Offer Description')}</label>
                   <textarea 
                     value={offerForm.description}
@@ -1308,8 +1316,8 @@ export default function Admin() {
                 </div>
                 <button 
                   onClick={async () => {
-                    if (!offerForm.title || !offerForm.description) {
-                      toast.error('Please fill in both title and description');
+                    if (!offerForm.title || !offerForm.description || !offerForm.discountRate) {
+                      toast.error('Please fill in title, description, and discount rate');
                       return;
                     }
                     
@@ -1327,11 +1335,16 @@ export default function Admin() {
                         return;
                       }
                       
-                      const promises = userEmails.map(email => notifyExclusiveOffer(email, offerForm.title, offerForm.description));
+                      // Update the Exclusive Offer section on the homepage
+                      await setDoc(doc(db, 'content', 'global_discount_title'), { value: offerForm.title, lastUpdated: serverTimestamp() }, { merge: true });
+                      await setDoc(doc(db, 'content', 'global_discount_desc'), { value: offerForm.description, lastUpdated: serverTimestamp() }, { merge: true });
+                      await setDoc(doc(db, 'content', 'global_discount_rate'), { value: offerForm.discountRate, lastUpdated: serverTimestamp() }, { merge: true });
+                      
+                      const promises = userEmails.map(email => notifyExclusiveOffer(email, `${offerForm.discountRate}% OFF: ${offerForm.title}`, offerForm.description));
                       await Promise.all(promises);
                       
-                      toast.success(`Offer sent to ${userEmails.length} users!`);
-                      setOfferForm({ title: '', description: '' });
+                      toast.success(`Offer sent to ${userEmails.length} users and homepage updated!`);
+                      setOfferForm({ title: '', description: '', discountRate: '' });
                     } catch (error) {
                       console.error('Error sending offers:', error);
                       toast.error('Failed to send offers');
