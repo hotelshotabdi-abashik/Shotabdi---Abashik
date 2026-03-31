@@ -59,8 +59,7 @@ export const sendEmail = async (params: EmailParams) => {
     const logoUrl = await getLogoUrl();
     const finalHtml = wrapEmail(params.html, logoUrl);
     
-    const apiUrl = import.meta.env.VITE_EMAIL_API_URL || '/api/send-email';
-    const response = await fetch(apiUrl, {
+    const response = await fetch('/api/send-email', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
