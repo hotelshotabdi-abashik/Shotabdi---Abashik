@@ -985,13 +985,14 @@ export default function Admin() {
                       <select 
                         value={b.status}
                         onChange={(e) => handleUpdateBookingStatus(b.id, e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
+                        className="w-full px-3 py-2 border border-slate-300 rounded text-sm disabled:opacity-50 disabled:bg-slate-100"
+                        disabled={['rejected', 'cancelled', 'completed'].includes(b.status)}
                       >
-                        <option value="pending">Pending</option>
-                        <option value="accepted">Accepted</option>
+                        <option value="pending" disabled>Pending</option>
+                        <option value="accepted" disabled>Accepted</option>
                         <option value="completed">Completed</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="cancelled">Cancelled</option>
+                        <option value="rejected" disabled>Rejected</option>
+                        <option value="cancelled" disabled={b.status === 'cancelled'}>Cancelled</option>
                       </select>
                     )}
                   </div>
@@ -1067,13 +1068,14 @@ export default function Admin() {
                             <select 
                               value={b.status}
                               onChange={(e) => handleUpdateBookingStatus(b.id, e.target.value)}
-                              className="px-2 py-1 border border-slate-300 rounded text-sm"
+                              className="px-2 py-1 border border-slate-300 rounded text-sm disabled:opacity-50 disabled:bg-slate-100"
+                              disabled={['rejected', 'cancelled', 'completed'].includes(b.status)}
                             >
-                              <option value="pending">Pending</option>
-                              <option value="accepted">Accepted</option>
+                              <option value="pending" disabled>Pending</option>
+                              <option value="accepted" disabled>Accepted</option>
                               <option value="completed">Completed</option>
-                              <option value="rejected">Rejected</option>
-                              <option value="cancelled">Cancelled</option>
+                              <option value="rejected" disabled>Rejected</option>
+                              <option value="cancelled" disabled={b.status === 'cancelled'}>Cancelled</option>
                             </select>
                           )}
                         </td>
