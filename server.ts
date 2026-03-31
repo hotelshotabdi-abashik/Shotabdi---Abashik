@@ -31,7 +31,7 @@ let resendClient: Resend | null = null;
 
 function getResend() {
   if (!resendClient) {
-    const key = process.env.RESEND_API_KEY || 're_JDjWan9P_BX7wV2aQkwUPBfFznC8W2L6N';
+    const key = process.env.RESEND_API_KEY;
     if (!key) {
       throw new Error('RESEND_API_KEY is not configured');
     }
@@ -52,10 +52,9 @@ async function startServer() {
 
     try {
       const resend = getResend();
-      const fromEmail = process.env.RESEND_FROM_EMAIL || 'hotel@shotabdi-abashik.bd';
+      const fromEmail = process.env.RESEND_FROM_EMAIL || 'notifications@shotabdi-abashik.bd';
       const data = await resend.emails.send({
         from: `Hotel Shotabdi Abashik <${fromEmail}>`,
-        reply_to: 'hotelshotabdiabashik@gmail.com',
         to: [to],
         subject,
         html,
