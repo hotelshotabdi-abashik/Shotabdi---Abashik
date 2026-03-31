@@ -142,7 +142,18 @@ service cloud.firestore {
     }
 
     function areImmutableFieldsUnchanged(fields) {
+      // A field is unchanged if it's not in affectedKeys, OR if it was missing in resource.data
+      // Actually, diff().affectedKeys() includes added keys. 
+      // Let's check each field manually or just allow if resource.data doesn't have it.
+      // Since we can't easily loop, we can check if the old document had the field.
+      // If the old document didn't have the field, it's okay to add it.
+      // But hasAny checks all fields.
+      // Let's just use a simpler approach for the specific rules.
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny(fields);
+    }
+    
+    function isFieldUnchangedOrAdded(field) {
+      return !(field in resource.data) || request.resource.data[field] == resource.data[field];
     }
 
     function isRecent(ts) {
@@ -306,6 +317,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
       allow create: if isAuthenticated() && 
                     isOwner(userId) && 
                     isValidUser() && 
@@ -348,7 +360,7 @@ service cloud.firestore {
     match /content/{contentId} {
       allow read: if true; // Anyone can read content
       allow create: if isAdmin() && isValidContent();
-      allow update: if isAdmin() && isValidContent() && areImmutableFieldsUnchanged(['id', 'section']);
+      allow update: if isAdmin() && isValidContent() && isFieldUnchangedOrAdded('id') && isFieldUnchangedOrAdded('section');
       allow delete: if isAdmin();
     }
 
@@ -387,7 +399,7 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read: if true;
       allow create: if isAdmin() && isValidSettings();
-      allow update: if isAdmin() && isValidSettings() && areImmutableFieldsUnchanged(['id']);
+      allow update: if isAdmin() && isValidSettings() && isFieldUnchangedOrAdded('id');
       allow delete: if isAdmin();
     }
   }

@@ -152,7 +152,7 @@ export default function Admin() {
 
   const handleUpdateSettings = async () => {
     try {
-      await setDoc(doc(db, 'settings', 'general'), settings);
+      await setDoc(doc(db, 'settings', 'general'), { ...settings, id: 'general' }, { merge: true });
       toast.success("Settings updated successfully!");
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'settings/general');
@@ -476,7 +476,12 @@ export default function Admin() {
       const contentSnap = await getDoc(contentRef);
       
       if (contentSnap.exists()) {
-        const images = contentSnap.data().value || [];
+        let images = [];
+        try {
+          images = JSON.parse(contentSnap.data().data) || [];
+        } catch (e) {
+          images = contentSnap.data().data || [];
+        }
         const threshold = settings.galleryCleanupThreshold || 50;
         
         if (images.length > threshold) {
@@ -492,7 +497,7 @@ export default function Admin() {
           }
           
           // Update Firestore
-          await updateDoc(contentRef, { value: toKeep });
+          await updateContent('galleryImages', toKeep);
           
           // Notify Admin
           await addDoc(collection(db, 'emailLogs'), {
@@ -537,12 +542,16 @@ export default function Admin() {
         const contentSnap = await getDoc(contentRef);
         let currentImages = [];
         if (contentSnap.exists()) {
-          currentImages = contentSnap.data().value || [];
+          try {
+            currentImages = JSON.parse(contentSnap.data().data) || [];
+          } catch (e) {
+            currentImages = contentSnap.data().data || [];
+          }
         }
         
         // Add to the beginning (ranking top to bottom)
         const newImages = [{ url: fileUrl, createdAt: new Date().toISOString() }, ...currentImages];
-        await setDoc(contentRef, { value: newImages }, { merge: true });
+        await updateContent('galleryImages', newImages);
         
         // Trigger cleanup
         await cleanupGallery();
@@ -1336,9 +1345,9 @@ export default function Admin() {
                       }
                       
                       // Update the Exclusive Offer section on the homepage
-                      await setDoc(doc(db, 'content', 'global_discount_title'), { value: offerForm.title, lastUpdated: serverTimestamp() }, { merge: true });
-                      await setDoc(doc(db, 'content', 'global_discount_desc'), { value: offerForm.description, lastUpdated: serverTimestamp() }, { merge: true });
-                      await setDoc(doc(db, 'content', 'global_discount_rate'), { value: offerForm.discountRate, lastUpdated: serverTimestamp() }, { merge: true });
+                      await updateContent('global_discount_title', offerForm.title);
+                      await updateContent('global_discount_desc', offerForm.description);
+                      await updateContent('global_discount_rate', offerForm.discountRate);
                       
                       const promises = userEmails.map(email => notifyExclusiveOffer(email, `${offerForm.discountRate}% OFF: ${offerForm.title}`, offerForm.description));
                       await Promise.all(promises);

@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, addDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export interface EmailParams {
@@ -11,14 +11,14 @@ export interface EmailParams {
 
 const logEmail = async (params: EmailParams, status: 'sent' | 'failed', error?: string) => {
   try {
-    await addDoc(collection(db, 'emailLogs'), {
+    const docRef = doc(collection(db, 'emailLogs'));
+    await setDoc(docRef, {
+      id: docRef.id,
       to: params.to,
       subject: params.subject,
-      type: params.type || 'general',
+      body: params.html || '',
       status,
-      error: error || null,
-      sentAt: serverTimestamp(),
-      metadata: params.metadata || {}
+      sentAt: serverTimestamp()
     });
   } catch (err) {
     console.error("Error logging email:", err);
@@ -59,7 +59,8 @@ export const sendEmail = async (params: EmailParams) => {
     const logoUrl = await getLogoUrl();
     const finalHtml = wrapEmail(params.html, logoUrl);
     
-    const response = await fetch('/api/send-email', {
+    const apiUrl = import.meta.env.VITE_EMAIL_API_URL || '/api/send-email';
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
