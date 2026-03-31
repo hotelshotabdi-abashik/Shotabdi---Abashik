@@ -59,13 +59,31 @@ export const sendEmail = async (params: EmailParams) => {
     const logoUrl = await getLogoUrl();
     const finalHtml = wrapEmail(params.html, logoUrl);
     
-    const response = await fetch('/api/send-email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ ...params, html: finalHtml }),
-    });
+    const workerUrl = import.meta.env.VITE_MAIL_WORKER_URL;
+    const workerSecret = import.meta.env.VITE_MAIL_WORKER_SECRET;
+
+    let response;
+
+    if (workerUrl) {
+      // Use Cloudflare Worker
+      response = await fetch(workerUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${workerSecret}`,
+        },
+        body: JSON.stringify({ ...params, html: finalHtml }),
+      });
+    } else {
+      // Fallback to Express backend
+      response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ...params, html: finalHtml }),
+      });
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));

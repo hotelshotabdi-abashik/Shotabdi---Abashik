@@ -52,7 +52,7 @@ async function startServer() {
 
     try {
       const resend = getResend();
-      const fromEmail = process.env.RESEND_FROM_EMAIL || 'notifications@shotabdi-abashik.bd';
+      const fromEmail = process.env.RESEND_FROM_EMAIL || 'hotel@shotabdi-abashik.bd';
       const data = await resend.emails.send({
         from: `Hotel Shotabdi Abashik <${fromEmail}>`,
         to: [to],
