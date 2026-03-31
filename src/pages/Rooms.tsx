@@ -199,7 +199,6 @@ export default function Rooms() {
           bookingRoom?.name || 'Room',
           totalAmount,
           profile?.phone || 'N/A',
-          profile?.nidNumber || 'N/A',
           inDate,
           outDate
         ).catch(console.error);
@@ -210,7 +209,6 @@ export default function Rooms() {
         userName: profile?.displayName || user?.displayName || 'User',
         userEmail: user?.email || 'Unknown',
         userPhone: profile?.phone || 'N/A',
-        userNid: profile?.nidNumber || 'N/A',
         roomName: bookingRoom?.name || 'Room',
         totalAmount,
         checkIn: inDate,
