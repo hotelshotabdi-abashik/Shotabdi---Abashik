@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, addDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 export interface EmailParams {
@@ -11,14 +11,14 @@ export interface EmailParams {
 
 const logEmail = async (params: EmailParams, status: 'sent' | 'failed', error?: string) => {
   try {
-    await addDoc(collection(db, 'emailLogs'), {
+    const docRef = doc(collection(db, 'emailLogs'));
+    await setDoc(docRef, {
+      id: docRef.id,
       to: params.to,
       subject: params.subject,
-      type: params.type || 'general',
+      body: params.html || '',
       status,
-      error: error || null,
-      sentAt: serverTimestamp(),
-      metadata: params.metadata || {}
+      sentAt: serverTimestamp()
     });
   } catch (err) {
     console.error("Error logging email:", err);
@@ -59,9 +59,13 @@ export const sendEmail = async (params: EmailParams) => {
     const logoUrl = await getLogoUrl();
     const finalHtml = wrapEmail(params.html, logoUrl);
     
-    const response = await fetch('/api/send-email', {
+    const WORKER_URL = import.meta.env.VITE_CLOUDFLARE_WORKER_URL || 'https://shotabdi-abashik.hotelshotabdiabashik.workers.dev';
+    const AUTH_KEY = import.meta.env.VITE_CLOUDFLARE_WORKER_SECRET || '123456@';
+
+    const response = await fetch(`${WORKER_URL}/send-email`, {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${AUTH_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ ...params, html: finalHtml }),
@@ -100,12 +104,12 @@ export const notifyLogin = async (email: string, name: string) => {
   });
 };
 
-export const notifyBookingSubmitted = async (email: string, name: string, roomName: string, totalAmount: number, phone: string, checkIn: Date, checkOut: Date) => {
+export const notifyBookingSubmitted = async (email: string, name: string, roomName: string, totalAmount: number, phone: string, nid: string, checkIn: Date, checkOut: Date) => {
   return sendEmail({
     to: email,
     subject: 'Booking Received - Hotel Shotabdi Abashik',
     type: 'booking_submitted',
-    metadata: { name, roomName, totalAmount, phone, checkIn, checkOut },
+    metadata: { name, roomName, totalAmount, phone, nid, checkIn, checkOut },
     html: `
       <h2 style="color: #dc2626; margin-top: 0;">Booking Received!</h2>
       <p>Hello ${name},</p>
@@ -113,12 +117,19 @@ export const notifyBookingSubmitted = async (email: string, name: string, roomNa
       <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px solid #e2e8f0;">
         <p style="margin: 5px 0;"><strong>Guest:</strong> ${name}</p>
         <p style="margin: 5px 0;"><strong>Phone:</strong> ${phone}</p>
+        <p style="margin: 5px 0;"><strong>NID:</strong> ${nid}</p>
         <p style="margin: 5px 0;"><strong>Room:</strong> ${roomName}</p>
         <p style="margin: 5px 0;"><strong>Check-in:</strong> ${checkIn.toLocaleDateString()}</p>
         <p style="margin: 5px 0;"><strong>Check-out:</strong> ${checkOut.toLocaleDateString()}</p>
         <p style="margin: 15px 0 0 0;">Total Amount: <strong style="color: #dc2626; font-size: 18px;">৳${totalAmount}</strong></p>
       </div>
       <p>Our team will review your booking and contact you shortly for confirmation.</p>
+      
+      <div style="background-color: #fffbeb; padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px dashed #f59e0b; text-align: center;">
+        <h3 style="color: #d97706; margin-top: 0;">🎁 Exclusive Offer for You!</h3>
+        <p style="margin-bottom: 0;">As a valued guest, enjoy a special discount on your next stay or dining with us. Mention this email at the reception to claim your exclusive offer!</p>
+      </div>
+
       <p>Thank you for choosing Hotel Shotabdi Abashik.</p>
     `,
   });
@@ -191,6 +202,7 @@ export const notifyAdminNewBooking = async (bookingData: any) => {
       <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
         <p style="margin: 5px 0;"><strong>Guest:</strong> ${bookingData.userName} (${bookingData.userEmail})</p>
         <p style="margin: 5px 0;"><strong>Phone:</strong> ${bookingData.userPhone}</p>
+        <p style="margin: 5px 0;"><strong>NID:</strong> ${bookingData.userNid || 'N/A'}</p>
         <p style="margin: 5px 0;"><strong>Room:</strong> ${bookingData.roomName}</p>
         <p style="margin: 5px 0;"><strong>Amount:</strong> ৳${bookingData.totalAmount}</p>
         <p style="margin: 5px 0;"><strong>Check-in:</strong> ${bookingData.checkIn.toLocaleDateString()}</p>
