@@ -561,8 +561,8 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
               {rooms.map((room) => (
                 <div key={room.id} className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col hover:shadow-xl transition-shadow relative group">
-                  <div className="relative h-48 sm:h-64 bg-slate-50">
-                    <img src={room.imageUrl || room.images?.[0] || 'https://picsum.photos/seed/room/800/600'} alt={room.name} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                  <div className="relative aspect-video sm:h-64 bg-slate-100 overflow-hidden">
+                    <img src={room.imageUrl || room.images?.[0] || 'https://picsum.photos/seed/room/800/600'} alt={room.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
                   </div>
                   <div className="p-5 sm:p-8 flex-grow flex flex-col">
                     <div className="flex justify-between items-start mb-4">

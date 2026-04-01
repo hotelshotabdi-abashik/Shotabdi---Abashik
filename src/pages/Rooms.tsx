@@ -548,8 +548,8 @@ export default function Rooms() {
                 </div>
               ) : (
                 <>
-                  <Link to={`/rooms/${room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`} className="relative h-32 sm:h-64 bg-slate-50 block">
-                    <img src={room.imageUrl} alt={room.name} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                  <Link to={`/rooms/${room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`} className="relative aspect-video sm:h-64 bg-slate-100 block overflow-hidden">
+                    <img src={room.imageUrl} alt={room.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
                     {room.isRecommended && (
                       <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded-md shadow-md flex items-center gap-1">
                         <Star className="w-3 h-3 fill-current" /> Recommended

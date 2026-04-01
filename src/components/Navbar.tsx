@@ -511,8 +511,8 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden fixed inset-0 z-[10000] bg-white flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white sticky top-0">
+        <div className="md:hidden fixed inset-0 z-[100000] bg-white flex flex-col h-[100dvh] overflow-hidden animate-in fade-in slide-in-from-right duration-300">
+          <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white sticky top-0 z-[100001]">
             {mobileMenuSection === 'main' ? (
               <Link to="/" className="flex items-center gap-2 min-w-0" onClick={(e) => handleNavClick('/', e)}>
                 <EditableImage 

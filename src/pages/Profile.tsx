@@ -149,11 +149,23 @@ export default function Profile() {
             <p className="text-red-100">
               {profile?.profileCompleted 
                 ? t('আপনার প্রোফাইলের তথ্য আপডেট করুন (প্রতি ৩০ মিনিটে একবার)।', 'Update your profile information (once every 30 minutes).') 
-                : t('বুকিং করার জন্য আপনার সঠিক তথ্য প্রদান করা আবশ্যক।', 'You must provide your correct information to make a booking.')}
+                : t('বুকিং করার জন্য আপনার সঠিক তথ্য প্রদান করা আবশ্যক। সবগুলো ঘর পূরণ করুন।', 'You must provide your correct information to make a booking. Please fill all fields.')}
             </p>
           </div>
           
           <form onSubmit={handleSubmit} className="p-8 space-y-6">
+            {!profile?.profileCompleted && (
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl mb-6 flex items-center">
+                <div className="bg-red-100 p-2 rounded-full mr-3">
+                  <FileText className="w-5 h-5 text-red-600" />
+                </div>
+                <div>
+                  <p className="font-bold text-sm">{t('প্রোফাইল অসম্পূর্ণ!', 'Profile Incomplete!')}</p>
+                  <p className="text-xs">{t('ওয়েবসাইট ব্যবহার করতে এবং বুকিং করতে নিচের সব তথ্য পূরণ করুন।', 'Please fill all the information below to use the website and make bookings.')}</p>
+                </div>
+              </div>
+            )}
+
             {timeRemaining !== null && timeRemaining > 0 && (
               <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-xl mb-6">
                 {t('আপনি সম্প্রতি প্রোফাইল আপডেট করেছেন। আবার আপডেট করতে', 'You have recently updated your profile. To update again wait')} <strong>{timeRemaining} {t('মিনিট', 'minutes')}</strong> {t('অপেক্ষা করুন।', '')}

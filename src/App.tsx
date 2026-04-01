@@ -137,7 +137,7 @@ export default function App() {
               <ProfileEnforcer />
               <div className="flex flex-col min-h-screen font-sans bg-slate-50 text-slate-900">
                 <Navbar />
-                <main className="flex-grow">
+                <main className="flex-grow pt-14">
                   <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
                     <Routes>
                       <Route path="/" element={<Home />} />

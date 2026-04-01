@@ -94,11 +94,11 @@ export default function RoomDetails() {
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
             {/* Image Section */}
-            <div className="relative h-[400px] lg:h-auto">
+            <div className="relative h-[300px] sm:h-[400px] lg:h-auto bg-slate-100 flex items-center justify-center">
               <img 
                 src={room.imageUrl} 
                 alt={room.name} 
-                className="w-full h-full object-cover"
+                className="max-w-full max-h-full object-contain"
                 referrerPolicy="no-referrer"
               />
               {!room.isAvailable && (
