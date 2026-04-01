@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BedDouble, CheckCircle2, Wifi, Tv, Wind, Plus, Trash2, Edit2, Save, X, Phone, MessageCircle } from 'lucide-react';
+import { BedDouble, CheckCircle2, Wifi, Tv, Wind, Plus, Trash2, Edit2, Save, X, Phone, MessageCircle, Star } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -24,6 +24,7 @@ interface Room {
   description: string;
   isAvailable: boolean;
   order?: number;
+  isRecommended?: boolean;
 }
 
 const defaultRooms = [
@@ -122,6 +123,8 @@ export default function Rooms() {
       
       // Sort rooms to maintain consistent order (e.g., by order field, then price)
       roomsData.sort((a, b) => {
+        if (a.isRecommended && !b.isRecommended) return -1;
+        if (!a.isRecommended && b.isRecommended) return 1;
         if (a.order !== undefined && b.order !== undefined) {
           return a.order - b.order;
         }
@@ -199,7 +202,6 @@ export default function Rooms() {
           bookingRoom?.name || 'Room',
           totalAmount,
           profile?.phone || 'N/A',
-          profile?.nidNumber || 'N/A',
           inDate,
           outDate
         ).catch(console.error);
@@ -210,7 +212,6 @@ export default function Rooms() {
         userName: profile?.displayName || user?.displayName || 'User',
         userEmail: user?.email || 'Unknown',
         userPhone: profile?.phone || 'N/A',
-        userNid: profile?.nidNumber || 'N/A',
         roomName: bookingRoom?.name || 'Room',
         totalAmount,
         checkIn: inDate,
@@ -341,7 +342,9 @@ export default function Rooms() {
       amenities: room.amenities ? room.amenities.join(', ') : '',
       imageUrl: room.imageUrl || '',
       description: room.description || '',
-      isAvailable: room.isAvailable !== false
+      isAvailable: room.isAvailable !== false,
+      order: room.order || 0,
+      isRecommended: room.isRecommended || false
     });
   };
 
@@ -508,6 +511,18 @@ export default function Rooms() {
                       placeholder="e.g. 1, 2, 3 (Higher numbers appear later)"
                     />
                   </div>
+                  <div className="w-full flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="isRecommended"
+                      checked={editForm.isRecommended || false}
+                      onChange={(e) => setEditForm({ ...editForm, isRecommended: e.target.checked })}
+                      className="w-4 h-4 text-red-600 rounded focus:ring-red-500"
+                    />
+                    <label htmlFor="isRecommended" className="text-sm font-medium text-slate-700">
+                      Mark as Recommended (Shows on top)
+                    </label>
+                  </div>
                   <div className="w-full">
                     <label className="block text-sm font-medium text-slate-700 mb-1">Room Image</label>
                     <ImageUploader
@@ -535,6 +550,11 @@ export default function Rooms() {
                 <>
                   <Link to={`/rooms/${room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`} className="relative h-32 sm:h-64 bg-slate-50 block">
                     <img src={room.imageUrl} alt={room.name} className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                    {room.isRecommended && (
+                      <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded-md shadow-md flex items-center gap-1">
+                        <Star className="w-3 h-3 fill-current" /> Recommended
+                      </div>
+                    )}
                   </Link>
                   <div className="p-3 sm:p-8 flex-grow flex flex-col">
                     <div className="flex flex-col sm:flex-row justify-between items-start mb-2 sm:mb-4">

@@ -3,7 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
 import { EditableText } from '../components/EditableText';
 import { uploadToR2, deleteFromR2 } from '../lib/r2';
-import { Trash2, Upload, Loader2, X, Image as ImageIcon, Edit2, Search } from 'lucide-react';
+import { Trash2, Upload, Loader2, X, Image as ImageIcon, Edit2, Search, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { Helmet } from 'react-helmet-async';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -16,6 +16,9 @@ export interface GalleryImage {
   description: string;
   keywords: string;
   createdAt: number;
+  order?: number;
+  isRecommended?: boolean;
+  originalIndex?: number;
 }
 
 export default function Gallery() {
@@ -31,7 +34,9 @@ export default function Gallery() {
     file: null as File | null,
     title: '',
     description: '',
-    keywords: ''
+    keywords: '',
+    order: 0,
+    isRecommended: false
   });
 
   const rawImages: any[] = content.galleryImages || [];
@@ -49,7 +54,15 @@ export default function Gallery() {
       }
       return img;
     })
-    .sort((a, b) => b.createdAt - a.createdAt);
+    .map((img, idx) => ({ ...img, originalIndex: idx }))
+    .sort((a, b) => {
+      if (a.isRecommended && !b.isRecommended) return -1;
+      if (!a.isRecommended && b.isRecommended) return 1;
+      if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+      if (a.order !== undefined) return -1;
+      if (b.order !== undefined) return 1;
+      return b.createdAt - a.createdAt;
+    });
 
   const handleOpenUploadModal = (index: number | null = null) => {
     if (index !== null) {
@@ -58,11 +71,13 @@ export default function Gallery() {
         file: null,
         title: img.title || '',
         description: img.description || '',
-        keywords: img.keywords || ''
+        keywords: img.keywords || '',
+        order: img.order || 0,
+        isRecommended: img.isRecommended || false
       });
       setEditingIndex(index);
     } else {
-      setFormData({ file: null, title: '', description: '', keywords: '' });
+      setFormData({ file: null, title: '', description: '', keywords: '', order: 0, isRecommended: false });
       setEditingIndex(null);
     }
     setIsUploadModalOpen(true);
@@ -93,12 +108,14 @@ export default function Gallery() {
         title: formData.title,
         description: formData.description,
         keywords: formData.keywords,
-        createdAt: editingIndex !== null ? images[editingIndex].createdAt : Date.now()
+        createdAt: editingIndex !== null ? images[editingIndex].createdAt : Date.now(),
+        order: formData.order,
+        isRecommended: formData.isRecommended
       };
 
-      let newImages = [...images];
+      let newImages = [...rawImages];
       if (editingIndex !== null) {
-        newImages[editingIndex] = newImage;
+        newImages[images[editingIndex].originalIndex!] = newImage;
       } else {
         newImages.unshift(newImage); // Add to top
       }
@@ -120,7 +137,8 @@ export default function Gallery() {
         
         // Log to emailLogs if possible
         try {
-          await fetch('/api/send-email', {
+          const WORKER_URL = import.meta.env.VITE_CLOUDFLARE_WORKER_URL || 'https://shotabdi-abashik.hotelshotabdiabashik.workers.dev';
+          await fetch(`${WORKER_URL}/send-email`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -145,8 +163,9 @@ export default function Gallery() {
     }
   };
 
-  const handleDelete = async (index: number, url: string, e: React.MouseEvent) => {
+  const handleDelete = async (originalIndex: number, url: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     setConfirmModal({
       isOpen: true,
       title: 'Delete Image',
@@ -156,8 +175,8 @@ export default function Gallery() {
           if (url.includes('workers.dev')) {
             await deleteFromR2(url);
           }
-          const newImages = [...images];
-          newImages.splice(index, 1);
+          const newImages = [...rawImages];
+          newImages.splice(originalIndex, 1);
           await updateContent('galleryImages', newImages);
           toast.success('Image deleted successfully');
         } catch (error) {
@@ -215,6 +234,13 @@ export default function Gallery() {
             >
               <img src={img.url} alt={img.title || `Gallery ${index + 1}`} className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
               
+              {img.isRecommended && (
+                <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded-full flex items-center shadow-md z-10">
+                  <Star className="w-3 h-3 sm:w-4 sm:h-4 mr-1 fill-current" />
+                  Recommended
+                </div>
+              )}
+
               {/* SEO Hidden Text */}
               <div className="sr-only">
                 <h2>{img.title}</h2>
@@ -241,7 +267,7 @@ export default function Gallery() {
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button 
-                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(index, img.url, e); }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(img.originalIndex!, img.url, e); }}
                     className="bg-red-600/90 text-white p-2 rounded-full hover:bg-red-600 transform hover:scale-110 transition-all shadow-lg"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -318,6 +344,30 @@ export default function Gallery() {
                   placeholder="e.g., hotel, sylhet, deluxe room, view"
                 />
                 <p className="text-xs text-slate-500 mt-1">Comma separated keywords for Google Search</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Order</label>
+                  <input 
+                    type="number" 
+                    value={formData.order}
+                    onChange={(e) => setFormData({...formData, order: parseInt(e.target.value) || 0})}
+                    className="w-full border-slate-300 rounded-xl shadow-sm focus:border-red-500 focus:ring-red-500"
+                    placeholder="e.g., 1"
+                  />
+                </div>
+                <div className="flex items-center mt-6">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      checked={formData.isRecommended}
+                      onChange={(e) => setFormData({...formData, isRecommended: e.target.checked})}
+                      className="rounded border-gray-300 text-red-600 focus:ring-red-500 w-5 h-5"
+                    />
+                    <span className="text-sm font-medium text-slate-700">Recommended</span>
+                  </label>
+                </div>
               </div>
 
               <div className="pt-4 flex justify-end gap-3">

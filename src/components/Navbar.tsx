@@ -213,6 +213,7 @@ export default function Navbar() {
   const isSolid = scrolled || !isHome;
 
   return (
+    <>
     <nav className={`fixed w-full top-0 z-[9999] transition-all duration-500 ${isSolid ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-transparent shadow-none'} ${isSolid ? 'text-slate-900' : 'text-white'}`}>
       <div className="w-full px-2 sm:px-4 lg:px-6">
         <div className="flex justify-between h-14 py-1 items-center">
@@ -506,9 +507,11 @@ export default function Navbar() {
         </div>
       </div>
 
+      </nav>
+
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden fixed inset-0 z-[9999] bg-white flex flex-col">
+        <div className="md:hidden fixed inset-0 z-[10000] bg-white flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white sticky top-0">
             {mobileMenuSection === 'main' ? (
               <Link to="/" className="flex items-center gap-2 min-w-0" onClick={(e) => handleNavClick('/', e)}>
@@ -606,7 +609,7 @@ export default function Navbar() {
 
       {/* Full Screen Notifications Modal */}
       {isFullScreenNotification && (
-        <div className="fixed inset-0 z-[9999] bg-white flex flex-col">
+        <div className="fixed inset-0 z-[10000] bg-white flex flex-col">
           <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white sticky top-0">
             <h2 className="text-xl font-bold text-slate-900">{t('সব নোটিফিকেশন', 'All Notifications')}</h2>
             <button 
@@ -661,6 +664,6 @@ export default function Navbar() {
           </div>
         </div>
       )}
-    </nav>
+    </>
   );
 }

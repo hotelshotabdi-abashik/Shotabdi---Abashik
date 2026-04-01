@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Utensils, Coffee, Clock, MapPin, Navigation, Search, Plus, Trash2, Edit2, Save, X } from 'lucide-react';
+import { Utensils, Coffee, Clock, MapPin, Navigation, Search, Plus, Trash2, Edit2, Save, X, Star } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
 import { useAuth } from '../context/AuthContext';
@@ -76,11 +76,20 @@ export default function Restaurant() {
   };
 
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', location: '', distance: '', type: '', mapUrl: '', imageUrl: '' });
+  const [editForm, setEditForm] = useState({ name: '', location: '', distance: '', type: '', mapUrl: '', imageUrl: '', order: 0, isRecommended: false });
   const [isAdding, setIsAdding] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, message: string, onConfirm: () => void }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
-  const filteredRestaurants = restaurants.filter(res => 
+  const sortedRestaurants = restaurants.map((res, index) => ({ ...res, originalIndex: index })).sort((a, b) => {
+    if (a.isRecommended && !b.isRecommended) return -1;
+    if (!a.isRecommended && b.isRecommended) return 1;
+    if (a.order !== undefined && b.order !== undefined) return a.order - b.order;
+    if (a.order !== undefined) return -1;
+    if (b.order !== undefined) return 1;
+    return 0;
+  });
+
+  const filteredRestaurants = sortedRestaurants.filter(res => 
     res && res.name && (
       res.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (res.location && res.location.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -124,7 +133,7 @@ export default function Restaurant() {
   const handleSaveAdd = async () => {
     await addToList('restaurants', editForm);
     setIsAdding(false);
-    setEditForm({ name: '', location: '', distance: '', type: '', mapUrl: '', imageUrl: '' });
+    setEditForm({ name: '', location: '', distance: '', type: '', mapUrl: '', imageUrl: '', order: 0, isRecommended: false });
   };
 
   return (
@@ -159,7 +168,7 @@ export default function Restaurant() {
                   <button
                     onClick={() => {
                       setIsAdding(true);
-                      setEditForm({ name: '', location: '', distance: '', type: '', mapUrl: '', imageUrl: '' });
+                      setEditForm({ name: '', location: '', distance: '', type: '', mapUrl: '', imageUrl: '', order: 0, isRecommended: false });
                     }}
                     className="bg-green-600 text-white p-2 rounded-xl hover:bg-green-700 transition-colors flex-shrink-0"
                     title="Add Restaurant"
@@ -186,6 +195,11 @@ export default function Restaurant() {
                 <input type="text" placeholder="Distance (e.g. 5.5 km)" value={editForm.distance} onChange={e => setEditForm({...editForm, distance: e.target.value})} className="border p-2 rounded" />
                 <input type="text" placeholder="Type (e.g. Bengali / Traditional)" value={editForm.type} onChange={e => setEditForm({...editForm, type: e.target.value})} className="border p-2 rounded" />
                 <input type="text" placeholder="Google Maps URL (Optional)" value={editForm.mapUrl || ''} onChange={e => setEditForm({...editForm, mapUrl: e.target.value})} className="border p-2 rounded" />
+                <input type="number" placeholder="Order (e.g. 1)" value={editForm.order || 0} onChange={e => setEditForm({...editForm, order: parseInt(e.target.value) || 0})} className="border p-2 rounded" />
+                <label className="flex items-center space-x-2">
+                  <input type="checkbox" checked={editForm.isRecommended || false} onChange={e => setEditForm({...editForm, isRecommended: e.target.checked})} className="rounded border-gray-300 text-red-600 focus:ring-red-500" />
+                  <span className="text-sm font-medium text-slate-700">Recommended</span>
+                </label>
               </div>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Restaurant Image</label>
@@ -207,13 +221,19 @@ export default function Restaurant() {
               <div key={index} className="bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow flex flex-col h-full relative group overflow-hidden">
                 {editMode && (
                   <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <button onClick={() => handleEdit(index, restaurant)} className="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"><Edit2 className="w-4 h-4" /></button>
-                    <button onClick={() => handleRemove(index, restaurant.name)} className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleEdit(restaurant.originalIndex, restaurant)} className="p-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleRemove(restaurant.originalIndex, restaurant.name)} className="p-1 bg-red-100 text-red-600 rounded hover:bg-red-200"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 )}
                 {restaurant.imageUrl && (
                   <div className="h-24 sm:h-48 w-full relative">
                     <img src={restaurant.imageUrl} alt={restaurant.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                )}
+                {restaurant.isRecommended && (
+                  <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded-full flex items-center shadow-md z-10">
+                    <Star className="w-3 h-3 sm:w-4 sm:h-4 mr-1 fill-current" />
+                    Recommended
                   </div>
                 )}
                 <div className="p-3 sm:p-6 flex-grow flex flex-col">
