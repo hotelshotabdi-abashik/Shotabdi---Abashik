@@ -1336,9 +1336,9 @@ export default function Admin() {
                       }
                       
                       // Update the Exclusive Offer section on the homepage
-                      await setDoc(doc(db, 'content', 'global_discount_title'), { value: offerForm.title, lastUpdated: serverTimestamp() }, { merge: true });
-                      await setDoc(doc(db, 'content', 'global_discount_desc'), { value: offerForm.description, lastUpdated: serverTimestamp() }, { merge: true });
-                      await setDoc(doc(db, 'content', 'global_discount_rate'), { value: offerForm.discountRate, lastUpdated: serverTimestamp() }, { merge: true });
+                      await updateContent('global_discount_title', { en: offerForm.title, bn: '' });
+                      await updateContent('global_discount_desc', { en: offerForm.description, bn: '' });
+                      await updateContent('global_discount_rate', offerForm.discountRate);
                       
                       const promises = userEmails.map(email => notifyExclusiveOffer(email, `${offerForm.discountRate}% OFF: ${offerForm.title}`, offerForm.description));
                       await Promise.all(promises);

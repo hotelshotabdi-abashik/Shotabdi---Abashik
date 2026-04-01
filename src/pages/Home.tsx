@@ -450,11 +450,11 @@ export default function Home() {
       {/* Special Offer Section */}
       <section className="py-8 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative bg-gradient-to-r from-red-700 via-red-600 to-red-800 text-white p-6 md:p-8 rounded-2xl shadow-2xl overflow-hidden group border border-red-500">
-            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
-            <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 opacity-20 blur-xl group-hover:opacity-40 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+          <div className="relative bg-gradient-to-r from-red-700 via-red-600 to-red-800 text-white p-6 md:p-8 rounded-2xl shadow-2xl group border border-red-500">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay rounded-2xl"></div>
+            <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 opacity-20 blur-xl group-hover:opacity-40 transition duration-1000 group-hover:duration-200 animate-pulse rounded-2xl"></div>
             <div className="relative flex flex-col md:flex-row items-center justify-center md:justify-between z-10 gap-6">
-              <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+              <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left flex-1 min-w-0">
                 <motion.div 
                   animate={{ 
                     scale: [1, 1.05, 1],
@@ -465,23 +465,23 @@ export default function Home() {
                     duration: 3,
                     ease: "easeInOut"
                   }}
-                  className="bg-white text-red-700 font-black text-4xl px-5 py-3 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center"
+                  className="bg-white text-red-700 font-black text-4xl px-5 py-3 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center flex-shrink-0"
                 >
                   <EditableText 
                     contentKey="global_discount_rate" 
                     defaultText="0" 
                   />% OFF
                 </motion.div>
-                <div>
-                  <h3 className="text-2xl md:text-3xl font-bold tracking-tight text-white drop-shadow-md">
-                    <EditableText contentKey="global_discount_title" defaultText="Special Offer!" />
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-2xl md:text-3xl font-bold text-white drop-shadow-md leading-tight break-words">
+                    <EditableText contentKey="global_discount_title" defaultText="Exclusive Offer!" />
                   </h3>
-                  <p className="text-red-100 font-medium mt-1 text-lg">
+                  <p className="text-red-100 font-medium mt-1 text-lg leading-snug break-words">
                     <EditableText contentKey="global_discount_desc" defaultText="Get a massive discount on all room bookings today." multiline />
                   </p>
                 </div>
               </div>
-              <Link to="/rooms" className="whitespace-nowrap bg-white text-red-700 hover:bg-slate-100 px-8 py-3 rounded-full font-bold transition-colors shadow-lg text-lg">
+              <Link to="/rooms" className="whitespace-nowrap bg-white text-red-700 hover:bg-slate-100 px-8 py-3 rounded-full font-bold transition-colors shadow-lg text-lg flex-shrink-0">
                 {t('বুক করুন', 'Book Now')}
               </Link>
             </div>
