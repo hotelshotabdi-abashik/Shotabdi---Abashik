@@ -93,7 +93,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-slate-800 text-center text-sm flex flex-col gap-2">
-        <p>&copy; {new Date().getFullYear()} Hotel Shotabdi Abashik. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} {t('হোটেল শতাব্দী আবাসিক। সর্বস্বত্ব সংরক্ষিত।', 'Hotel Shotabdi Abashik. All rights reserved.')}</p>
       </div>
     </footer>
   );

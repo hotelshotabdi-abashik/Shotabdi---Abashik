@@ -29,7 +29,7 @@ export default function TermsOfService() {
 
           <h2>5. Contact Us</h2>
           <p>In order to resolve a complaint regarding the Site or to receive further information regarding use of the Site, please contact us at:</p>
-          <p>Hotel Shotabdi Abashik<br/>Kumargaon, Sylhet<br/>Email: hotelshotabdiabashik@gmail.com<br/>Phone: +880 1717-425702</p>
+          <p>Hotel Shotabdi Abashik<br/>Kumargaon, Sylhet<br/>Email: hotel@shotabdi-abashik.bd / hotelshotabdiabashik@gmail.com<br/>Phone: +880 1717-425702</p>
 
           <h2>6. Ownership, Development, and Hosting</h2>
           <p>

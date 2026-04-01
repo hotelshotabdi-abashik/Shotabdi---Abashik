@@ -39,7 +39,7 @@ export default function PrivacyPolicy() {
 
           <h2>5. Contact Details</h2>
           <p>If you have any questions about this privacy policy or our privacy practices, please contact us at:</p>
-          <p>Email: hotelshotabdiabashik@gmail.com<br/>Phone: +880 1717-425702</p>
+          <p>Email: hotel@shotabdi-abashik.bd / hotelshotabdiabashik@gmail.com<br/>Phone: +880 1717-425702</p>
         </div>
       </div>
     </div>
