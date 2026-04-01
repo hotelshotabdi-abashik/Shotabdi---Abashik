@@ -214,7 +214,7 @@ export default function Navbar() {
 
   return (
     <>
-    <nav className={`fixed w-full top-0 z-[9999] transition-all duration-500 ${isSolid ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-transparent shadow-none'} ${isSolid ? 'text-slate-900' : 'text-white'}`}>
+    <nav className={`fixed w-full top-0 z-[9999] transition-all duration-500 ${isSolid ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-transparent shadow-none'} text-black`}>
       <div className="w-full px-2 sm:px-4 lg:px-6">
         <div className="flex justify-between h-14 py-1 items-center">
           <div className="flex items-center flex-1 mr-2 sm:mr-4 min-w-0">
@@ -226,7 +226,7 @@ export default function Navbar() {
                 alt={`${websiteName} Logo`}
                 folder="shotabdi-abashik/logo"
               />
-              <span className={`font-bold text-[10px] sm:text-xs md:text-sm lg:text-base leading-tight truncate ${isSolid ? 'text-slate-900' : 'text-white'}`}>
+              <span className={`font-bold text-[10px] sm:text-xs md:text-sm lg:text-base leading-tight truncate text-black`}>
                 {websiteName}
               </span>
             </Link>
@@ -243,14 +243,14 @@ export default function Navbar() {
               </button>
             )}
             {(!user || profile?.profileCompleted) && navLinks.map((link) => (
-              <Link key={link.name} to={link.path} onClick={(e) => handleNavClick(link.path, e)} className={`hover:bg-red-50 hover:text-red-700 px-1 md:px-1.5 xl:px-2 py-2 rounded-md text-[10px] md:text-xs xl:text-sm font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-slate-700' : 'text-white'}`}>
+              <Link key={link.name} to={link.path} onClick={(e) => handleNavClick(link.path, e)} className={`hover:bg-red-50 hover:text-red-700 px-1 md:px-1.5 xl:px-2 py-2 rounded-md text-[10px] md:text-xs xl:text-sm font-medium transition-colors whitespace-nowrap text-black`}>
                 {link.name}
               </Link>
             ))}
 
             <button
               onClick={() => setLanguage(language === 'bn' ? 'en' : 'bn')}
-              className={`flex items-center justify-center ml-1 px-2 xl:px-3 py-1.5 rounded-full transition-colors text-xs xl:text-sm font-bold flex-shrink-0 ${isSolid ? 'bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-700' : 'bg-white/20 text-white hover:bg-white/30'}`}
+              className={`flex items-center justify-center ml-1 px-2 xl:px-3 py-1.5 rounded-full transition-colors text-xs xl:text-sm font-bold flex-shrink-0 bg-slate-100 text-black hover:bg-red-100 hover:text-red-700`}
             >
               <Globe className="w-3 h-3 xl:w-4 xl:h-4 mr-1" />
               {language === 'bn' ? 'EN' : 'BN'}
@@ -263,7 +263,7 @@ export default function Navbar() {
                 <div className="relative" ref={notificationDropdownRef}>
                   <button 
                     onClick={user ? handleNotificationClick : login}
-                    className={`relative flex items-center justify-center w-8 h-8 xl:w-10 xl:h-10 rounded-full transition-colors focus:outline-none mr-1 xl:mr-2 flex-shrink-0 ${isSolid ? 'bg-slate-100 text-slate-700 hover:bg-red-100 hover:text-red-700' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                    className={`relative flex items-center justify-center w-8 h-8 xl:w-10 xl:h-10 rounded-full transition-colors focus:outline-none mr-1 xl:mr-2 flex-shrink-0 bg-slate-100 text-black hover:bg-red-100 hover:text-red-700`}
                     title={user ? "Notifications" : "Login to see notifications"}
                   >
                     <Bell className="w-4 h-4 xl:w-5 xl:h-5" />
@@ -321,7 +321,7 @@ export default function Navbar() {
                     <div className="relative" ref={dropdownRef}>
                       <button 
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
-                        className={`flex items-center gap-2 p-1 rounded-full transition-colors focus:outline-none ${isSolid ? 'hover:bg-slate-100' : 'hover:bg-white/20'}`}
+                        className={`flex items-center gap-2 p-1 rounded-full transition-colors focus:outline-none hover:bg-slate-100`}
                       >
                         {user.photoURL || profile?.photoURL ? (
                           <img 
@@ -331,7 +331,7 @@ export default function Navbar() {
                             referrerPolicy="no-referrer"
                           />
                         ) : (
-                          <div className={`w-8 h-8 xl:w-9 xl:h-9 rounded-full flex items-center justify-center flex-shrink-0 ${isSolid ? 'bg-slate-200 text-slate-500' : 'bg-white/20 text-white'}`}>
+                          <div className={`w-8 h-8 xl:w-9 xl:h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-slate-200 text-slate-500`}>
                             <User className="w-4 h-4 xl:w-5 xl:h-5" />
                           </div>
                         )}
@@ -382,7 +382,7 @@ export default function Navbar() {
           <div className="md:hidden flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <button
               onClick={() => setLanguage(language === 'bn' ? 'en' : 'bn')}
-              className={`flex items-center justify-center px-2 sm:px-3 py-1.5 rounded-full transition-colors text-xs sm:text-sm font-bold flex-shrink-0 ${isSolid ? 'bg-slate-100 text-slate-700' : 'bg-white/20 text-white'}`}
+              className={`flex items-center justify-center px-2 sm:px-3 py-1.5 rounded-full transition-colors text-xs sm:text-sm font-bold flex-shrink-0 ${isSolid ? 'bg-slate-100 text-black' : 'bg-white/20 text-white'}`}
             >
               <Globe className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
               {language === 'bn' ? 'EN' : 'BN'}
@@ -392,7 +392,7 @@ export default function Navbar() {
               <div className="relative" ref={mobileDropdownRef}>
                 <button 
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-colors focus:outline-none flex-shrink-0 overflow-hidden border ${isSolid ? 'bg-slate-100 text-slate-700 border-slate-200' : 'bg-white/20 text-white border-white/30'}`}
+                  className={`flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full transition-colors focus:outline-none flex-shrink-0 overflow-hidden border ${isSolid ? 'bg-slate-100 text-black border-slate-200' : 'bg-white/20 text-white border-white/30'}`}
                 >
                   {user.photoURL || profile?.photoURL ? (
                     <img 
@@ -447,7 +447,7 @@ export default function Navbar() {
             <div className="relative" ref={mobileNotificationDropdownRef}>
               <button 
                 onClick={user ? handleNotificationClick : login}
-                className={`relative inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md transition-colors focus:outline-none flex-shrink-0 ${isSolid ? 'text-slate-900 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}
+                className={`relative inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md transition-colors focus:outline-none flex-shrink-0 text-black hover:bg-slate-100`}
                 title={user ? "Notifications" : "Login to see notifications"}
               >
                 <Bell className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -500,7 +500,7 @@ export default function Navbar() {
               )}
             </div>
 
-            <button onClick={() => setIsOpen(!isOpen)} className={`inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md transition-colors focus:outline-none flex-shrink-0 ${isSolid ? 'text-slate-900 hover:bg-slate-100' : 'text-white hover:bg-white/10'}`}>
+            <button onClick={() => setIsOpen(!isOpen)} className={`inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md transition-colors focus:outline-none flex-shrink-0 text-black hover:bg-slate-100`}>
               {isOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
             </button>
           </div>

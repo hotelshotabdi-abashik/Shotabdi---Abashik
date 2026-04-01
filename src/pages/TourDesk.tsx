@@ -149,6 +149,35 @@ export default function TourDesk() {
         <title>Tour Desk & Attractions | Hotel Shotabdi Abashik</title>
         <meta name="description" content="Explore top tourist spots in Sylhet with our Tour Desk. Visit SUST Campus, Hazrat Shahjalal Mazar, Ratargul, Jaflong and more." />
         <meta name="keywords" content="Sylhet tourist spots, Tour desk Sylhet, Jaflong, Ratargul, SUST, Sylhet attractions" />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href={`${window.location.origin}/tourdesk`} />
+        
+        <meta property="og:title" content="Tour Desk & Attractions | Hotel Shotabdi Abashik" />
+        <meta property="og:description" content="Explore top tourist spots in Sylhet with our Tour Desk. Visit SUST Campus, Hazrat Shahjalal Mazar, Ratargul, Jaflong and more." />
+        <meta property="og:url" content={`${window.location.origin}/tourdesk`} />
+        <meta property="og:type" content="website" />
+
+        {/* Structured Data for Tourist Attractions */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            "itemListElement": tourSpots.slice(0, 10).map((spot, index) => ({
+              "@type": "ListItem",
+              "position": index + 1,
+              "item": {
+                "@type": "TouristAttraction",
+                "name": spot.name,
+                "description": spot.description,
+                "image": spot.imageUrl,
+                "address": {
+                  "@type": "PostalAddress",
+                  "addressLocality": "Sylhet"
+                }
+              }
+            }))
+          })}
+        </script>
       </Helmet>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Tourist Spots List */}

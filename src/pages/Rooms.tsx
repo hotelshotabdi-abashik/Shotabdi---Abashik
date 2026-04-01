@@ -371,6 +371,40 @@ export default function Rooms() {
         <title>Our Rooms | Hotel Shotabdi Abashik</title>
         <meta name="description" content="Explore our comfortable and affordable rooms in Sylhet. Choose from Single Delux, Double Delux, Family Suit, and Super Delux." />
         <meta name="keywords" content="Hotel rooms Sylhet, Single Delux, Double Delux, Family Suit, Super Delux, affordable stay Sylhet" />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href={`${window.location.origin}/rooms`} />
+        
+        <meta property="og:title" content="Our Rooms | Hotel Shotabdi Abashik" />
+        <meta property="og:description" content="Explore our comfortable and affordable rooms in Sylhet. Choose from Single Delux, Double Delux, Family Suit, and Super Delux." />
+        <meta property="og:url" content={`${window.location.origin}/rooms`} />
+        <meta property="og:type" content="website" />
+        
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Our Rooms | Hotel Shotabdi Abashik" />
+        <meta name="twitter:description" content="Explore our comfortable and affordable rooms in Sylhet. Choose from Single Delux, Double Delux, Family Suit, and Super Delux." />
+
+        {/* Structured Data for Room List */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            "itemListElement": rooms.map((room, index) => ({
+              "@type": "ListItem",
+              "position": index + 1,
+              "item": {
+                "@type": "Accommodation",
+                "name": room.name,
+                "description": room.description,
+                "image": room.imageUrl,
+                "offers": {
+                  "@type": "Offer",
+                  "price": room.price,
+                  "priceCurrency": "BDT"
+                }
+              }
+            }))
+          })}
+        </script>
       </Helmet>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16 relative">

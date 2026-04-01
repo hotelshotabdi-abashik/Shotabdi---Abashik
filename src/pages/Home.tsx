@@ -270,11 +270,51 @@ export default function Home() {
       <Helmet>
         <title>{websiteName} | Best Hotel in Bogura</title>
         <meta name="description" content={`Welcome to ${websiteName}. Experience luxury and comfort in the heart of Bogura. 24h Residential Service.`} />
+        <meta name="keywords" content="Hotel Bogura, Best Hotel in Bogura, Shotabdi Abashik, Sylhet Hotel, affordable stay Bogura, 24h service hotel" />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href={window.location.origin} />
+        
         <meta property="og:title" content={`${websiteName} | Best Hotel in Bogura`} />
         <meta property="og:description" content={`Welcome to ${websiteName}. Experience luxury and comfort in the heart of Bogura. 24h Residential Service.`} />
         <meta property="og:image" content={content[activeHeroImages[0]?.key] || activeHeroImages[0]?.default || ''} />
+        <meta property="og:url" content={window.location.origin} />
         <meta property="og:type" content="website" />
+        
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${websiteName} | Best Hotel in Bogura`} />
+        <meta name="twitter:description" content={`Welcome to ${websiteName}. Experience luxury and comfort in the heart of Bogura. 24h Residential Service.`} />
+        <meta name="twitter:image" content={content[activeHeroImages[0]?.key] || activeHeroImages[0]?.default || ''} />
+
+        {/* Structured Data for Hotel */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Hotel",
+            "name": websiteName,
+            "description": `Welcome to ${websiteName}. Experience luxury and comfort in the heart of Bogura.`,
+            "url": window.location.origin,
+            "telephone": "+8801711111111", // Replace with real phone if available
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "Kumargaon Bus Stand",
+              "addressLocality": "Bogura",
+              "addressRegion": "Rajshahi",
+              "postalCode": "5800",
+              "addressCountry": "BD"
+            },
+            "geo": {
+              "@type": "GeoCoordinates",
+              "latitude": 24.8481,
+              "longitude": 89.3730
+            },
+            "image": activeHeroImages.map(slot => content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : slot.default),
+            "priceRange": "$$",
+            "amenityFeature": [
+              { "@type": "LocationFeatureSpecification", "name": "Free Wi-Fi", "value": true },
+              { "@type": "LocationFeatureSpecification", "name": "24h Service", "value": true }
+            ]
+          })}
+        </script>
       </Helmet>
       
       {/* SEO H1 - Hidden but present for crawlers */}

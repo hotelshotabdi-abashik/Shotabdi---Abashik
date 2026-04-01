@@ -142,6 +142,36 @@ export default function Restaurant() {
         <title>Restaurants & Dining | Hotel Shotabdi Abashik</title>
         <meta name="description" content="Discover the best restaurants and dining options near Hotel Shotabdi Abashik in Sylhet. From local Bengali cuisine to fast food." />
         <meta name="keywords" content="Restaurants Sylhet, dining Sylhet, food near Kumargaon, best restaurants Sylhet" />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href={`${window.location.origin}/restaurant`} />
+        
+        <meta property="og:title" content="Restaurants & Dining | Hotel Shotabdi Abashik" />
+        <meta property="og:description" content="Discover the best restaurants and dining options near Hotel Shotabdi Abashik in Sylhet." />
+        <meta property="og:url" content={`${window.location.origin}/restaurant`} />
+        <meta property="og:type" content="website" />
+
+        {/* Structured Data for Restaurant List */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            "itemListElement": restaurants.slice(0, 10).map((rest, index) => ({
+              "@type": "ListItem",
+              "position": index + 1,
+              "item": {
+                "@type": "Restaurant",
+                "name": rest.name,
+                "address": {
+                  "@type": "PostalAddress",
+                  "addressLocality": "Sylhet",
+                  "streetAddress": rest.location
+                },
+                "servesCuisine": rest.type,
+                "image": rest.imageUrl
+              }
+            }))
+          })}
+        </script>
       </Helmet>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Nearby Restaurants List */}
