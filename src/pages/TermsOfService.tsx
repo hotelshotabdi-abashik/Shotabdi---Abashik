@@ -30,6 +30,14 @@ export default function TermsOfService() {
           <h2>5. Contact Us</h2>
           <p>In order to resolve a complaint regarding the Site or to receive further information regarding use of the Site, please contact us at:</p>
           <p>Hotel Shotabdi Abashik<br/>Kumargaon, Sylhet<br/>Email: hotelshotabdiabashik@gmail.com<br/>Phone: +880 1717-425702</p>
+
+          <h2>6. Ownership, Development, and Hosting</h2>
+          <p>
+            Hotel Shotabdi Abashik is owned by Abdul Kahar Kodor, who is a businessman and a journalist. 
+            This website (shotabdi-abashik.bd) is developed and fully coded by Fuad Ahmed. His brand name is "Fuad Editing Zone". 
+            Fuad Ahmed is a Full Stack-Web Developer, Designer, an expert in Photo manipulation, and a VFX Editor. 
+            The website is also hosted by him, utilizing the official BTCL website for hosting services.
+          </p>
         </div>
       </div>
     </div>

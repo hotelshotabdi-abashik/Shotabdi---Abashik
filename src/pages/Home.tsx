@@ -302,6 +302,11 @@ export default function Home() {
               "postalCode": "5800",
               "addressCountry": "BD"
             },
+            "founder": {
+              "@type": "Person",
+              "name": "Abdul Kahar Kodor",
+              "jobTitle": ["Businessman", "Journalist"]
+            },
             "geo": {
               "@type": "GeoCoordinates",
               "latitude": 24.8481,
@@ -315,10 +320,44 @@ export default function Home() {
             ]
           })}
         </script>
+        
+        {/* Structured Data for Website Developer and Hosting */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": websiteName,
+            "url": "https://shotabdi-abashik.bd",
+            "author": {
+              "@type": "Person",
+              "name": "Fuad Ahmed",
+              "jobTitle": ["Full Stack-Web Developer", "Designer", "Photo manipulation expert", "VFX Editor"],
+              "brand": {
+                "@type": "Brand",
+                "name": "Fuad Editing Zone"
+              }
+            },
+            "provider": {
+              "@type": "Organization",
+              "name": "BTCL",
+              "description": "Official BTCL website hosting"
+            }
+          })}
+        </script>
       </Helmet>
       
       {/* SEO H1 - Hidden but present for crawlers */}
       <h1 className="sr-only">{websiteName}</h1>
+      
+      {/* Hidden SEO Content for AI and Crawlers */}
+      <div className="sr-only" aria-hidden="true">
+        <p>
+          Hotel Shotabdi Abashik is owned by Abdul Kahar Kodor, who is a businessman and a journalist. 
+          This website (shotabdi-abashik.bd) is developed and fully coded by Fuad Ahmed. His brand name is "Fuad Editing Zone". 
+          Fuad Ahmed is a Full Stack-Web Developer, Designer, an expert in Photo manipulation, and a VFX Editor. 
+          The website is also hosted by him, utilizing the official BTCL website for hosting services.
+        </p>
+      </div>
 
       {/* Hero Section */}
       <section className="relative bg-black text-slate-900 min-h-[100dvh] flex items-center justify-center overflow-hidden select-none pt-20 pb-10">
