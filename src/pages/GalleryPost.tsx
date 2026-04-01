@@ -109,7 +109,8 @@ export default function GalleryPost() {
                   exit={{ opacity: 0, scale: 1.05 }}
                   transition={{ duration: 0.4 }}
                   src={currentImage.url}
-                  alt={currentImage.title}
+                  alt={currentImage.title || 'Gallery image'}
+                  title={currentImage.title || 'Gallery image'}
                   className="max-w-full max-h-[80vh] object-contain"
                   referrerPolicy="no-referrer"
                 />
@@ -201,7 +202,7 @@ export default function GalleryPost() {
                     to={`/gallery/${img.id || i}`}
                     className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${img.id === id || i.toString() === id ? 'border-red-600 scale-95' : 'border-transparent hover:border-red-300'}`}
                   >
-                    <img src={img.url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={img.url} alt={img.title || `Gallery image`} title={img.title || `Gallery image`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </Link>
                 ))}
               </div>

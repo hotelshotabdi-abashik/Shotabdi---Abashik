@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /api
 
-Sitemap: https://ais-pre-gp5j6hvh22jccfgawdxif5-16417103426.asia-southeast1.run.app/sitemap.xml
+Sitemap: https://shotabdi-abashik.bd/sitemap.xml

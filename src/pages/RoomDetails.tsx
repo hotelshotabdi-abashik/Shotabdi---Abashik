@@ -98,6 +98,7 @@ export default function RoomDetails() {
               <img 
                 src={room.imageUrl} 
                 alt={room.name} 
+                title={room.description || room.name}
                 className="max-w-full max-h-full object-contain"
                 referrerPolicy="no-referrer"
               />

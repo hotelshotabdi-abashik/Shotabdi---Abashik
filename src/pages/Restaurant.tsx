@@ -257,7 +257,7 @@ export default function Restaurant() {
                 )}
                 {restaurant.imageUrl && (
                   <div className="h-24 sm:h-48 w-full relative">
-                    <img src={restaurant.imageUrl} alt={restaurant.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img src={restaurant.imageUrl} alt={restaurant.name} title={`${restaurant.type} at ${restaurant.location}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </div>
                 )}
                 {restaurant.isRecommended && (
