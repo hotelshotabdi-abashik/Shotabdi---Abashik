@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, query, orderBy, limit, addDoc } from 'firebase/firestore';
+import { collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, query, orderBy, limit, addDoc, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone, Send, Facebook, Mail, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
@@ -486,6 +486,124 @@ export default function Admin() {
     executeRoleUpdate(roleModal.uid, roleModal.newRole);
   };
 
+  const handleDeleteUser = async (uid: string, email: string) => {
+    const DEFAULT_ADMINS = ['hotelshotabdiabashik@gmail.com', 'fuadf342@gmail.com', 'selectedlegendbusiness@gmail.com', 'd2kabdulkahar@gmail.com'];
+    
+    if (DEFAULT_ADMINS.includes(email)) {
+      toast.error(t("ডিফল্ট অ্যাডমিনকে মুছে ফেলা যাবে না।", "Cannot delete a default admin."));
+      return;
+    }
+
+    if (user && user.uid === uid) {
+      toast.error(t("আপনি নিজেকে মুছে ফেলতে পারবেন না।", "You cannot delete yourself."));
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete User',
+      message: `Are you sure you want to delete user "${email}" and all their data (bookings, ratings)? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          setLoading(true);
+          // 1. Delete Bookings
+          const bookingsRef = collection(db, 'bookings');
+          const bookingsSnapshot = await getDocs(query(bookingsRef, where('userId', '==', uid)));
+          for (const docSnap of bookingsSnapshot.docs) {
+            await deleteDoc(docSnap.ref);
+          }
+
+          // 2. Delete Ratings
+          const ratingsRef = collection(db, 'ratings');
+          const ratingsSnapshot = await getDocs(query(ratingsRef, where('userId', '==', uid)));
+          for (const docSnap of ratingsSnapshot.docs) {
+            await deleteDoc(docSnap.ref);
+          }
+
+          // 3. Delete Gallery Posts
+          const galleryRef = collection(db, 'gallery');
+          const gallerySnapshot = await getDocs(query(galleryRef, where('authorId', '==', uid)));
+          for (const docSnap of gallerySnapshot.docs) {
+            const data = docSnap.data();
+            if (data.imageUrl) {
+              await deleteFromR2(data.imageUrl).catch(err => console.error("Error deleting from R2:", err));
+            }
+            await deleteDoc(docSnap.ref);
+          }
+
+          // 4. Delete User Document
+          await deleteDoc(doc(db, 'users', uid));
+
+          fetchUsers();
+          toast.success(t("ইউজার এবং তাদের সমস্ত তথ্য মুছে ফেলা হয়েছে!", "User and all their data deleted successfully!"));
+        } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, `users/${uid}`);
+          toast.error(t("ইউজার মুছতে সমস্যা হয়েছে।", "Failed to delete user."));
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+  };
+
+  const handleCleanupTestData = async () => {
+    const DEFAULT_ADMINS = ['hotelshotabdiabashik@gmail.com', 'fuadf342@gmail.com', 'selectedlegendbusiness@gmail.com', 'd2kabdulkahar@gmail.com'];
+    
+    setConfirmModal({
+      isOpen: true,
+      title: 'Cleanup Test Data',
+      message: 'Are you sure you want to delete all booking history and all non-admin users? This will NOT delete default admins.',
+      onConfirm: async () => {
+        try {
+          setLoading(true);
+          // 1. Delete ALL Bookings
+          const bookingsRef = collection(db, 'bookings');
+          const bookingsSnapshot = await getDocs(bookingsRef);
+          for (const docSnap of bookingsSnapshot.docs) {
+            await deleteDoc(docSnap.ref);
+          }
+
+          // 2. Delete Non-Admin Users
+          const usersRef = collection(db, 'users');
+          const usersSnapshot = await getDocs(usersRef);
+          for (const docSnap of usersSnapshot.docs) {
+            const data = docSnap.data() as User;
+            if (data.role !== 'admin' && !DEFAULT_ADMINS.includes(data.email)) {
+              // Delete their ratings too
+              const ratingsRef = collection(db, 'ratings');
+              const ratingsSnapshot = await getDocs(query(ratingsRef, where('userId', '==', docSnap.id)));
+              for (const rSnap of ratingsSnapshot.docs) {
+                await deleteDoc(rSnap.ref);
+              }
+              
+              // Delete their gallery posts
+              const galleryRef = collection(db, 'gallery');
+              const gallerySnapshot = await getDocs(query(galleryRef, where('authorId', '==', docSnap.id)));
+              for (const gSnap of gallerySnapshot.docs) {
+                const gData = gSnap.data();
+                if (gData.imageUrl) {
+                  await deleteFromR2(gData.imageUrl).catch(err => console.error("Error deleting from R2:", err));
+                }
+                await deleteDoc(gSnap.ref);
+              }
+
+              await deleteDoc(docSnap.ref);
+            }
+          }
+
+          fetchUsers();
+          fetchBookings();
+          toast.success(t("টেস্ট ডাটা মুছে ফেলা হয়েছে!", "Test data cleaned up successfully!"));
+        } catch (error) {
+          handleFirestoreError(error, OperationType.DELETE, 'cleanup');
+          toast.error(t("ডাটা মুছতে সমস্যা হয়েছে।", "Failed to cleanup data."));
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+  };
+
   const cleanupGallery = async () => {
     try {
       const contentRef = doc(db, 'content', 'galleryImages');
@@ -866,7 +984,15 @@ export default function Admin() {
 
         {activeTab === 'users' && (
           <div>
-            <h2 className="text-xl font-bold text-slate-800 mb-6">{t('ইউজার তালিকা', 'User List')}</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-slate-800">{t('ইউজার তালিকা', 'User List')}</h2>
+              <button 
+                onClick={handleCleanupTestData}
+                className="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-4 rounded-lg flex items-center transition-colors text-sm"
+              >
+                <Trash2 className="w-4 h-4 mr-2" /> {t('টেস্ট ডাটা মুছুন', 'Cleanup Test Data')}
+              </button>
+            </div>
             {/* Users Content */}
             <div className="md:hidden space-y-4">
               {users.map((u) => (
@@ -883,16 +1009,23 @@ export default function Admin() {
                   <div className="text-sm text-slate-600">
                     {u.phone || '-'}
                   </div>
-                  <div className="pt-2 border-t border-slate-50">
+                  <div className="pt-2 border-t border-slate-50 flex space-x-2">
                     <select 
                       value={u.role}
                       onChange={(e) => handleUpdateUserRole(u.uid, e.target.value, u.email)}
                       disabled={user?.uid === u.uid}
-                      className={`w-full px-3 py-2 border border-slate-300 rounded text-sm ${user?.uid === u.uid ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      className={`flex-1 px-3 py-2 border border-slate-300 rounded text-sm ${user?.uid === u.uid ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <option value="user">User</option>
                       <option value="admin">Admin</option>
                     </select>
+                    <button 
+                      onClick={() => handleDeleteUser(u.uid, u.email)}
+                      className="p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                      title="Delete User & Data"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -921,15 +1054,24 @@ export default function Admin() {
                           </span>
                         </td>
                         <td className="p-4 text-right">
-                          <select 
-                            value={u.role}
-                            onChange={(e) => handleUpdateUserRole(u.uid, e.target.value, u.email)}
-                            disabled={user?.uid === u.uid}
-                            className={`px-2 py-1 border border-slate-300 rounded text-sm ${user?.uid === u.uid ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
-                          </select>
+                          <div className="flex justify-end items-center space-x-2">
+                            <select 
+                              value={u.role}
+                              onChange={(e) => handleUpdateUserRole(u.uid, e.target.value, u.email)}
+                              disabled={user?.uid === u.uid}
+                              className={`px-2 py-1 border border-slate-300 rounded text-sm ${user?.uid === u.uid ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                              <option value="user">User</option>
+                              <option value="admin">Admin</option>
+                            </select>
+                            <button 
+                              onClick={() => handleDeleteUser(u.uid, u.email)}
+                              className="p-2 bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                              title="Delete User & Data"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
