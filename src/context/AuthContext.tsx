@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const snapshot = await getDoc(userRef);
       if (snapshot.exists()) {
         const data = snapshot.data() as UserProfile;
-        const adminEmails = ['hotelshotabdiabashik@gmail.com', 'selectedlegendbusiness@gmail.com', 'fuadf342@gmail.com'];
+        const adminEmails = ['hotelshotabdiabashik@gmail.com', 'selectedlegendbusiness@gmail.com', 'fuadf342@gmail.com', 'd2kabdulkahar@gmail.com'];
         
         // Auto-upgrade to admin if email matches
         if (currentUser?.email && adminEmails.includes(currentUser.email) && data.role !== 'admin') {

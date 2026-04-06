@@ -56,15 +56,15 @@ const ProfileEnforcer = () => {
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, profile, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (!user) return <Navigate to="/" />;
-  if (profile && !profile.profileCompleted) return <Navigate to="/profile" />;
+  if (!user || !profile) return <Navigate to="/" />;
+  if (!profile.profileCompleted) return <Navigate to="/profile" />;
   return <>{children}</>;
 };
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, profile, loading } = useAuth();
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (!user || profile?.role !== 'admin') return <Navigate to="/" />;
+  if (!user || !profile || profile.role !== 'admin') return <Navigate to="/" />;
   return <>{children}</>;
 };
 

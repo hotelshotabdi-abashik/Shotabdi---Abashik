@@ -46,12 +46,19 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
   }, [verificationStep, timeLeft, t]);
 
   useEffect(() => {
-    return () => {
-      if (verificationStep && tempUser && !isForgotPassword) {
-        auth.signOut().catch(console.error);
-      }
-    };
-  }, [verificationStep, tempUser, isForgotPassword]);
+    if (isOpen) {
+      setIsLogin(true);
+      setIsForgotPassword(false);
+      setEmail('');
+      setPassword('');
+      setNewPassword('');
+      setVerificationStep(false);
+      setVerificationCode('');
+      setEnteredCode('');
+      setTempUser(null);
+      setTimeLeft(300);
+    }
+  }, [isOpen]);
 
   const handleClose = async () => {
     if (verificationStep && tempUser && !isForgotPassword) {
@@ -196,7 +203,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
         const snapshot = await getDoc(userRef);
         
         if (!snapshot.exists()) {
-          const adminEmails = ['hotelshotabdiabashik@gmail.com', 'selectedlegendbusiness@gmail.com', 'fuadf342@gmail.com'];
+          const adminEmails = ['hotelshotabdiabashik@gmail.com', 'selectedlegendbusiness@gmail.com', 'fuadf342@gmail.com', 'd2kabdulkahar@gmail.com'];
           await setDoc(userRef, {
             uid: tempUser.uid,
             email: tempUser.email || '',
@@ -235,7 +242,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
       const snapshot = await getDoc(userRef);
       
       if (!snapshot.exists()) {
-        const adminEmails = ['hotelshotabdiabashik@gmail.com', 'selectedlegendbusiness@gmail.com', 'fuadf342@gmail.com'];
+        const adminEmails = ['hotelshotabdiabashik@gmail.com', 'selectedlegendbusiness@gmail.com', 'fuadf342@gmail.com', 'd2kabdulkahar@gmail.com'];
         await setDoc(userRef, {
           uid: user.uid,
           email: user.email || '',
