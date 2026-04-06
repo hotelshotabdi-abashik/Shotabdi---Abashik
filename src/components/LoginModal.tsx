@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { auth, db } from '../firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail, fetchSignInMethodsForEmail } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { sendEmail, notifyLogin } from '../services/NotificationService';
 import { googleProvider } from '../firebase';
@@ -101,6 +101,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
 
       try {
         if (isLogin) {
+          try {
+            const methods = await fetchSignInMethodsForEmail(auth, email);
+            if (methods.length > 0 && !methods.includes('password') && methods.includes('google.com')) {
+              toast.info(t('পাসওয়ার্ড সেট করা নেই। পাসওয়ার্ড সেট করার লিংক পাঠানো হচ্ছে...', 'Password is not set. Sending password set link...'));
+              await sendPasswordResetEmail(auth, email);
+              toast.success(t('পাসওয়ার্ড সেট করার লিংক আপনার ইমেইলে পাঠানো হয়েছে।', 'Password set link sent to your email.'));
+              setLoading(false);
+              return;
+            }
+          } catch (e) {
+            console.error("Error fetching methods", e);
+          }
           userCredential = await signInWithEmailAndPassword(auth, email, password);
         } else {
           userCredential = await createUserWithEmailAndPassword(auth, email, password);
