@@ -214,7 +214,7 @@ export default function Navbar() {
 
   return (
     <>
-    <nav className={`fixed w-full top-0 z-[9999] transition-all duration-500 ${isSolid ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-transparent shadow-none'} text-black`}>
+    <nav className={`fixed w-full top-0 z-[9999] transition-all duration-500 ${isSolid ? 'bg-white/95 backdrop-blur-md shadow-sm text-black' : 'bg-transparent shadow-none text-white'}`}>
       <div className="w-full px-2 sm:px-4 lg:px-6">
         <div className="flex justify-between h-14 py-1 items-center">
           <div className="flex items-center flex-1 mr-2 sm:mr-4 min-w-0">
@@ -226,7 +226,7 @@ export default function Navbar() {
                 alt={`${websiteName} Logo`}
                 folder="shotabdi-abashik/logo"
               />
-              <span className={`font-bold text-[10px] sm:text-xs md:text-sm lg:text-base leading-tight truncate text-black uppercase`}>
+              <span className={`font-bold text-[10px] sm:text-xs md:text-sm lg:text-base leading-tight truncate uppercase ${isSolid ? 'text-black' : 'text-white'}`}>
                 {t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik')}
               </span>
             </Link>
@@ -243,14 +243,14 @@ export default function Navbar() {
               </button>
             )}
             {(!user || profile?.profileCompleted) && navLinks.map((link) => (
-              <Link key={link.name} to={link.path} onClick={(e) => handleNavClick(link.path, e)} className={`hover:bg-red-50 hover:text-red-700 px-1 md:px-1.5 xl:px-2 py-2 rounded-md text-[10px] md:text-xs xl:text-sm font-medium transition-colors whitespace-nowrap text-black`}>
+              <Link key={link.name} to={link.path} onClick={(e) => handleNavClick(link.path, e)} className={`hover:bg-red-50 hover:text-red-700 px-1 md:px-1.5 xl:px-2 py-2 rounded-md text-[10px] md:text-xs xl:text-sm font-medium transition-colors whitespace-nowrap ${isSolid ? 'text-black' : 'text-white'}`}>
                 {link.name}
               </Link>
             ))}
 
             <button
               onClick={() => setLanguage(language === 'bn' ? 'en' : 'bn')}
-              className={`flex items-center justify-center ml-1 px-2 xl:px-3 py-1.5 rounded-full transition-colors text-xs xl:text-sm font-bold flex-shrink-0 bg-slate-100 text-black hover:bg-red-100 hover:text-red-700`}
+              className={`flex items-center justify-center ml-1 px-2 xl:px-3 py-1.5 rounded-full transition-colors text-xs xl:text-sm font-bold flex-shrink-0 ${isSolid ? 'bg-black text-white hover:bg-slate-800' : 'bg-white/20 text-white hover:bg-white/30'}`}
             >
               <Globe className="w-3 h-3 xl:w-4 xl:h-4 mr-1" />
               {language === 'bn' ? 'EN' : 'BN'}
@@ -263,7 +263,7 @@ export default function Navbar() {
                 <div className="relative" ref={notificationDropdownRef}>
                   <button 
                     onClick={user ? handleNotificationClick : login}
-                    className={`relative flex items-center justify-center w-8 h-8 xl:w-10 xl:h-10 rounded-full transition-colors focus:outline-none mr-1 xl:mr-2 flex-shrink-0 bg-slate-100 text-black hover:bg-red-100 hover:text-red-700`}
+                    className={`relative flex items-center justify-center w-8 h-8 xl:w-10 xl:h-10 rounded-full transition-colors focus:outline-none mr-1 xl:mr-2 flex-shrink-0 ${isSolid ? 'bg-black text-white hover:bg-slate-800' : 'bg-white/20 text-white hover:bg-white/30'}`}
                     title={user ? "Notifications" : "Login to see notifications"}
                   >
                     <Bell className="w-4 h-4 xl:w-5 xl:h-5" />
@@ -370,7 +370,7 @@ export default function Navbar() {
                       )}
                     </div>
                   ) : (
-                  <button onClick={login} className="flex items-center bg-red-700 text-white hover:bg-red-800 px-2 md:px-3 xl:px-4 py-1.5 xl:py-2 rounded-md text-[10px] md:text-xs xl:text-sm font-bold transition-colors flex-shrink-0">
+                  <button onClick={login} className={`flex items-center px-2 md:px-3 xl:px-4 py-1.5 xl:py-2 rounded-md text-[10px] md:text-xs xl:text-sm font-bold transition-colors flex-shrink-0 ${isSolid ? 'bg-black text-white hover:bg-slate-800' : 'bg-red-700 text-white hover:bg-red-800'}`}>
                     <LogIn className="w-3 h-3 xl:w-4 xl:h-4 mr-1 xl:mr-2" /> {t('লগইন', 'Login')}
                   </button>
                 )}
@@ -382,7 +382,7 @@ export default function Navbar() {
           <div className="md:hidden flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <button
               onClick={() => setLanguage(language === 'bn' ? 'en' : 'bn')}
-              className={`flex items-center justify-center px-2 sm:px-3 py-1.5 rounded-full transition-colors text-xs sm:text-sm font-bold flex-shrink-0 ${isSolid ? 'bg-slate-100 text-black' : 'bg-white/20 text-white'}`}
+              className={`flex items-center justify-center px-2 sm:px-3 py-1.5 rounded-full transition-colors text-xs sm:text-sm font-bold flex-shrink-0 ${isSolid ? 'bg-black text-white' : 'bg-white/20 text-white'}`}
             >
               <Globe className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
               {language === 'bn' ? 'EN' : 'BN'}
@@ -439,7 +439,7 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <button onClick={login} className="flex items-center bg-red-700 text-white hover:bg-red-800 px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-bold transition-colors flex-shrink-0">
+              <button onClick={login} className={`flex items-center px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-bold transition-colors flex-shrink-0 ${isSolid ? 'bg-black text-white hover:bg-slate-800' : 'bg-red-700 text-white hover:bg-red-800'}`}>
                 <LogIn className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> {t('লগইন', 'Login')}
               </button>
             )}
@@ -447,7 +447,7 @@ export default function Navbar() {
             <div className="relative" ref={mobileNotificationDropdownRef}>
               <button 
                 onClick={user ? handleNotificationClick : login}
-                className={`relative inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md transition-colors focus:outline-none flex-shrink-0 text-black hover:bg-slate-100`}
+                className={`relative inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md transition-colors focus:outline-none flex-shrink-0 ${isSolid ? 'text-black hover:bg-slate-100' : 'text-white hover:bg-white/20'}`}
                 title={user ? "Notifications" : "Login to see notifications"}
               >
                 <Bell className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -500,7 +500,7 @@ export default function Navbar() {
               )}
             </div>
 
-            <button onClick={() => setIsOpen(!isOpen)} className={`inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md transition-colors focus:outline-none flex-shrink-0 text-black hover:bg-slate-100`}>
+            <button onClick={() => setIsOpen(!isOpen)} className={`inline-flex items-center justify-center p-1.5 sm:p-2 rounded-md transition-colors focus:outline-none flex-shrink-0 ${isSolid ? 'text-black hover:bg-slate-100' : 'text-white hover:bg-white/20'}`}>
               {isOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
             </button>
           </div>

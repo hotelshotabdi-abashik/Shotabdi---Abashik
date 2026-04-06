@@ -360,11 +360,11 @@ export default function Home() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative bg-black text-slate-900 min-h-[100dvh] flex items-center justify-center overflow-hidden select-none pt-20 pb-10">
+      <section className="relative bg-black text-slate-900 min-h-[100dvh] flex items-center justify-center overflow-hidden select-none pt-14 sm:pt-20 pb-4 sm:pb-10">
         {editMode && (
           <button
             onClick={() => setIsHeroEditModalOpen(true)}
-            className="absolute top-24 right-4 z-50 bg-red-600 text-white p-2 rounded-full shadow-lg hover:bg-red-700 transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
+            className="absolute top-20 sm:top-24 right-4 z-50 bg-red-600 text-white p-2 rounded-full shadow-lg hover:bg-red-700 transition-colors flex items-center gap-1.5 text-xs sm:text-sm"
           >
             <Edit2 className="w-4 h-4" />
             <span className="font-medium hidden sm:inline">Edit Hero Images</span>
@@ -398,7 +398,7 @@ export default function Home() {
           <div className="absolute inset-0 bg-black/50 pointer-events-none z-10"></div>
         </div>
         
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center pt-16 pb-8 pointer-events-none flex flex-col justify-center h-full">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center pt-8 sm:pt-16 pb-4 sm:pb-8 pointer-events-none flex flex-col justify-center h-full">
           <AnimatePresence>
             {showHeroContent && (
               <motion.div

@@ -225,3 +225,37 @@ export const notifyAdminNewReview = async (reviewData: any) => {
   });
 };
 
+export const notifyNewAdminRole = async (email: string, secretCode: string) => {
+  return sendEmail({
+    to: email,
+    subject: 'Congratulations! You are now an Admin - Hotel Shotabdi Abashik',
+    type: 'admin_role_assigned',
+    html: `
+      <h2 style="color: #dc2626; margin-top: 0;">Congratulations!</h2>
+      <p>You have been granted Administrator access to the Hotel Shotabdi Abashik website.</p>
+      <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin: 20px 0;">
+        <p style="margin: 0; font-size: 16px;">Your Admin Secret Code is:</p>
+        <p style="margin: 10px 0 0 0; font-size: 24px; font-weight: bold; color: #1e293b; letter-spacing: 2px;">${secretCode}</p>
+      </div>
+      <p style="color: #dc2626; font-weight: bold;">Please keep this code private and do not share it with anyone.</p>
+      <p>You will need this code to access the admin panel and make changes to the website.</p>
+      <div style="margin-top: 30px;">
+        <a href="https://shotabdi-abashik.bd/admin" style="background-color: #1e293b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Go to Admin Panel</a>
+      </div>
+    `,
+  });
+};
+
+export const notifyAdminRoleGiven = async (adminEmail: string, newAdminEmail: string) => {
+  return sendEmail({
+    to: adminEmail,
+    subject: 'Admin Role Granted - Hotel Shotabdi Abashik',
+    type: 'admin_role_granted',
+    html: `
+      <h2 style="color: #1e293b; margin-top: 0;">Admin Role Granted</h2>
+      <p>You have successfully granted Administrator access to <strong>${newAdminEmail}</strong>.</p>
+      <p>An email with their secret code has been sent to them.</p>
+    `,
+  });
+};
+

@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User as FirebaseUser, onAuthStateChanged, signInWithPopup, signOut, GoogleAuthProvider } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../firebase';
+import { User as FirebaseUser, onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 import { toast } from 'sonner';
 import { useLanguage } from './LanguageContext';
-import { notifyLogin } from '../services/NotificationService';
+import { LoginModal } from '../components/LoginModal';
 
 export interface UserProfile {
   uid: string;
@@ -26,7 +26,7 @@ interface AuthContextType {
   user: FirebaseUser | null;
   profile: UserProfile | null;
   loading: boolean;
-  login: () => Promise<void>;
+  login: () => void;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -38,6 +38,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png');
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const docRef = doc(db, 'settings', 'general');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists() && docSnap.data().logoUrl) {
+          setLogoUrl(docSnap.data().logoUrl);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchLogo();
+  }, []);
 
   const fetchProfile = async (uid: string, currentUser?: FirebaseUser) => {
     try {
@@ -77,50 +94,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const login = async () => {
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      
-      // Check if user profile exists in Firestore
-      const userRef = doc(db, 'users', user.uid);
-      const snapshot = await getDoc(userRef);
-      
-      if (!snapshot.exists()) {
-        // Create new user profile
-        const adminEmails = ['hotelshotabdiabashik@gmail.com', 'selectedlegendbusiness@gmail.com', 'fuadf342@gmail.com'];
-        const newProfile: UserProfile = {
-          uid: user.uid,
-          email: user.email || '',
-          role: adminEmails.includes(user.email || '') ? 'admin' : 'user',
-          profileCompleted: false,
-          displayName: user.displayName || '',
-          photoURL: user.photoURL || '',
-          createdAt: serverTimestamp(),
-        };
-        await setDoc(userRef, newProfile);
-        setProfile(newProfile);
-      } else {
-        setProfile(snapshot.data() as UserProfile);
-      }
-      
-      // Send login notification
-      if (user.email) {
-        notifyLogin(user.email, user.displayName || 'User').catch(console.error);
-      }
-      
-      toast.success(t("সফলভাবে লগইন হয়েছে!", "Logged in successfully!"));
-    } catch (error: any) {
-      console.error("Login error:", error);
-      if (error.code === 'auth/unauthorized-domain') {
-        toast.error(t("এই ডোমেইনটি Firebase-এ অনুমোদিত নয়। অনুগ্রহ করে Authorized Domains-এ যোগ করুন।", "This domain is not authorized in Firebase. Please add it to Authorized Domains."));
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        toast.error(t("লগইন বাতিল করা হয়েছে।", "Login cancelled."));
-      } else {
-        toast.error(t(`লগইন করতে সমস্যা হয়েছে: ${error.message}`, `Failed to login: ${error.message}`));
-      }
-      throw error;
-    }
+  const login = () => {
+    setIsLoginModalOpen(true);
   };
 
   const logout = async () => {
@@ -136,14 +111,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.uid);
+    if (auth.currentUser) {
+      await fetchProfile(auth.currentUser.uid, auth.currentUser);
     }
   };
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, login, logout, refreshProfile }}>
       {children}
+      <LoginModal 
+        isOpen={isLoginModalOpen} 
+        onClose={() => setIsLoginModalOpen(false)} 
+        logoUrl={logoUrl}
+      />
     </AuthContext.Provider>
   );
 };

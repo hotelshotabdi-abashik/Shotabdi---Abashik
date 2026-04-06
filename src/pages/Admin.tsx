@@ -9,7 +9,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
 import { useAuth } from '../context/AuthContext';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { notifyBookingStatus, notifyExclusiveOffer } from '../services/NotificationService';
+import { notifyBookingStatus, notifyExclusiveOffer, notifyNewAdminRole, notifyAdminRoleGiven } from '../services/NotificationService';
 
 interface Room {
   id: string;
@@ -498,6 +498,17 @@ export default function Admin() {
         updateData.adminSecret = secret;
       }
       await updateDoc(userRef, updateData);
+      
+      if (newRole === 'admin' && secret) {
+        // Send notifications
+        if (roleModal.userEmail) {
+          notifyNewAdminRole(roleModal.userEmail, secret).catch(console.error);
+        }
+        if (user?.email) {
+          notifyAdminRoleGiven(user.email, roleModal.userEmail).catch(console.error);
+        }
+      }
+      
       fetchUsers();
       toast.success(t("ইউজার রোল আপডেট করা হয়েছে!", "User role updated!"));
     } catch (error) {

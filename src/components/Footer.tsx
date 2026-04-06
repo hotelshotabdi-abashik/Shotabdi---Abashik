@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 const iconMap: { [key: string]: any } = {
   Facebook,
@@ -16,6 +17,7 @@ const iconMap: { [key: string]: any } = {
 
 export default function Footer() {
   const { t } = useLanguage();
+  const { login, user } = useAuth();
   const [socialLinks, setSocialLinks] = useState<any[]>([]);
 
   useEffect(() => {
@@ -89,6 +91,9 @@ export default function Footer() {
             <li><Link to="/tour-desk" className="hover:text-red-400 transition-colors">{t('ট্যুর ডেস্ক', 'Tour Desk')}</Link></li>
             <li><Link to="/privacy-policy" className="hover:text-red-400 transition-colors">{t('গোপনীয়তা নীতি', 'Privacy Policy')}</Link></li>
             <li><Link to="/terms-of-service" className="hover:text-red-400 transition-colors">{t('পরিষেবার শর্তাবলী', 'Terms of Service')}</Link></li>
+            {!user && (
+              <li><button onClick={login} className="hover:text-red-400 transition-colors">{t('লগইন', 'Log In')}</button></li>
+            )}
           </ul>
         </div>
       </div>

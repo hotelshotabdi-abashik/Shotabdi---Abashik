@@ -1,8 +1,249 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if true;
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId} (matches request.auth.uid)
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - email: string (required, immutable, email format)
+    //   - role: string (required, ['user', 'admin'])
+    //   - displayName: string (optional, max 100)
+    //   - photoURL: string (optional, url format or empty)
+    //   - legalName: string (optional, max 100)
+    //   - phone: string (optional, max 20)
+    //   - guardianName: string (optional, max 100)
+    //   - guardianPhone: string (optional, max 20)
+    //   - nidNumber: string (optional, max 30)
+    //   - nidImageUrl: string (optional, url format)
+    //   - profileCompleted: bool (required)
+    //   - createdAt: timestamp (required, immutable)
+    //   - lastUpdated: timestamp (optional)
+    //   - adminSecret: string (optional, for admins)
+    //
+    // Collection: rooms
+    // Fields: name, type, price, cutPrice, amenities, imageUrl, description, isAvailable, createdAt, order
+    //
+    // Collection: bookings
+    // Fields: userId, roomId, roomName, userName, userPhone, userEmail, checkIn, checkOut, status, totalAmount, createdAt
+    //
+    // Collection: ratings
+    // Fields: userId, userName, userPhoto, rating, comment, status, createdAt
+    //
+    // Collection: content
+    // Fields: section, data, updatedAt
+    //
+    // Collection: gallery
+    // Fields: title, description, imageUrl, category, status, order, createdAt, authorId
+    //
+    // Collection: socialLinks
+    // Fields: platform, url, icon, order
+    //
+    // Collection: emailLogs
+    // Fields: to, subject, body, sentAt, status, type, error, metadata
+    //
+    // Collection: settings
+    // Fields: logoUrl, websiteName, galleryCleanupThreshold, lastCleanupDate
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      let adminEmails = [
+        "hotelshotabdiabashik@gmail.com", 
+        "selectedlegendbusiness@gmail.com", 
+        "fuadf342@gmail.com",
+        "d2kabdulkahar@gmail.com"
+      ];
+      return isAuthenticated() && (
+        (request.auth.token.email in adminEmails) || 
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function isRecent(ts) {
+      return ts is timestamp && ts > request.time - duration.value(10, 'm') && ts <= request.time;
+    }
+
+    function fieldUnchanged(field) {
+      return request.resource.data[field] == resource.data[field];
+    }
+
+    // ===============================================================
+    // Collection Rules
+    // ===============================================================
+
+    // Users Collection
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.uid is string && data.uid.size() < 128 &&
+               data.email is string && isValidEmail(data.email) &&
+               data.role in ['user', 'admin'] &&
+               data.profileCompleted is bool &&
+               data.createdAt is timestamp &&
+               (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100)) &&
+               (!('phone' in data) || (data.phone is string && data.phone.size() <= 20)) &&
+               (!('photoURL' in data) || (data.photoURL is string && (data.photoURL == "" || isValidUrl(data.photoURL)))) &&
+               (!('adminSecret' in data) || (data.adminSecret is string && data.adminSecret.size() <= 50)) &&
+               (!('lastUpdated' in data) || (data.lastUpdated is timestamp));
+      }
+
+      allow read: if isOwner(userId) || isAdmin();
+      
+      allow create: if isAuthenticated() && 
+                      isOwner(userId) && 
+                      isValidUser(request.resource.data) &&
+                      (
+                        (request.resource.data.role == 'user') || 
+                        (request.resource.data.role == 'admin' && request.auth.token.email in [
+                          "hotelshotabdiabashik@gmail.com", 
+                          "selectedlegendbusiness@gmail.com", 
+                          "fuadf342@gmail.com",
+                          "d2kabdulkahar@gmail.com"
+                        ])
+                      ) &&
+                      isRecent(request.resource.data.createdAt);
+      
+      allow update: if isAuthenticated() && (
+                      (isOwner(userId) && 
+                       isValidUser(request.resource.data) && 
+                       (fieldUnchanged('role') || isAdmin()) &&
+                       fieldUnchanged('uid') &&
+                       fieldUnchanged('email') &&
+                       fieldUnchanged('createdAt')) || 
+                      isAdmin()
+                    );
+      
+      allow delete: if isAdmin() && userId != request.auth.uid;
+    }
+
+    // Rooms Collection
+    match /rooms/{roomId} {
+      function isValidRoom(data) {
+        return data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+               data.type is string &&
+               data.price is number && data.price >= 0 &&
+               data.isAvailable is bool &&
+               data.createdAt is timestamp &&
+               (!('imageUrl' in data) || isValidUrl(data.imageUrl)) &&
+               (!('description' in data) || (data.description is string && data.description.size() <= 2000));
+      }
+
+      allow read: if true;
+      allow write: if isAdmin() && isValidRoom(request.resource.data);
+    }
+
+    // Bookings Collection
+    match /bookings/{bookingId} {
+      function isValidBooking(data) {
+        return data.userId is string &&
+               data.roomId is string &&
+               data.status in ['pending', 'confirmed', 'accepted', 'rejected', 'cancelled', 'completed'] &&
+               data.totalAmount is number && data.totalAmount >= 0 &&
+               data.checkIn is timestamp &&
+               data.checkOut is timestamp &&
+               data.createdAt is timestamp &&
+               (!('userEmail' in data) || isValidEmail(data.userEmail));
+      }
+
+      allow read: if isAuthenticated() && (isOwner(resource.data.userId) || isAdmin());
+      
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.userId) && 
+                      isValidBooking(request.resource.data) &&
+                      request.resource.data.status == 'pending' &&
+                      isRecent(request.resource.data.createdAt);
+      
+      allow update: if isAuthenticated() && (
+                      (isOwner(resource.data.userId) && 
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+                       request.resource.data.status == 'cancelled' &&
+                       resource.data.status == 'pending') || 
+                      isAdmin()
+                    );
+      
+      allow delete: if isAdmin();
+    }
+
+    // Ratings Collection
+    match /ratings/{ratingId} {
+      function isValidRating(data) {
+        return data.userId is string &&
+               data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+               data.status in ['approved', 'pending', 'rejected'] &&
+               data.createdAt is timestamp &&
+               (!('comment' in data) || (data.comment is string && data.comment.size() <= 1000)) &&
+               (!('userName' in data) || (data.userName is string && data.userName.size() <= 100));
+      }
+
+      allow read: if true;
+      
+      allow create: if isAuthenticated() && 
+                      isOwner(request.resource.data.userId) && 
+                      isValidRating(request.resource.data) &&
+                      request.resource.data.status == 'pending' &&
+                      isRecent(request.resource.data.createdAt);
+      
+      allow update, delete: if isAdmin();
+    }
+
+    // Content Collection
+    match /content/{contentId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Gallery Collection
+    match /gallery/{postId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Social Links Collection
+    match /socialLinks/{linkId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Email Logs Collection
+    match /emailLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() && 
+                      request.resource.data.sentAt is timestamp &&
+                      (!('to' in request.resource.data) || isValidEmail(request.resource.data.to)) &&
+                      isRecent(request.resource.data.sentAt);
+      allow update, delete: if isAdmin();
+    }
+
+    // Settings Collection
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin() && 
+                      (!('lastCleanupDate' in request.resource.data) || (request.resource.data.lastCleanupDate is timestamp));
     }
   }
 }
