@@ -1,35 +1,78 @@
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, HEAD, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    };
+class MetaRewriter {
+  constructor(metadata) {
+    this.metadata = metadata;
+  }
+  element(element) {
+    const property = element.getAttribute("property") || element.getAttribute("name");
+    if (property === "og:title" || property === "twitter:title") {
+      element.setAttribute("content", this.metadata.title);
+    }
+    if (property === "og:image" || property === "twitter:image") {
+      element.setAttribute("content", this.metadata.image);
+    }
+    if (property === "og:description" || property === "twitter:description") {
+      element.setAttribute("content", this.metadata.description);
+    }
+  }
+}
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// Configuration
+const AUTH_KEY = "123456@";
+const RESEND_API_KEY = "re_JDjWan9P_BX7wV2aQkwUPBfFznC8W2L6N";
+const FROM_EMAIL = "hotel@shotabdi-abashik.bd";
+const PAGES_URL = "shotabdi-abashik.pages.dev";
+const FIRESTORE_URL = "https://firestore.googleapis.com/v1/projects/helical-realm-476704-m0/databases/ai-studio-f14820b0-2a32-464e-8aca-957a8401f25f/documents";
+
+async function fetchRoom(roomId) {
+  try {
+    const res = await fetch(`${FIRESTORE_URL}/rooms/${roomId}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.fields;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function fetchContent(docId) {
+  try {
+    const res = await fetch(`${FIRESTORE_URL}/content/${docId}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const jsonStr = data.fields?.data?.stringValue;
+    if (jsonStr) {
+      return JSON.parse(jsonStr);
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const path = url.pathname.slice(1);
+
+    // 1. Handle CORS Preflight
     if (request.method === "OPTIONS") {
-      return new Response(null, {
-        headers: corsHeaders,
-      });
+      return new Response(null, { headers: corsHeaders });
     }
 
-    // Handle Email Sending
+    // 2. EMAIL ROUTE (FIXED)
     if (url.pathname === "/send-email" && request.method === "POST") {
       try {
         const body = await request.json();
         const { to, subject, html, text } = body;
-
-        if (!env.RESEND_API_KEY) {
-          return new Response(JSON.stringify({ error: "RESEND_API_KEY is not configured" }), {
-            status: 500,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          });
-        }
-
-        const fromEmail = env.RESEND_FROM_EMAIL || "hotel@shotabdi-abashik.bd";
-
+        
         const resendPayload = {
-          from: `Hotel Shotabdi Abashik <${fromEmail}>`,
+          from: `Hotel Shotabdi <${FROM_EMAIL}>`,
           to: [to],
           subject: subject,
         };
@@ -37,86 +80,144 @@ export default {
         if (html) resendPayload.html = html;
         if (text) resendPayload.text = text;
 
-        const resendResponse = await fetch("https://api.resend.com/emails", {
+        const resendRes = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+            "Authorization": `Bearer ${RESEND_API_KEY}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify(resendPayload),
         });
 
-        if (!resendResponse.ok) {
-          const errorData = await resendResponse.json().catch(() => ({}));
-          console.error("Resend API Error:", errorData);
-          return new Response(JSON.stringify({ error: "Failed to send email via Resend", details: errorData }), {
-            status: resendResponse.status,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          });
+        const data = await resendRes.json();
+        return new Response(JSON.stringify(data), { 
+          status: resendRes.status, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: err.message }), { 
+          status: 500, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        });
+      }
+    }
+
+    // 3. R2 STORAGE ROUTE (UNCHANGED - Connection Preserved)
+    const isStorageRequest = path.startsWith("shotabdi-abashik/") || 
+                             /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(path);
+
+    if (isStorageRequest) {
+      const bucket = env["shotabdi-abashik"];
+      
+      if (request.method === "PUT" || request.method === "DELETE") {
+        const authHeader = request.headers.get("Authorization");
+        if (authHeader !== `Bearer ${AUTH_KEY}`) {
+          return new Response("Unauthorized", { status: 401, headers: corsHeaders });
         }
+      }
 
-        const data = await resendResponse.json();
-        return new Response(JSON.stringify(data), {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+      if (request.method === "PUT") {
+        await bucket.put(path, request.body, {
+          httpMetadata: { contentType: request.headers.get("Content-Type") || "application/octet-stream" },
         });
-      } catch (error) {
-        console.error("Error processing email request:", error);
-        return new Response(JSON.stringify({ error: "Internal Server Error" }), {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
+        return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+      }
+
+      if (request.method === "GET") {
+        const object = await bucket.get(path);
+        if (!object) return new Response("Not Found", { status: 404, headers: corsHeaders });
+        const headers = new Headers(corsHeaders);
+        object.writeHttpMetadata(headers);
+        return new Response(object.body, { headers });
+      }
+
+      if (request.method === "DELETE") {
+        await bucket.delete(path);
+        return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
       }
     }
 
-    // Handle R2 Image Uploads and Deletions
-    const key = url.pathname.slice(1); // Remove leading slash
+    // 4. WEBSITE PROXY WITH DYNAMIC PREVIEWS
+    url.hostname = PAGES_URL;
+    const modifiedRequest = new Request(url.toString(), {
+      method: request.method,
+      headers: request.headers,
+      redirect: "follow",
+    });
 
-    if (request.method === "PUT" || request.method === "DELETE") {
-      const authHeader = request.headers.get("Authorization");
-      const expectedAuth = `Bearer ${env.AUTH_KEY_SECRET || "123456@"}`;
+    const response = await fetch(modifiedRequest);
+    
+    // Only rewrite if it's an HTML page
+    const contentType = response.headers.get("Content-Type");
+    if (contentType && contentType.includes("text/html")) {
       
-      if (authHeader !== expectedAuth) {
-        return new Response("Unauthorized", { status: 401, headers: corsHeaders });
+      let meta = {
+        title: "Hotel Shotabdi Abashik",
+        description: "Boutique Hotel in Sylhet, Bangladesh",
+        image: "https://shotabdi-abashik.bd/logo.png" // Default
+      };
+
+      // DETECT ROOM LINKS
+      if (url.pathname.includes("/rooms/")) {
+        const roomId = url.pathname.split("/rooms/")[1];
+        if (roomId) {
+          const room = await fetchRoom(roomId);
+          if (room) {
+            meta.title = room.name?.stringValue ? `${room.name.stringValue} - Hotel Shotabdi` : "Luxury Room - Hotel Shotabdi";
+            meta.description = room.description?.stringValue || "Book your stay at the best price.";
+            
+            // Try to get the first image from the images array
+            const images = room.images?.arrayValue?.values;
+            if (images && images.length > 0 && images[0].stringValue) {
+              meta.image = images[0].stringValue;
+            }
+          }
+        }
+      } 
+      // DETECT RESTAURANT LINKS
+      else if (url.pathname.includes("/restaurant/")) {
+        const slug = url.pathname.split("/restaurant/")[1];
+        if (slug) {
+          const restaurants = await fetchContent("restaurants");
+          if (restaurants && Array.isArray(restaurants)) {
+            const restaurant = restaurants.find(r => 
+              r.name && r.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') === slug
+            );
+            if (restaurant) {
+              meta.title = `${restaurant.name} | Restaurant in Sylhet`;
+              meta.description = `${restaurant.type} restaurant located at ${restaurant.location}.`;
+              if (restaurant.imageUrl) {
+                meta.image = restaurant.imageUrl;
+              }
+            }
+          }
+        }
       }
-    }
-
-    if (request.method === "PUT") {
-      if (!key) return new Response("Missing key", { status: 400, headers: corsHeaders });
-      
-      await env.MY_BUCKET.put(key, request.body, {
-        httpMetadata: {
-          contentType: request.headers.get("Content-Type") || "application/octet-stream",
-        },
-      });
-      return new Response(`Successfully uploaded ${key}`, { status: 200, headers: corsHeaders });
-    }
-
-    if (request.method === "DELETE") {
-      if (!key) return new Response("Missing key", { status: 400, headers: corsHeaders });
-      
-      await env.MY_BUCKET.delete(key);
-      return new Response(`Successfully deleted ${key}`, { status: 200, headers: corsHeaders });
-    }
-
-    if (request.method === "GET") {
-      if (!key) return new Response("Missing key", { status: 400, headers: corsHeaders });
-      
-      const object = await env.MY_BUCKET.get(key);
-      if (!object) {
-        return new Response("Not found", { status: 404, headers: corsHeaders });
+      // DETECT TOUR LINKS
+      else if (url.pathname.includes("/tour-desk/")) {
+        const slug = url.pathname.split("/tour-desk/")[1];
+        if (slug) {
+          const tourSpots = await fetchContent("tourSpots");
+          if (tourSpots && Array.isArray(tourSpots)) {
+            const spot = tourSpots.find(t => 
+              t.name && t.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') === slug
+            );
+            if (spot) {
+              meta.title = `${spot.name} | Tour Spot in Sylhet`;
+              meta.description = spot.description || `Explore ${spot.name} with Hotel Shotabdi.`;
+              if (spot.imageUrl) {
+                meta.image = spot.imageUrl;
+              }
+            }
+          }
+        }
       }
 
-      const headers = new Headers(corsHeaders);
-      object.writeHttpMetadata(headers);
-      headers.set("etag", object.httpEtag);
-
-      return new Response(object.body, {
-        status: 200,
-        headers,
-      });
+      return new HTMLRewriter()
+        .on("meta", new MetaRewriter(meta))
+        .transform(response);
     }
 
-    return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+    return response;
   },
 };

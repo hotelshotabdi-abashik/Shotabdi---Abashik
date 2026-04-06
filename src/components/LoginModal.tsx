@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { auth, db } from '../firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, fetchSignInMethodsForEmail, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { sendEmail, notifyLogin } from '../services/NotificationService';
 import { googleProvider } from '../firebase';
@@ -29,6 +29,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -137,29 +138,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
       return;
     }
 
+    if (!isLogin && !isForgotPassword && password !== confirmPassword) {
+      toast.error(t('পাসওয়ার্ড মিলছে না।', 'Passwords do not match.'));
+      return;
+    }
+
     setLoading(true);
     try {
       if (isForgotPassword) {
-        // Send reset code
-        const code = generateCode();
-        setVerificationCode(code);
-        setTimeLeft(300);
-        
-        await sendEmail({
-          to: email,
-          subject: 'Password Reset Code - Hotel Shotabdi',
-          type: 'verification',
-          html: `
-            <h2 style="color: #dc2626; margin-top: 0;">Password Reset Code</h2>
-            <p>Your password reset code for Hotel Shotabdi is:</p>
-            <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin: 20px 0; text-align: center;">
-              <p style="margin: 0; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1e293b;">${code}</p>
-            </div>
-            <p>This code will expire in 5 minutes.</p>
-          `
-        });
-        setVerificationStep(true);
-        toast.success(t('পাসওয়ার্ড রিসেট কোড পাঠানো হয়েছে।', 'Password reset code sent to your email.'));
+        await sendPasswordResetEmail(auth, email);
+        toast.success(t('পাসওয়ার্ড রিসেট লিংক আপনার ইমেইলে পাঠানো হয়েছে।', 'Password reset link sent to your email.'));
+        setIsForgotPassword(false);
         setLoading(false);
         return;
       }
@@ -168,13 +157,34 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
       let userCredential;
       try {
         if (isLogin) {
+          try {
+            const methods = await fetchSignInMethodsForEmail(auth, email);
+            if (methods.length === 0) {
+              toast.error(t('এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট নেই।', 'There is no account with this email address.'));
+              setLoading(false);
+              return;
+            }
+            if (!methods.includes('password') && methods.includes('google.com')) {
+              toast.info(t('পাসওয়ার্ড সেট করা নেই। পাসওয়ার্ড সেট করার লিংক পাঠানো হচ্ছে...', 'Password is not set. Sending password set link...'));
+              await sendPasswordResetEmail(auth, email);
+              toast.success(t('পাসওয়ার্ড সেট করার লিংক আপনার ইমেইলে পাঠানো হয়েছে।', 'Password set link sent to your email.'));
+              setLoading(false);
+              return;
+            }
+          } catch (e) {
+            console.error("Error fetching methods", e);
+          }
           userCredential = await signInWithEmailAndPassword(auth, email, password);
         } else {
           userCredential = await createUserWithEmailAndPassword(auth, email, password);
         }
       } catch (authError: any) {
-        if (authError.code === 'auth/user-not-found' && isLogin) {
-          toast.error(t('অ্যাকাউন্ট পাওয়া যায়নি। অনুগ্রহ করে সাইন আপ করুন।', 'Account not found. Please sign up.'));
+        if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
+          if (isLogin) {
+            toast.error(t('ভুল ইমেইল বা পাসওয়ার্ড।', 'Incorrect email or password.'));
+          } else {
+            toast.error(authError.message);
+          }
         } else if (authError.code === 'auth/wrong-password') {
           toast.error(t('ভুল পাসওয়ার্ড।', 'Incorrect password.'));
         } else if (authError.code === 'auth/email-already-in-use' && !isLogin) {
@@ -258,37 +268,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
       return;
     }
 
-    if (isForgotPassword && !newPassword) {
-      toast.error(t('নতুন পাসওয়ার্ড দিন।', 'Please enter a new password.'));
-      return;
-    }
-
     setLoading(true);
     try {
-      if (isForgotPassword) {
-        // Reset password flow
-        const userCredential = await signInWithEmailAndPassword(auth, email, password); // This won't work if they forgot password
-        // Actually, Firebase reset password usually uses a link. 
-        // But the user wants "after verifying code with email they can add new password like facebook,Instagram".
-        // Since I'm using a custom code flow, I'll need to use updatePassword if they are signed in, 
-        // or if not, I'd need to use a different method.
-        // For simplicity in this demo, I'll assume they can reset if they provide the code.
-        // In a real app, you'd use confirmPasswordReset(auth, oobCode, newPassword).
-        // But here we are simulating a code flow.
-        
-        // If I can't sign them in, I can't update password easily without a real reset link.
-        // I'll try to sign in with a temporary method or just show success for the demo if it's a simulation.
-        // However, let's try to do it "properly" by signing in first if we have the password, 
-        // but they FORGOT it. So I should use the Firebase reset password email instead?
-        // The user specifically asked for a CODE flow.
-        
-        toast.success(t('পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!', 'Password reset successfully!'));
-        setIsForgotPassword(false);
-        setVerificationStep(false);
-        setLoading(false);
-        return;
-      }
-
       if (tempUser) {
         const userRef = doc(db, 'users', tempUser.uid);
         const snapshot = await getDoc(userRef);
@@ -411,25 +392,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
                 </p>
               </div>
 
-              {isForgotPassword && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    {t('নতুন পাসওয়ার্ড', 'New Password')}
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
-                      required
-                    />
-                  </div>
-                </div>
-              )}
-
               <button
                 onClick={verifyCode}
                 disabled={loading || enteredCode.length !== 6}
@@ -440,7 +402,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
                 ) : (
                   <>
                     <CheckCircle className="w-5 h-5" />
-                    {isForgotPassword ? t('পাসওয়ার্ড রিসেট করুন', 'Reset Password') : t('ভেরিফাই করুন', 'Verify')}
+                    {t('ভেরিফাই করুন', 'Verify')}
                   </>
                 )}
               </button>
@@ -466,33 +428,53 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
                 </div>
 
                 {!isForgotPassword && !isPhoneNumber && (
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="block text-sm font-medium text-slate-700">
-                        {t('পাসওয়ার্ড', 'Password')}
-                      </label>
-                      {isLogin && (
-                        <button
-                          type="button"
-                          onClick={() => setIsForgotPassword(true)}
-                          className="text-xs text-red-600 font-bold hover:underline"
-                        >
-                          {t('পাসওয়ার্ড ভুলে গেছেন?', 'Forgot Password?')}
-                        </button>
-                      )}
+                  <>
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-medium text-slate-700">
+                          {t('পাসওয়ার্ড', 'Password')}
+                        </label>
+                        {isLogin && (
+                          <button
+                            type="button"
+                            onClick={() => setIsForgotPassword(true)}
+                            className="text-xs text-red-600 font-bold hover:underline"
+                          >
+                            {t('পাসওয়ার্ড ভুলে গেছেন?', 'Forgot Password?')}
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                        <input
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
+                          required={!isPhoneNumber}
+                        />
+                      </div>
                     </div>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
-                        required={!isPhoneNumber}
-                      />
-                    </div>
-                  </div>
+                    {!isLogin && (
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">
+                          {t('পাসওয়ার্ড নিশ্চিত করুন', 'Confirm Password')}
+                        </label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                          <input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="••••••••"
+                            className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
+                            required={!isPhoneNumber}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <div id="recaptcha-container"></div>
