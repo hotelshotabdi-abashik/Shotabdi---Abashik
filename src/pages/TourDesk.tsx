@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Map, Compass, Car, MapPin, Navigation, Search, Plus, Trash2, Edit2, Save, X } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
@@ -219,7 +220,7 @@ export default function TourDesk() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {filteredSpots.map((spot: any, index: number) => (
               <div key={index} className="bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow flex flex-col h-full relative group overflow-hidden">
                 {editMode && editingId !== index.toString() && (
@@ -307,9 +308,9 @@ export default function TourDesk() {
                       </div>
                     )}
                     <div className="p-3 sm:p-6 flex-grow flex flex-col">
-                      <div className="flex-grow">
+                      <Link to={`/tour-desk/${spot.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`} className="flex-grow block group-hover:text-red-600 transition-colors">
                         <div className="flex flex-col sm:flex-row justify-between items-start mb-1 sm:mb-2">
-                          <h3 className="text-xs sm:text-lg font-bold text-slate-900 pr-1 sm:pr-8 leading-tight w-full">{spot.name}</h3>
+                          <h3 className="text-xs sm:text-lg font-bold text-slate-900 pr-1 sm:pr-8 leading-tight w-full group-hover:text-red-600 transition-colors">{spot.name}</h3>
                           <span className="bg-red-50 text-red-700 text-[8px] sm:text-xs font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap mt-1 sm:mt-0 sm:ml-2">
                             {spot.distance}
                           </span>
@@ -319,7 +320,7 @@ export default function TourDesk() {
                           <MapPin className="w-2.5 h-2.5 sm:w-4 sm:h-4 mr-1 text-slate-400 flex-shrink-0" />
                           <span>{spot.location}</span>
                         </div>
-                      </div>
+                      </Link>
                       <a 
                         href={getDirectionsUrl(spot)}
                         target="_blank"

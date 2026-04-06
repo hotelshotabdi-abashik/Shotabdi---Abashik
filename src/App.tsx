@@ -18,7 +18,9 @@ const Rooms = lazy(() => import('./pages/Rooms'));
 const RoomDetails = lazy(() => import('./pages/RoomDetails'));
 const About = lazy(() => import('./pages/About'));
 const Restaurant = lazy(() => import('./pages/Restaurant'));
+const RestaurantDetails = lazy(() => import('./pages/RestaurantDetails'));
 const TourDesk = lazy(() => import('./pages/TourDesk'));
+const TourDeskDetails = lazy(() => import('./pages/TourDeskDetails'));
 const Gallery = lazy(() => import('./pages/Gallery'));
 const GalleryPost = lazy(() => import('./pages/GalleryPost'));
 const Reviews = lazy(() => import('./pages/Reviews').then(module => ({ default: module.Reviews })));
@@ -152,8 +154,8 @@ export default function App() {
                       <Route path="/gallery/:id" element={<GalleryPost />} />
                       <Route path="/logo" element={<Navigate to="/" />} />
                       <Route path="/rooms/:title" element={<RoomDetails />} />
-                      <Route path="/restaurant/:id" element={<Restaurant />} />
-                      <Route path="/tour-desk/:id" element={<TourDesk />} />
+                      <Route path="/restaurant/:id" element={<RestaurantDetails />} />
+                      <Route path="/tour-desk/:id" element={<TourDeskDetails />} />
                       <Route path="/reviews" element={<Reviews />} />
                       <Route path="/help-desk" element={<HelpDesk />} />
                       <Route path="/profile" element={<Profile />} />

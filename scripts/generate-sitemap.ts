@@ -116,7 +116,7 @@ async function generateSitemap() {
 
       // Tour Desk Page
       xml += `  <url>\n`;
-      xml += `    <loc>${baseUrl}/tourdesk</loc>\n`;
+      xml += `    <loc>${baseUrl}/tour-desk</loc>\n`;
       xml += `    <changefreq>weekly</changefreq>\n`;
       xml += `    <priority>0.8</priority>\n`;
       const tourSpots = content.tourSpots || [];
@@ -184,6 +184,44 @@ async function generateSitemap() {
           xml += `    </image:image>\n`;
         }
         xml += `  </url>\n`;
+      });
+
+      // Individual Restaurant Pages
+      restaurants.forEach((rest: any) => {
+        if (rest.name) {
+          const slug = rest.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+          xml += `  <url>\n`;
+          xml += `    <loc>${baseUrl}/restaurant/${slug}</loc>\n`;
+          xml += `    <changefreq>monthly</changefreq>\n`;
+          xml += `    <priority>0.6</priority>\n`;
+          if (rest.imageUrl) {
+            xml += `    <image:image>\n`;
+            xml += `      <image:loc>${escapeXml(rest.imageUrl)}</image:loc>\n`;
+            xml += `      <image:title>${escapeXml(rest.name)}</image:title>\n`;
+            xml += `      <image:caption>${escapeXml(rest.type + ' at ' + rest.location)}</image:caption>\n`;
+            xml += `    </image:image>\n`;
+          }
+          xml += `  </url>\n`;
+        }
+      });
+
+      // Individual Tour Desk Pages
+      tourSpots.forEach((spot: any) => {
+        if (spot.name) {
+          const slug = spot.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+          xml += `  <url>\n`;
+          xml += `    <loc>${baseUrl}/tour-desk/${slug}</loc>\n`;
+          xml += `    <changefreq>monthly</changefreq>\n`;
+          xml += `    <priority>0.6</priority>\n`;
+          if (spot.imageUrl) {
+            xml += `    <image:image>\n`;
+            xml += `      <image:loc>${escapeXml(spot.imageUrl)}</image:loc>\n`;
+            xml += `      <image:title>${escapeXml(spot.name)}</image:title>\n`;
+            xml += `      <image:caption>${escapeXml(spot.description || spot.name)}</image:caption>\n`;
+            xml += `    </image:image>\n`;
+          }
+          xml += `  </url>\n`;
+        }
       });
 
       // Individual Room Pages
