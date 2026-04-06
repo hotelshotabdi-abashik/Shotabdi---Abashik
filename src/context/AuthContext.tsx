@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User as FirebaseUser, onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { User as FirebaseUser, onAuthStateChanged, signOut, signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { toast } from 'sonner';
 import { useLanguage } from './LanguageContext';
 import { LoginModal } from '../components/LoginModal';
+import { GoogleOAuthProvider, useGoogleOneTapLogin } from '@react-oauth/google';
 
 export interface UserProfile {
   uid: string;
@@ -32,6 +33,48 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const GoogleOneTap = () => {
+  const { t } = useLanguage();
+  const { user, loading } = useAuth();
+
+  useGoogleOneTapLogin({
+    onSuccess: async (credentialResponse) => {
+      if (user || loading) return;
+      try {
+        const credential = GoogleAuthProvider.credential(credentialResponse.credential);
+        const result = await signInWithCredential(auth, credential);
+        
+        // Check if user document exists
+        const userRef = doc(db, 'users', result.user.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (!userSnap.exists()) {
+          const adminEmails = ['hotelshotabdiabashik@gmail.com', 'selectedlegendbusiness@gmail.com', 'fuadf342@gmail.com', 'd2kabdulkahar@gmail.com'];
+          await setDoc(userRef, {
+            uid: result.user.uid,
+            email: result.user.email || '',
+            role: adminEmails.includes(result.user.email || '') ? 'admin' : 'user',
+            profileCompleted: false,
+            displayName: result.user.displayName || '',
+            photoURL: result.user.photoURL || '',
+            createdAt: serverTimestamp()
+          });
+        }
+        
+        toast.success(t('লগইন সফল হয়েছে!', 'Logged in successfully!'));
+      } catch (error) {
+        console.error('Google One Tap Error:', error);
+      }
+    },
+    onError: () => {
+      console.log('Google One Tap Failed');
+    },
+    disabled: !!user || loading,
+  });
+
+  return null;
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { t } = useLanguage();
@@ -116,15 +159,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1046429402636-i9a700m15309s519p4v43a123l8u3u29.apps.googleusercontent.com';
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, login, logout, refreshProfile }}>
-      {children}
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
-        onClose={() => setIsLoginModalOpen(false)} 
-        logoUrl={logoUrl}
-      />
-    </AuthContext.Provider>
+    <GoogleOAuthProvider clientId={clientId}>
+      <AuthContext.Provider value={{ user, profile, loading, login, logout, refreshProfile }}>
+        {children}
+        <GoogleOneTap />
+        <LoginModal 
+          isOpen={isLoginModalOpen} 
+          onClose={() => setIsLoginModalOpen(false)} 
+          logoUrl={logoUrl}
+        />
+      </AuthContext.Provider>
+    </GoogleOAuthProvider>
   );
 };
 

@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key } from 'lucide-react';
+import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import PhoneInput from '../components/PhoneInput';
@@ -84,6 +84,8 @@ export default function Profile() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const [showTermsModal, setShowTermsModal] = useState(false);
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -95,48 +97,17 @@ export default function Profile() {
 
     setLoading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const img = new Image();
-        img.onload = async () => {
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 512;
-          const MAX_HEIGHT = 512;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
-          
-          // Lossless-ish compression using high quality PNG
-          const dataUrl = canvas.toDataURL('image/png', 1.0);
-          
-          const userRef = doc(db, 'users', user.uid);
-          await updateDoc(userRef, { photoURL: dataUrl });
-          await refreshProfile();
-          toast.success(t('প্রোফাইল ছবি আপডেট করা হয়েছে!', 'Profile picture updated!'));
-          setLoading(false);
-        };
-        img.src = event.target?.result as string;
-      };
-      reader.readAsDataURL(file);
+      const { uploadToR2 } = await import('../lib/r2');
+      const fileUrl = await uploadToR2(file, 'shotabdi-abashik/profiles');
+      
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, { photoURL: fileUrl });
+      await refreshProfile();
+      toast.success(t('প্রোফাইল ছবি আপডেট করা হয়েছে!', 'Profile picture updated!'));
     } catch (error) {
       console.error(error);
       toast.error(t('ছবি আপলোড করতে সমস্যা হয়েছে।', 'Failed to upload image.'));
+    } finally {
       setLoading(false);
     }
   };
@@ -156,6 +127,11 @@ export default function Profile() {
       return;
     }
 
+    setShowTermsModal(true);
+  };
+
+  const confirmSaveProfile = async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const userRef = doc(db, 'users', user.uid);
@@ -167,6 +143,7 @@ export default function Profile() {
       await refreshProfile();
       localStorage.removeItem('profileDraft');
       toast.success(t("প্রোফাইল সফলভাবে আপডেট করা হয়েছে!", "Profile updated successfully!"));
+      setShowTermsModal(false);
       navigate('/');
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -555,6 +532,60 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {showTermsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="text-2xl font-bold text-slate-900">
+                {t('শর্তাবলী', 'Terms and Conditions')}
+              </h3>
+              <button 
+                onClick={() => setShowTermsModal(false)}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto flex-grow prose prose-slate max-w-none">
+              <div className="mb-6">
+                <h4 className="text-lg font-bold text-slate-900 mb-2">Bangla (বাংলা)</h4>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  আমি এতদ্বারা ঘোষণা করছি যে, আমার প্রদানকৃত সকল তথ্য সম্পূর্ণ সত্য এবং নির্ভুল। আমি হোটেল শতাব্দী আবাসিক-এর সকল নিয়ম-কানুন ও শর্তাবলী মেনে চলতে বাধ্য থাকব। কোনো মিথ্যা তথ্য প্রদান করলে বা নিয়ম ভঙ্গ করলে কর্তৃপক্ষ আমার বিরুদ্ধে আইনানুগ ব্যবস্থা গ্রহণ করতে পারবে।
+                </p>
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-slate-900 mb-2">English</h4>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  I hereby declare that all information provided by me is completely true and accurate. I will be obliged to follow all the rules and conditions of Hotel Shotabdi Abashik. If any false information is provided or rules are broken, the authority can take legal action against me.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex gap-4 justify-end">
+              <button 
+                onClick={() => setShowTermsModal(false)}
+                className="px-6 py-2.5 rounded-xl font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
+              >
+                {t('বাতিল করুন', 'Cancel')}
+              </button>
+              <button 
+                onClick={confirmSaveProfile}
+                disabled={loading}
+                className="px-6 py-2.5 rounded-xl font-bold text-white bg-red-700 hover:bg-red-800 transition-colors flex items-center gap-2 disabled:opacity-70"
+              >
+                {loading ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <CheckCircle2 className="w-5 h-5" />
+                )}
+                {t('সম্মত আছি এবং সংরক্ষণ করুন', 'Agree & Save')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

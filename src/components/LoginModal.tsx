@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { auth, db } from '../firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { sendEmail, notifyLogin } from '../services/NotificationService';
 import { googleProvider } from '../firebase';
@@ -13,6 +13,12 @@ interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   logoUrl: string;
+}
+
+declare global {
+  interface Window {
+    recaptchaVerifier: any;
+  }
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl }) => {
@@ -31,6 +37,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
   const [enteredCode, setEnteredCode] = useState('');
   const [tempUser, setTempUser] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState(300); // 5 minutes
+  const [isPhoneAuth, setIsPhoneAuth] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -57,8 +65,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
       setEnteredCode('');
       setTempUser(null);
       setTimeLeft(300);
+      setIsPhoneAuth(false);
+      setConfirmationResult(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user && isOpen && isPhoneAuth) {
+        // Auto-verified
+        toast.success(t('লগইন সফল হয়েছে!', 'Logged in successfully!'));
+        refreshProfile();
+        onClose();
+      }
+    });
+    return () => unsubscribe();
+  }, [isOpen, isPhoneAuth, onClose, refreshProfile, t]);
 
   const handleClose = async () => {
     if (verificationStep && tempUser && !isForgotPassword) {
@@ -73,8 +95,43 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
+  const isPhoneNumber = /^\+?[0-9]{10,15}$/.test(email.replace(/[- ]/g, ''));
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isPhoneNumber) {
+      setLoading(true);
+      try {
+        if (!window.recaptchaVerifier) {
+          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            size: 'invisible',
+            callback: () => {
+              // reCAPTCHA solved
+            }
+          });
+        }
+        
+        const formattedPhone = email.startsWith('+') ? email : `+88${email}`; // Assuming BD default if no +
+        const confirmation = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier);
+        setConfirmationResult(confirmation);
+        setIsPhoneAuth(true);
+        setVerificationStep(true);
+        setTimeLeft(300);
+        toast.success(t('এসএমএস কোড পাঠানো হয়েছে।', 'SMS code sent to your phone.'));
+      } catch (error: any) {
+        console.error("Phone auth error:", error);
+        toast.error(t('ফোন নম্বর যাচাই করতে সমস্যা হয়েছে।', 'Failed to verify phone number.'));
+        if (window.recaptchaVerifier) {
+          window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
+        }
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (!email || (!isForgotPassword && !password)) {
       toast.error(t('ইমেইল এবং পাসওয়ার্ড দিন।', 'Please enter email and password.'));
       return;
@@ -162,6 +219,40 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
   };
 
   const verifyCode = async () => {
+    if (isPhoneAuth && confirmationResult) {
+      setLoading(true);
+      try {
+        const result = await confirmationResult.confirm(enteredCode);
+        const user = result.user;
+        
+        // Check if user document exists
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            uid: user.uid,
+            email: user.email || '',
+            phone: user.phoneNumber || '',
+            role: 'user',
+            profileCompleted: false,
+            createdAt: serverTimestamp()
+          });
+          notifyLogin(user.phoneNumber || 'Unknown Phone', 'Phone Auth').catch(console.error);
+        }
+        
+        await refreshProfile();
+        toast.success(t('লগইন সফল হয়েছে!', 'Logged in successfully!'));
+        onClose();
+      } catch (error) {
+        console.error("Phone verification error:", error);
+        toast.error(t('ভুল কোড।', 'Incorrect code.'));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (enteredCode !== verificationCode) {
       toast.error(t('ভুল কোড।', 'Incorrect code.'));
       return;
@@ -359,22 +450,22 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
               <form onSubmit={handleEmailAuth} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
-                    {t('ইমেইল', 'Email')}
+                    {t('ইমেইল বা ফোন নম্বর', 'Email or Phone Number')}
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input
-                      type="email"
+                      type="text"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="your@email.com"
+                      placeholder="Email or Phone Number"
                       className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
                       required
                     />
                   </div>
                 </div>
 
-                {!isForgotPassword && (
+                {!isForgotPassword && !isPhoneNumber && (
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <label className="block text-sm font-medium text-slate-700">
@@ -398,11 +489,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
-                        required
+                        required={!isPhoneNumber}
                       />
                     </div>
                   </div>
                 )}
+
+                <div id="recaptcha-container"></div>
 
                 <button
                   type="submit"
