@@ -61,6 +61,19 @@ export default function MyStays() {
 
   const handleCancelBooking = async (bookingId: string) => {
     try {
+      const bookingToCancel = bookings.find(b => b.id === bookingId);
+      if (bookingToCancel) {
+        const bookingTime = bookingToCancel.createdAt?.seconds ? bookingToCancel.createdAt.seconds * 1000 : Date.now();
+        const timeSinceBooking = Date.now() - bookingTime;
+        const cooldownMs = 30 * 60 * 1000; // 30 minutes
+        
+        if (timeSinceBooking < cooldownMs) {
+          const remainingMinutes = Math.ceil((cooldownMs - timeSinceBooking) / (60 * 1000));
+          toast.error(t(`আপনি বুকিং করার ${remainingMinutes} মিনিট পর এটি বাতিল করতে পারবেন।`, `You can cancel this booking after ${remainingMinutes} minutes.`));
+          return;
+        }
+      }
+
       await updateDoc(doc(db, 'bookings', bookingId), {
         status: 'cancelled'
       });

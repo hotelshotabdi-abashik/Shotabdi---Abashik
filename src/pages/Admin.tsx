@@ -371,6 +371,22 @@ export default function Admin() {
 
   const handleUpdateBookingStatus = async (id: string, newStatus: string) => {
     try {
+      // Check cooldown if admin is cancelling a booking
+      if (newStatus === 'cancelled') {
+        const bookingToCancel = bookings.find(b => b.id === id);
+        if (bookingToCancel) {
+          const bookingTime = bookingToCancel.createdAt?.seconds ? bookingToCancel.createdAt.seconds * 1000 : Date.now();
+          const timeSinceBooking = Date.now() - bookingTime;
+          const cooldownMs = 30 * 60 * 1000; // 30 minutes
+          
+          if (timeSinceBooking < cooldownMs) {
+            const remainingMinutes = Math.ceil((cooldownMs - timeSinceBooking) / (60 * 1000));
+            toast.error(t(`এই বুকিংটি বাতিল করতে আরও ${remainingMinutes} মিনিট অপেক্ষা করুন।`, `Please wait ${remainingMinutes} more minutes to cancel this booking.`));
+            return;
+          }
+        }
+      }
+
       const bookingRef = doc(db, 'bookings', id);
       await updateDoc(bookingRef, { status: newStatus });
       

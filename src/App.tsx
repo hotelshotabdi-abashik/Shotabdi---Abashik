@@ -72,13 +72,15 @@ const SEO = () => {
   const { content } = useContent();
   const logoUrl = content.site_logo || "https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png";
   const websiteName = "HOTEL SHOTABDI ABASHIK";
-  const description = "Hotel Shotabdi Abashik offers luxury residential services in Sylhet. Experience comfort, safety, and 24h service near Kumargaon Bus Stand.";
+  const description = "Hotel Shotabdi Abashik is the most advanced luxury residential hotel in Sylhet, offering premium rooms, fine dining, and expert tour desk services. Best hotel in Sylhet for booking, located near Kumargaon Bus Stand.";
+  const keywords = "Rose view, sylhet best hotel, best hotel in sylhet, sylhet booking best hotel, best booking website in sylhet, kumargaon, polina rahman, surma tower, sylhet hotels, best hotel, fuad ahmed, tea garden sylhet, Hotel Shotabdi Abashik, luxury hotel Sylhet, affordable hotel Sylhet, Kumargaon hotel, Sylhet tourism, best residential hotel Sylhet";
 
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Hotel",
     "name": websiteName,
     "description": description,
+    "keywords": keywords,
     "url": "https://www.shotabdi-abashik.bd",
     "logo": logoUrl,
     "image": logoUrl,
@@ -107,6 +109,7 @@ const SEO = () => {
     <Helmet>
       <title>{websiteName} | Best Luxury Residential Hotel in Sylhet</title>
       <meta name="description" content={description} />
+      <meta name="keywords" content={keywords} />
       <link rel="icon" type="image/png" href={logoUrl} />
       <link rel="apple-touch-icon" href={logoUrl} />
       
@@ -122,6 +125,7 @@ const SEO = () => {
       <meta property="twitter:title" content={`${websiteName} | Best Luxury Residential Hotel in Sylhet`} />
       <meta property="twitter:description" content={description} />
       <meta property="twitter:image" content={logoUrl} />
+      <meta name="twitter:site" content="@ShotabdiAbashik" />
 
       <script type="application/ld+json">
         {JSON.stringify(structuredData)}

@@ -10,7 +10,7 @@ import { EditableText } from '../components/EditableText';
 import { ImageUploader } from '../components/ImageUploader';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { notifyBookingSubmitted, notifyAdminNewBooking } from '../services/NotificationService';
-import { collection, getDocs, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, onSnapshot, query, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 
 interface Room {
@@ -143,7 +143,7 @@ export default function Rooms() {
     return () => unsubscribe();
   }, []);
 
-  const handleBook = (room: Room) => {
+  const handleBook = async (room: Room) => {
     if (!user) {
       toast.error(t("বুকিং করতে অনুগ্রহ করে লগইন করুন।", "Please login to book a room."));
       return;
@@ -152,6 +152,66 @@ export default function Rooms() {
       navigate('/profile');
       return;
     }
+
+    // Check for existing bookings today
+    try {
+      const bookingsRef = collection(db, 'bookings');
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const q = query(
+        bookingsRef,
+        where('userId', '==', user.uid)
+      );
+      
+      const snapshot = await getDocs(q);
+      
+      if (!snapshot.empty) {
+        // Filter for today's bookings
+        const todaysBookings = snapshot.docs.filter(doc => {
+          const data = doc.data() as any;
+          const createdAt = data.createdAt?.toMillis ? data.createdAt.toMillis() : (data.createdAt || 0);
+          return createdAt >= today.getTime();
+        });
+
+        if (todaysBookings.length > 0) {
+          // Sort by newest first
+          todaysBookings.sort((a, b) => {
+            const dataA = a.data() as any;
+            const dataB = b.data() as any;
+            const timeA = dataA.createdAt?.toMillis ? dataA.createdAt.toMillis() : (dataA.createdAt || 0);
+            const timeB = dataB.createdAt?.toMillis ? dataB.createdAt.toMillis() : (dataB.createdAt || 0);
+            return timeB - timeA;
+          });
+
+          // User has a booking today
+          const latestBooking = todaysBookings[0].data() as any;
+          const bookingTime = latestBooking.createdAt?.toMillis ? latestBooking.createdAt.toMillis() : (latestBooking.createdAt || Date.now());
+          const timeSinceBooking = Date.now() - bookingTime;
+          const cooldownMs = 30 * 60 * 1000; // 30 minutes
+          
+          if (timeSinceBooking < cooldownMs) {
+            const remainingMinutes = Math.ceil((cooldownMs - timeSinceBooking) / (60 * 1000));
+            toast.error(t(`আপনি ইতিমধ্যে একটি বুকিং করেছেন। অনুগ্রহ করে ${remainingMinutes} মিনিট অপেক্ষা করুন।`, `You have already made a booking. Please wait ${remainingMinutes} minutes.`));
+            return;
+          }
+          
+          // Check if the previous booking is still pending or accepted
+          const activeBookings = todaysBookings.filter(doc => {
+            const status = (doc.data() as any).status;
+            return status === 'pending' || status === 'accepted';
+          });
+          
+          if (activeBookings.length > 0) {
+             toast.error(t('আপনার ইতিমধ্যে একটি সক্রিয় বুকিং আছে। নতুন বুকিং করার আগে অনুগ্রহ করে সেটি বাতিল করুন অথবা অ্যাডমিন এর অনুমোদনের জন্য অপেক্ষা করুন।', 'You already have an active booking. Please cancel it or wait for admin approval before making a new one.'));
+             return;
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error checking existing bookings:", error);
+    }
+
     setBookingRoom(room);
     setCheckIn(new Date().toISOString().split('T')[0]);
     setCheckOut(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
