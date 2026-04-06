@@ -1,11 +1,32 @@
 import { MapPin, Phone, Mail, Globe, Clock, ShieldCheck, Users } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { EditableText } from '../components/EditableText';
+import { Helmet } from 'react-helmet-async';
+import { useContent } from '../context/ContentContext';
 
 export default function About() {
   const { t } = useLanguage();
+  const { content } = useContent();
+  const logoUrl = content.site_logo || "https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png";
+  const websiteName = "HOTEL SHOTABDI ABASHIK";
+  const pageTitle = `${t('আমাদের সম্পর্কে', 'About Us')} | ${websiteName}`;
+  const description = t(
+    'হোটেল শতাব্দী আবাসিক হলো বাংলাদেশের সিলেটে অবস্থিত একটি সাশ্রয়ী মূল্যের আবাসিক হোটেল। এটি কুমারগাঁও বাস টার্মিনালের কাছে অবস্থিত।',
+    'Hotel Shotabdi Abashik is an affordable residential hotel located in Sylhet, Bangladesh near Kumargaon Bus Terminal.'
+  );
+
   return (
     <div className="bg-slate-50 py-16 min-h-screen">
+      <Helmet>
+        <title>{pageTitle}</title>
+        <meta name="description" content={description} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={description} />
+        <meta property="og:image" content={logoUrl} />
+        <meta property="twitter:title" content={pageTitle} />
+        <meta property="twitter:description" content={description} />
+        <meta property="twitter:image" content={logoUrl} />
+      </Helmet>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h1 className="text-4xl font-extrabold text-slate-900 mb-4">

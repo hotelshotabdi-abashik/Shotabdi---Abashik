@@ -226,8 +226,8 @@ export default function Navbar() {
                 alt={`${websiteName} Logo`}
                 folder="shotabdi-abashik/logo"
               />
-              <span className={`font-bold text-[10px] sm:text-xs md:text-sm lg:text-base leading-tight truncate text-black`}>
-                {websiteName}
+              <span className={`font-bold text-[10px] sm:text-xs md:text-sm lg:text-base leading-tight truncate text-black uppercase`}>
+                {t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik')}
               </span>
             </Link>
           </div>

@@ -79,6 +79,12 @@ export default function GalleryPost() {
         <meta property="og:description" content={currentImage.description || 'View this beautiful moment from Hotel Shotabdi Abashik.'} />
         <meta property="og:image" content={currentImage.url} />
         <meta property="og:type" content="article" />
+        
+        {/* Twitter */}
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:title" content={`${currentImage.title || 'Gallery Post'} | Hotel Shotabdi Abashik`} />
+        <meta property="twitter:description" content={currentImage.description || 'View this beautiful moment from Hotel Shotabdi Abashik.'} />
+        <meta property="twitter:image" content={currentImage.url} />
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

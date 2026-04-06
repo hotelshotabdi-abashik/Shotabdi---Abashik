@@ -69,22 +69,24 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 const SEO = () => {
   const { content } = useContent();
   const logoUrl = content.site_logo || "https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png";
-  const websiteName = "Hotel Shotabdi Abashik";
-  const description = "24h Residential Service in Sylhet. Best hotel in Kumargaon, Sylhet.";
+  const websiteName = "HOTEL SHOTABDI ABASHIK";
+  const description = "Hotel Shotabdi Abashik offers luxury residential services in Sylhet. Experience comfort, safety, and 24h service near Kumargaon Bus Stand.";
 
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Hotel",
     "name": websiteName,
     "description": description,
-    "url": "https://shotabdi-abashik.bd",
+    "url": "https://www.shotabdi-abashik.bd",
     "logo": logoUrl,
     "image": logoUrl,
     "telephone": "+8801717425702",
     "address": {
       "@type": "PostalAddress",
+      "streetAddress": "Kumargaon Bus Terminal, Sunamganj Road",
       "addressLocality": "Sylhet",
       "addressRegion": "Sylhet",
+      "postalCode": "3100",
       "addressCountry": "BD"
     },
     "founder": {
@@ -101,20 +103,21 @@ const SEO = () => {
 
   return (
     <Helmet>
-      <title>{websiteName}</title>
+      <title>{websiteName} | Best Luxury Residential Hotel in Sylhet</title>
       <meta name="description" content={description} />
       <link rel="icon" type="image/png" href={logoUrl} />
       <link rel="apple-touch-icon" href={logoUrl} />
       
       {/* Open Graph / Facebook */}
       <meta property="og:type" content="website" />
-      <meta property="og:title" content={websiteName} />
+      <meta property="og:title" content={`${websiteName} | Best Luxury Residential Hotel in Sylhet`} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={logoUrl} />
+      <meta property="og:url" content="https://www.shotabdi-abashik.bd" />
 
       {/* Twitter */}
       <meta property="twitter:card" content="summary_large_image" />
-      <meta property="twitter:title" content={websiteName} />
+      <meta property="twitter:title" content={`${websiteName} | Best Luxury Residential Hotel in Sylhet`} />
       <meta property="twitter:description" content={description} />
       <meta property="twitter:image" content={logoUrl} />
 
