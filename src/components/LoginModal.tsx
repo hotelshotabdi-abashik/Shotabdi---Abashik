@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { auth, db } from '../firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, sendPasswordResetEmail } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, fetchSignInMethodsForEmail, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { sendEmail, notifyLogin } from '../services/NotificationService';
 import { googleProvider } from '../firebase';
@@ -157,6 +157,23 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
       let userCredential;
       try {
         if (isLogin) {
+          try {
+            const methods = await fetchSignInMethodsForEmail(auth, email);
+            if (methods.length === 0) {
+              toast.error(t('এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট নেই।', 'There is no account with this email address.'));
+              setLoading(false);
+              return;
+            }
+            if (!methods.includes('password') && methods.includes('google.com')) {
+              toast.info(t('পাসওয়ার্ড সেট করা নেই। পাসওয়ার্ড সেট করার লিংক পাঠানো হচ্ছে...', 'Password is not set. Sending password set link...'));
+              await sendPasswordResetEmail(auth, email);
+              toast.success(t('পাসওয়ার্ড সেট করার লিংক আপনার ইমেইলে পাঠানো হয়েছে।', 'Password set link sent to your email.'));
+              setLoading(false);
+              return;
+            }
+          } catch (e) {
+            console.error("Error fetching methods", e);
+          }
           userCredential = await signInWithEmailAndPassword(auth, email, password);
         } else {
           userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -164,7 +181,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
       } catch (authError: any) {
         if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
           if (isLogin) {
-            toast.error(t('ভুল ইমেইল বা পাসওয়ার্ড। আপনি যদি গুগল দিয়ে অ্যাকাউন্ট খুলে থাকেন, তবে "Continue with Google" ব্যবহার করুন অথবা "Forgot Password" এ ক্লিক করুন।', 'Incorrect email or password. If you signed up with Google, please use "Continue with Google" or click "Forgot Password".'));
+            toast.error(t('ভুল ইমেইল বা পাসওয়ার্ড।', 'Incorrect email or password.'));
           } else {
             toast.error(authError.message);
           }

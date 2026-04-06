@@ -18,3 +18,26 @@ html::-webkit-scrollbar, body::-webkit-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Google Translate Styles */
+.goog-te-banner-frame.skiptranslate {
+    display: none !important;
+}
+body {
+    top: 0px !important;
+}
+.goog-te-gadget {
+  font-family: inherit !important;
+  color: transparent !important;
+}
+.goog-te-gadget .goog-te-combo {
+  color: #333;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  font-size: 12px;
+  outline: none;
+}
+.goog-te-gadget span {
+  display: none;
+}

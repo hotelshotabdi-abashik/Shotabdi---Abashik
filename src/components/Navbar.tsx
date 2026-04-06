@@ -255,6 +255,7 @@ export default function Navbar() {
               <Globe className="w-3 h-3 xl:w-4 xl:h-4 mr-1" />
               {language === 'bn' ? 'EN' : 'BN'}
             </button>
+            <div id="google_translate_element" className="ml-2 hidden lg:block"></div>
             
             {loading ? (
               <div className="w-24 h-8 xl:h-10 bg-slate-100/20 animate-pulse rounded-md ml-1 xl:ml-2 flex-shrink-0"></div>
@@ -387,6 +388,7 @@ export default function Navbar() {
               <Globe className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
               {language === 'bn' ? 'EN' : 'BN'}
             </button>
+            <div id="google_translate_element_mobile" className="hidden"></div>
             
             {user ? (
               <div className="relative" ref={mobileDropdownRef}>

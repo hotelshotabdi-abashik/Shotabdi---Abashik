@@ -114,18 +114,128 @@ async function startServer() {
       server: { middlewareMode: true },
       appType: 'spa',
     });
+    
+    // Intercept HTML requests to inject meta tags
+    app.use(async (req, res, next) => {
+      if (req.method !== 'GET' || req.headers.accept?.indexOf('text/html') === -1) {
+        return next();
+      }
+      
+      try {
+        let template = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf-8');
+        template = await vite.transformIndexHtml(req.originalUrl, template);
+        
+        const modifiedHtml = await injectMetaTags(req.originalUrl, template);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(modifiedHtml);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as Error);
+        next(e);
+      }
+    });
+
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+    app.use(express.static(distPath, { index: false })); // Disable default index.html serving
+    
+    app.get('*', async (req, res) => {
+      try {
+        const template = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
+        const modifiedHtml = await injectMetaTags(req.originalUrl, template);
+        res.status(200).set({ 'Content-Type': 'text/html' }).send(modifiedHtml);
+      } catch (e) {
+        res.sendFile(path.join(distPath, 'index.html'));
+      }
     });
   }
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
+}
+
+async function injectMetaTags(url: string, html: string): Promise<string> {
+  if (!adminDb) return html;
+
+  try {
+    let title = '';
+    let description = '';
+    let imageUrl = '';
+
+    if (url.startsWith('/restaurant/')) {
+      const id = url.split('/restaurant/')[1].split('?')[0];
+      const docSnap = await adminDb.collection('content').doc('restaurants').get();
+      if (docSnap.exists) {
+        const data = JSON.parse(docSnap.data()?.data || '[]');
+        const item = data.find((r: any, idx: number) => 
+          idx.toString() === id || 
+          (r.name && r.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') === id)
+        );
+        if (item) {
+          title = `${item.name} | Restaurant in Sylhet | Hotel Shotabdi Abashik`;
+          description = `${item.type} restaurant located at ${item.location}. Distance: ${item.distance} from Hotel Shotabdi Abashik.`;
+          imageUrl = item.imageUrl;
+        }
+      }
+    } else if (url.startsWith('/tour-desk/')) {
+      const id = url.split('/tour-desk/')[1].split('?')[0];
+      const docSnap = await adminDb.collection('content').doc('tourDesk').get();
+      if (docSnap.exists) {
+        const data = JSON.parse(docSnap.data()?.data || '[]');
+        const item = data.find((t: any, idx: number) => 
+          t.id === id ||
+          idx.toString() === id || 
+          (t.name && t.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') === id)
+        );
+        if (item) {
+          title = `${item.name} | Tour Desk | Hotel Shotabdi Abashik`;
+          description = `${item.type} located at ${item.location}. Distance: ${item.distance} from Hotel Shotabdi Abashik.`;
+          imageUrl = item.imageUrl;
+        }
+      }
+    } else if (url.startsWith('/gallery/')) {
+      const id = url.split('/gallery/')[1].split('?')[0];
+      const docSnap = await adminDb.collection('content').doc('gallery').get();
+      if (docSnap.exists) {
+        const data = JSON.parse(docSnap.data()?.data || '[]');
+        const item = data.find((g: any, idx: number) => idx.toString() === id);
+        if (item) {
+          title = `${item.title || 'Gallery'} | Hotel Shotabdi Abashik`;
+          description = item.description || 'View our gallery';
+          imageUrl = item.imageUrl;
+        }
+      }
+    }
+
+    if (title && imageUrl) {
+      // Replace existing meta tags or inject new ones
+      let newHtml = html;
+      
+      // Replace title
+      newHtml = newHtml.replace(/<title>(.*?)<\/title>/, `<title>${escapeXml(title)}</title>`);
+      
+      // Replace og:title
+      newHtml = newHtml.replace(/<meta property="og:title" content="(.*?)" \/>/, `<meta property="og:title" content="${escapeXml(title)}" />`);
+      
+      // Replace og:description
+      if (description) {
+        newHtml = newHtml.replace(/<meta property="og:description" content="(.*?)" \/>/, `<meta property="og:description" content="${escapeXml(description)}" />`);
+        newHtml = newHtml.replace(/<meta name="description" content="(.*?)" \/>/, `<meta name="description" content="${escapeXml(description)}" />`);
+      }
+      
+      // Replace og:image
+      newHtml = newHtml.replace(/<meta property="og:image" content="(.*?)" \/>/, `<meta property="og:image" content="${escapeXml(imageUrl)}" />`);
+      
+      // Replace twitter:image
+      newHtml = newHtml.replace(/<meta property="twitter:image" content="(.*?)" \/>/, `<meta property="twitter:image" content="${escapeXml(imageUrl)}" />`);
+      
+      return newHtml;
+    }
+  } catch (error) {
+    console.error('Error injecting meta tags:', error);
+  }
+
+  return html;
 }
 
 startServer();

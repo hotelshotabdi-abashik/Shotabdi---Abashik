@@ -120,7 +120,7 @@ export default function PhoneInput({ value, onChange, disabled, className, ...pr
         onChange={handleNumberChange}
         disabled={disabled}
         minLength={9}
-        maxLength={12}
+        maxLength={15}
         className="flex-grow px-3 py-2 bg-transparent border-none focus:ring-0 focus:outline-none disabled:text-slate-500 w-full"
         placeholder="1XXXXXXXXX"
         {...props}
