@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, query, orderBy, limit, addDoc, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone, Send, Facebook, Mail, MapPin } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone, Send, Facebook, Mail, MapPin, ShieldCheck, Lock, AlertTriangle } from 'lucide-react';
+import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import { uploadToR2, deleteFromR2 } from '../lib/r2';
 import { useLanguage } from '../context/LanguageContext';
@@ -29,6 +30,7 @@ interface User {
   role: string;
   displayName?: string;
   phone?: string;
+  adminSecret?: string;
 }
 
 interface Booking {
@@ -83,6 +85,11 @@ export default function Admin() {
   // Bookings State
   const [bookings, setBookings] = useState<Booking[]>([]);
 
+  // Admin Authentication State
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [adminLoginSecret, setAdminLoginSecret] = useState('');
+  const [currentUserData, setCurrentUserData] = useState<User | null>(null);
+
   // Ratings State
   const [ratings, setRatings] = useState<any[]>([]);
 
@@ -98,6 +105,16 @@ export default function Admin() {
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, title: string, message: string, onConfirm: () => void }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
   const [roleModal, setRoleModal] = useState<{ isOpen: boolean, uid: string, newRole: string, userEmail: string }>({ isOpen: false, uid: '', newRole: '', userEmail: '' });
   const [rolePassword, setRolePassword] = useState('');
+  const [newAdminSecret, setNewAdminSecret] = useState('');
+
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ 
+    isOpen: boolean, 
+    title: string, 
+    message: string, 
+    onConfirm: () => void,
+    type: 'room' | 'user' | 'rating' | 'social'
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {}, type: 'room' });
+  const [deleteSecret, setDeleteSecret] = useState('');
 
   useEffect(() => {
     if (activeTab === 'rooms') fetchRooms();
@@ -256,6 +273,12 @@ export default function Admin() {
           ...doc.data()
         })) as User[];
         setUsers(usersData);
+        
+        // Find current user data for secret check
+        if (user) {
+          const current = usersData.find(u => u.uid === user.uid);
+          if (current) setCurrentUserData(current);
+        }
       } else {
         setUsers([]);
       }
@@ -351,10 +374,11 @@ export default function Admin() {
   };
 
   const handleDeleteRoom = async (id: string, name: string) => {
-    setConfirmModal({
+    setDeleteConfirmModal({
       isOpen: true,
       title: 'Delete Room',
       message: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+      type: 'room',
       onConfirm: async () => {
         try {
           const roomRef = doc(db, 'rooms', id);
@@ -422,10 +446,11 @@ export default function Admin() {
   };
 
   const handleDeleteRating = async (id: string) => {
-    setConfirmModal({
+    setDeleteConfirmModal({
       isOpen: true,
       title: 'Delete Rating',
       message: 'Are you sure you want to delete this rating?',
+      type: 'rating',
       onConfirm: async () => {
         try {
           const ratingRef = doc(db, 'ratings', id);
@@ -465,10 +490,14 @@ export default function Admin() {
     executeRoleUpdate(uid, newRole);
   };
 
-  const executeRoleUpdate = async (uid: string, newRole: string) => {
+  const executeRoleUpdate = async (uid: string, newRole: string, secret?: string) => {
     try {
       const userRef = doc(db, 'users', uid);
-      await updateDoc(userRef, { role: newRole });
+      const updateData: any = { role: newRole };
+      if (newRole === 'admin' && secret) {
+        updateData.adminSecret = secret;
+      }
+      await updateDoc(userRef, updateData);
       fetchUsers();
       toast.success(t("ইউজার রোল আপডেট করা হয়েছে!", "User role updated!"));
     } catch (error) {
@@ -482,8 +511,15 @@ export default function Admin() {
       toast.error(t("ভুল পাসওয়ার্ড।", "Incorrect password."));
       return;
     }
+    
+    if (!newAdminSecret || newAdminSecret.length < 4) {
+      toast.error(t("অ্যাডমিন সিক্রেট কমপক্ষে ৪ অক্ষরের হতে হবে।", "Admin secret must be at least 4 characters."));
+      return;
+    }
+
     setRoleModal({ isOpen: false, uid: '', newRole: '', userEmail: '' });
-    executeRoleUpdate(roleModal.uid, roleModal.newRole);
+    executeRoleUpdate(roleModal.uid, roleModal.newRole, newAdminSecret);
+    setNewAdminSecret('');
   };
 
   const handleDeleteUser = async (uid: string, email: string) => {
@@ -499,10 +535,11 @@ export default function Admin() {
       return;
     }
 
-    setConfirmModal({
+    setDeleteConfirmModal({
       isOpen: true,
       title: 'Delete User',
       message: `Are you sure you want to delete user "${email}" and all their data (bookings, ratings)? This action cannot be undone.`,
+      type: 'user',
       onConfirm: async () => {
         try {
           setLoading(true);
@@ -546,62 +583,32 @@ export default function Admin() {
     });
   };
 
-  const handleCleanupTestData = async () => {
+  const handleAdminLogin = () => {
     const DEFAULT_ADMINS = ['hotelshotabdiabashik@gmail.com', 'fuadf342@gmail.com', 'selectedlegendbusiness@gmail.com', 'd2kabdulkahar@gmail.com'];
+    const isDefaultAdmin = user && DEFAULT_ADMINS.includes(user.email || '');
     
-    setConfirmModal({
-      isOpen: true,
-      title: 'Cleanup Test Data',
-      message: 'Are you sure you want to delete all booking history and all non-admin users? This will NOT delete default admins.',
-      onConfirm: async () => {
-        try {
-          setLoading(true);
-          // 1. Delete ALL Bookings
-          const bookingsRef = collection(db, 'bookings');
-          const bookingsSnapshot = await getDocs(bookingsRef);
-          for (const docSnap of bookingsSnapshot.docs) {
-            await deleteDoc(docSnap.ref);
-          }
+    const correctSecret = isDefaultAdmin ? 'kahar02' : currentUserData?.adminSecret;
 
-          // 2. Delete Non-Admin Users
-          const usersRef = collection(db, 'users');
-          const usersSnapshot = await getDocs(usersRef);
-          for (const docSnap of usersSnapshot.docs) {
-            const data = docSnap.data() as User;
-            if (data.role !== 'admin' && !DEFAULT_ADMINS.includes(data.email)) {
-              // Delete their ratings too
-              const ratingsRef = collection(db, 'ratings');
-              const ratingsSnapshot = await getDocs(query(ratingsRef, where('userId', '==', docSnap.id)));
-              for (const rSnap of ratingsSnapshot.docs) {
-                await deleteDoc(rSnap.ref);
-              }
-              
-              // Delete their gallery posts
-              const galleryRef = collection(db, 'gallery');
-              const gallerySnapshot = await getDocs(query(galleryRef, where('authorId', '==', docSnap.id)));
-              for (const gSnap of gallerySnapshot.docs) {
-                const gData = gSnap.data();
-                if (gData.imageUrl) {
-                  await deleteFromR2(gData.imageUrl).catch(err => console.error("Error deleting from R2:", err));
-                }
-                await deleteDoc(gSnap.ref);
-              }
+    if (adminLoginSecret === correctSecret) {
+      setIsAdminAuthenticated(true);
+      toast.success(t("অ্যাডমিন লগইন সফল!", "Admin login successful!"));
+    } else {
+      toast.error(t("ভুল সিক্রেট কোড।", "Incorrect secret code."));
+    }
+  };
 
-              await deleteDoc(docSnap.ref);
-            }
-          }
+  const handleConfirmDelete = () => {
+    const DEFAULT_ADMINS = ['hotelshotabdiabashik@gmail.com', 'fuadf342@gmail.com', 'selectedlegendbusiness@gmail.com', 'd2kabdulkahar@gmail.com'];
+    const isDefaultAdmin = user && DEFAULT_ADMINS.includes(user.email || '');
+    const correctSecret = isDefaultAdmin ? 'kahar02' : currentUserData?.adminSecret;
 
-          fetchUsers();
-          fetchBookings();
-          toast.success(t("টেস্ট ডাটা মুছে ফেলা হয়েছে!", "Test data cleaned up successfully!"));
-        } catch (error) {
-          handleFirestoreError(error, OperationType.DELETE, 'cleanup');
-          toast.error(t("ডাটা মুছতে সমস্যা হয়েছে।", "Failed to cleanup data."));
-        } finally {
-          setLoading(false);
-        }
-      }
-    });
+    if (deleteSecret === correctSecret) {
+      deleteConfirmModal.onConfirm();
+      setDeleteConfirmModal({ ...deleteConfirmModal, isOpen: false });
+      setDeleteSecret('');
+    } else {
+      toast.error(t("ভুল সিক্রেট কোড।", "Incorrect secret code."));
+    }
   };
 
   const cleanupGallery = async () => {
@@ -694,6 +701,60 @@ export default function Admin() {
 
   return (
     <div className="bg-slate-50 py-6 md:py-10 min-h-screen">
+      {/* Admin Login Overlay */}
+      {!isAdminAuthenticated && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/95 backdrop-blur-sm p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 border border-slate-200"
+          >
+            <div className="flex flex-col items-center text-center mb-8">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <ShieldCheck className="w-8 h-8 text-red-700" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                {t('অ্যাডমিন প্যানেল অ্যাক্সেস', 'Admin Panel Access')}
+              </h2>
+              <p className="text-slate-600">
+                {t('অ্যাডমিন প্যানেলে প্রবেশ করতে আপনার সিক্রেট কোডটি দিন।', 'Please enter your secret code to access the admin panel.')}
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  {t('সিক্রেট কোড', 'Secret Code')}
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <input
+                    type="password"
+                    value={adminLoginSecret}
+                    onChange={(e) => setAdminLoginSecret(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAdminLogin()}
+                    placeholder="••••••••"
+                    className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleAdminLogin}
+                className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-xl shadow-lg shadow-red-700/20 transition-all active:scale-[0.98]"
+              >
+                {t('প্রবেশ করুন', 'Access Panel')}
+              </button>
+
+              <p className="text-center text-xs text-slate-400">
+                {t('শুধুমাত্র অনুমোদিত অ্যাডমিনদের জন্য।', 'Authorized personnel only.')}
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 md:mb-8">{t('অ্যাডমিন প্যানেল', 'Admin Dashboard')}</h1>
         
@@ -986,12 +1047,6 @@ export default function Admin() {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-slate-800">{t('ইউজার তালিকা', 'User List')}</h2>
-              <button 
-                onClick={handleCleanupTestData}
-                className="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-4 rounded-lg flex items-center transition-colors text-sm"
-              >
-                <Trash2 className="w-4 h-4 mr-2" /> {t('টেস্ট ডাটা মুছুন', 'Cleanup Test Data')}
-              </button>
             </div>
             {/* Users Content */}
             <div className="md:hidden space-y-4">
@@ -1926,35 +1981,54 @@ export default function Admin() {
           </div>
         )}
       </div>
-      <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        onConfirm={confirmModal.onConfirm}
-        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
-        confirmText="Delete"
-      />
-
       {/* Role Password Modal */}
       {roleModal.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
             <h3 className="text-xl font-bold text-slate-900 mb-4">
-              {t('অ্যাডমিন পাসওয়ার্ড প্রয়োজন', 'Admin Password Required')}
+              {t('অ্যাডমিন অ্যাকশন নিশ্চিত করুন', 'Confirm Admin Action')}
             </h3>
-            <p className="text-slate-600 mb-4">
-              {t('নতুন অ্যাডমিন যুক্ত করতে অনুগ্রহ করে পাসওয়ার্ড দিন।', 'Please enter the password to add a new admin.')}
-            </p>
-            <input
-              type="password"
-              value={rolePassword}
-              onChange={(e) => setRolePassword(e.target.value)}
-              placeholder="Password"
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 mb-6"
-            />
+            
+            <div className="space-y-4 mb-6">
+              {roleModal.newRole === 'admin' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    {t('নতুন অ্যাডমিনের সিক্রেট কোড', 'New Admin Secret Code')}
+                  </label>
+                  <input
+                    type="text"
+                    value={newAdminSecret}
+                    onChange={(e) => setNewAdminSecret(e.target.value)}
+                    placeholder="Set a secret for this admin"
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    {t('এই কোডটি নতুন অ্যাডমিনকে প্যানেল অ্যাক্সেস করতে ব্যবহার করতে হবে।', 'This code will be required for the new admin to access the panel.')}
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  {t('আপনার সিক্রেট কোড (নিশ্চিত করতে)', 'Your Secret Code (to confirm)')}
+                </label>
+                <input
+                  type="password"
+                  value={rolePassword}
+                  onChange={(e) => setRolePassword(e.target.value)}
+                  placeholder="Your secret code"
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                />
+              </div>
+            </div>
+
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setRoleModal({ isOpen: false, uid: '', newRole: '', userEmail: '' })}
+                onClick={() => {
+                  setRoleModal({ isOpen: false, uid: '', newRole: '', userEmail: '' });
+                  setRolePassword('');
+                  setNewAdminSecret('');
+                }}
                 className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-medium"
               >
                 {t('বাতিল', 'Cancel')}
@@ -1964,6 +2038,53 @@ export default function Admin() {
                 className="px-4 py-2 bg-red-700 hover:bg-red-800 text-white rounded-lg transition-colors font-medium"
               >
                 {t('নিশ্চিত করুন', 'Confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal with Secret */}
+      {deleteConfirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 text-red-600 mb-4">
+              <AlertTriangle className="w-6 h-6" />
+              <h3 className="text-xl font-bold">{deleteConfirmModal.title}</h3>
+            </div>
+            
+            <p className="text-slate-600 mb-6">{deleteConfirmModal.message}</p>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                {t('নিশ্চিত করতে আপনার সিক্রেট কোড দিন', 'Enter your secret code to confirm')}
+              </label>
+              <input
+                type="password"
+                value={deleteSecret}
+                onChange={(e) => setDeleteSecret(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleConfirmDelete()}
+                placeholder="Secret Code"
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setDeleteConfirmModal({ ...deleteConfirmModal, isOpen: false });
+                  setDeleteSecret('');
+                }}
+                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors font-medium"
+              >
+                {t('বাতিল', 'Cancel')}
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
+              >
+                {t('মুছে ফেলুন', 'Delete')}
               </button>
             </div>
           </div>
