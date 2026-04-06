@@ -30,6 +30,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const Admin = lazy(() => import('./pages/Admin'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -181,6 +182,7 @@ function MainContent() {
           <Route path="/reviews" element={<Reviews />} />
           <Route path="/help-desk" element={<HelpDesk />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/my-stays" element={<ProtectedRoute><MyStays /></ProtectedRoute>} />

@@ -90,7 +90,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
     setLoading(true);
     try {
       if (isForgotPassword) {
-        await sendPasswordResetEmail(auth, email);
+        const actionCodeSettings = {
+          url: window.location.origin + '/reset-password',
+          handleCodeInApp: true,
+        };
+        await sendPasswordResetEmail(auth, email, actionCodeSettings);
         toast.success(t('পাসওয়ার্ড রিসেট লিংক আপনার ইমেইলে পাঠানো হয়েছে।', 'Password reset link sent to your email.'));
         setIsForgotPassword(false);
         setLoading(false);
@@ -105,7 +109,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
             const methods = await fetchSignInMethodsForEmail(auth, email);
             if (methods.length > 0 && !methods.includes('password') && methods.includes('google.com')) {
               toast.info(t('পাসওয়ার্ড সেট করা নেই। পাসওয়ার্ড সেট করার লিংক পাঠানো হচ্ছে...', 'Password is not set. Sending password set link...'));
-              await sendPasswordResetEmail(auth, email);
+              const actionCodeSettings = {
+                url: window.location.origin + '/reset-password',
+                handleCodeInApp: true,
+              };
+              await sendPasswordResetEmail(auth, email, actionCodeSettings);
               toast.success(t('পাসওয়ার্ড সেট করার লিংক আপনার ইমেইলে পাঠানো হয়েছে।', 'Password set link sent to your email.'));
               setLoading(false);
               return;

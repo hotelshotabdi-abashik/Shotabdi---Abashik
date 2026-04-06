@@ -71,6 +71,8 @@ const GoogleOneTap = () => {
       console.log('Google One Tap Failed');
     },
     disabled: !!user || loading,
+    use_fedcm_for_prompt: true,
+    auto_select: true,
   });
 
   return null;
