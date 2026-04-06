@@ -167,6 +167,7 @@ function MainContent() {
       <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/home" element={<Navigate to="/" />} />
           <Route path="/rooms" element={<Rooms />} />
           <Route path="/about" element={<About />} />
           <Route path="/restaurant" element={<Restaurant />} />
@@ -184,6 +185,7 @@ function MainContent() {
           <Route path="/terms-of-service" element={<TermsOfService />} />
           <Route path="/my-stays" element={<ProtectedRoute><MyStays /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Suspense>
     </main>
