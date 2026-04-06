@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 import { auth, db } from '../firebase';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, fetchSignInMethodsForEmail, sendPasswordResetEmail } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, fetchSignInMethodsForEmail, sendPasswordResetEmail, linkWithPhoneNumber } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { sendEmail, notifyLogin } from '../services/NotificationService';
 import { googleProvider } from '../firebase';
@@ -101,40 +101,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isPhoneNumber) {
-      setLoading(true);
-      try {
-        if (!window.recaptchaVerifier) {
-          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            size: 'invisible',
-            callback: () => {
-              // reCAPTCHA solved
-            }
-          });
-        }
-        
-        const formattedPhone = email.startsWith('+') ? email : `+88${email}`; // Assuming BD default if no +
-        const confirmation = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier);
-        setConfirmationResult(confirmation);
-        setIsPhoneAuth(true);
-        setVerificationStep(true);
-        setTimeLeft(300);
-        toast.success(t('এসএমএস কোড পাঠানো হয়েছে।', 'SMS code sent to your phone.'));
-      } catch (error: any) {
-        console.error("Phone auth error:", error);
-        toast.error(t('ফোন নম্বর যাচাই করতে সমস্যা হয়েছে।', 'Failed to verify phone number.'));
-        if (window.recaptchaVerifier) {
-          window.recaptchaVerifier.clear();
-          window.recaptchaVerifier = null;
-        }
-      } finally {
-        setLoading(false);
-      }
-      return;
-    }
+    const isPhoneNumber = /^\+?[0-9]{10,15}$/.test(email.replace(/[- ]/g, ''));
+    const formattedPhone = email.startsWith('+') ? email : `+88${email}`;
+    const fakeEmail = `${formattedPhone.replace('+', '')}@phone.shotabdi-abashik.bd`;
 
     if (!email || (!isForgotPassword && !password)) {
-      toast.error(t('ইমেইল এবং পাসওয়ার্ড দিন।', 'Please enter email and password.'));
+      toast.error(t('ইমেইল/ফোন এবং পাসওয়ার্ড দিন।', 'Please enter email/phone and password.'));
       return;
     }
 
@@ -146,6 +118,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
     setLoading(true);
     try {
       if (isForgotPassword) {
+        if (isPhoneNumber) {
+          toast.error(t('ফোন নম্বরের পাসওয়ার্ড রিসেট করতে অ্যাডমিনের সাথে যোগাযোগ করুন।', 'Please contact admin to reset phone password.'));
+          setLoading(false);
+          return;
+        }
         await sendPasswordResetEmail(auth, email);
         toast.success(t('পাসওয়ার্ড রিসেট লিংক আপনার ইমেইলে পাঠানো হয়েছে।', 'Password reset link sent to your email.'));
         setIsForgotPassword(false);
@@ -155,16 +132,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
 
       // First, try to sign in to see if user exists
       let userCredential;
+      const loginEmail = isPhoneNumber ? fakeEmail : email;
+
       try {
         if (isLogin) {
           try {
-            const methods = await fetchSignInMethodsForEmail(auth, email);
+            const methods = await fetchSignInMethodsForEmail(auth, loginEmail);
             if (methods.length === 0) {
-              toast.error(t('এই ইমেইল দিয়ে কোনো অ্যাকাউন্ট নেই।', 'There is no account with this email address.'));
+              toast.error(t('এই ইমেইল/নম্বর দিয়ে কোনো অ্যাকাউন্ট নেই।', 'There is no account with this email/number.'));
               setLoading(false);
               return;
             }
-            if (!methods.includes('password') && methods.includes('google.com')) {
+            if (!isPhoneNumber && !methods.includes('password') && methods.includes('google.com')) {
               toast.info(t('পাসওয়ার্ড সেট করা নেই। পাসওয়ার্ড সেট করার লিংক পাঠানো হচ্ছে...', 'Password is not set. Sending password set link...'));
               await sendPasswordResetEmail(auth, email);
               toast.success(t('পাসওয়ার্ড সেট করার লিংক আপনার ইমেইলে পাঠানো হয়েছে।', 'Password set link sent to your email.'));
@@ -174,21 +153,21 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
           } catch (e) {
             console.error("Error fetching methods", e);
           }
-          userCredential = await signInWithEmailAndPassword(auth, email, password);
+          userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
         } else {
-          userCredential = await createUserWithEmailAndPassword(auth, email, password);
+          userCredential = await createUserWithEmailAndPassword(auth, loginEmail, password);
         }
       } catch (authError: any) {
         if (authError.code === 'auth/user-not-found' || authError.code === 'auth/invalid-credential') {
           if (isLogin) {
-            toast.error(t('ভুল ইমেইল বা পাসওয়ার্ড।', 'Incorrect email or password.'));
+            toast.error(t('ভুল ইমেইল/নম্বর বা পাসওয়ার্ড।', 'Incorrect email/number or password.'));
           } else {
             toast.error(authError.message);
           }
         } else if (authError.code === 'auth/wrong-password') {
           toast.error(t('ভুল পাসওয়ার্ড।', 'Incorrect password.'));
         } else if (authError.code === 'auth/email-already-in-use' && !isLogin) {
-          toast.error(t('এই ইমেইল দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট আছে।', 'An account already exists with this email.'));
+          toast.error(t('এই ইমেইল/নম্বর দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট আছে।', 'An account already exists with this email/number.'));
         } else {
           toast.error(authError.message);
         }
@@ -199,30 +178,59 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
       const user = userCredential.user;
       setTempUser(user);
 
-      // Generate and send code
-      const code = generateCode();
-      setVerificationCode(code);
-      setTimeLeft(300);
-      
-      await sendEmail({
-        to: email,
-        subject: 'Your Verification Code - Hotel Shotabdi',
-        type: 'verification',
-        html: `
-          <h2 style="color: #dc2626; margin-top: 0;">Verification Code</h2>
-          <p>Your verification code for Hotel Shotabdi is:</p>
-          <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin: 20px 0; text-align: center;">
-            <p style="margin: 0; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1e293b;">${code}</p>
-          </div>
-          <p>This code will expire in 5 minutes.</p>
-        `
-      });
+      if (isPhoneNumber) {
+        if (!window.recaptchaVerifier) {
+          window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            size: 'invisible'
+          });
+        }
+        
+        try {
+          const confirmation = await linkWithPhoneNumber(user, formattedPhone, window.recaptchaVerifier);
+          setConfirmationResult(confirmation);
+        } catch (linkError: any) {
+          if (linkError.code === 'auth/credential-already-in-use' || linkError.code === 'auth/provider-already-linked') {
+             const confirmation = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier);
+             setConfirmationResult(confirmation);
+          } else {
+             throw linkError;
+          }
+        }
 
-      setVerificationStep(true);
-      toast.success(t('ভেরিফিকেশন কোড পাঠানো হয়েছে।', 'Verification code sent to your email.'));
+        setIsPhoneAuth(true);
+        setVerificationStep(true);
+        setTimeLeft(300);
+        toast.success(t('এসএমএস কোড পাঠানো হয়েছে।', 'SMS code sent to your phone.'));
+      } else {
+        // Generate and send code
+        const code = generateCode();
+        setVerificationCode(code);
+        setTimeLeft(300);
+        
+        await sendEmail({
+          to: email,
+          subject: 'Your Verification Code - Hotel Shotabdi',
+          type: 'verification',
+          html: `
+            <h2 style="color: #dc2626; margin-top: 0;">Verification Code</h2>
+            <p>Your verification code for Hotel Shotabdi is:</p>
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; margin: 20px 0; text-align: center;">
+              <p style="margin: 0; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1e293b;">${code}</p>
+            </div>
+            <p>This code will expire in 5 minutes.</p>
+          `
+        });
+
+        setVerificationStep(true);
+        toast.success(t('ভেরিফিকেশন কোড পাঠানো হয়েছে।', 'Verification code sent to your email.'));
+      }
     } catch (error: any) {
       console.error(error);
       toast.error(t('একটি সমস্যা হয়েছে।', 'An error occurred.'));
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
     } finally {
       setLoading(false);
     }

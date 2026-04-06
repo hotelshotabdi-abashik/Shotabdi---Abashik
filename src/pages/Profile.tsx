@@ -157,6 +157,11 @@ export default function Profile() {
   const handleSecurityAction = async (action: 'change' | 'reset') => {
     if (!user?.email) return;
     
+    if (user.email.includes('@phone.shotabdi-abashik.bd')) {
+      toast.error(t('ফোন নম্বরের পাসওয়ার্ড পরিবর্তন করতে লগআউট করে "পাসওয়ার্ড ভুলে গেছেন" অপশনটি ব্যবহার করুন অথবা অ্যাডমিনের সাথে যোগাযোগ করুন।', 'To change phone password, please logout and use "Forgot Password" or contact admin.'));
+      return;
+    }
+
     setLoading(true);
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setSecurityData({ ...securityData, verificationCode: code, step: 'verify' });
@@ -264,7 +269,7 @@ export default function Profile() {
                 {profile?.profileCompleted ? t('অ্যাকাউন্ট ম্যানেজ করুন', 'Manage Account') : t('প্রোফাইল সম্পূর্ণ করুন', 'Complete Profile')}
               </h1>
               <p className="text-red-100 text-sm sm:text-base max-w-md mx-auto">
-                {user.email}
+                {user.email?.includes('@phone.shotabdi-abashik.bd') ? user.email.split('@')[0] : user.email}
               </p>
             </div>
           </div>
@@ -414,8 +419,10 @@ export default function Profile() {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                      <p className="text-xs text-slate-500 mb-1">{t('ইমেইল অ্যাড্রেস', 'Email Address')}</p>
-                      <p className="font-bold text-slate-900 truncate">{user.email}</p>
+                      <p className="text-xs text-slate-500 mb-1">{t('ইমেইল/ফোন', 'Email/Phone')}</p>
+                      <p className="font-bold text-slate-900 truncate">
+                        {user.email?.includes('@phone.shotabdi-abashik.bd') ? user.email.split('@')[0] : user.email}
+                      </p>
                     </div>
                     <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                       <p className="text-xs text-slate-500 mb-1">{t('অ্যাকাউন্ট তৈরি', 'Account Created')}</p>
@@ -490,7 +497,9 @@ export default function Profile() {
                     <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 space-y-4">
                       <div className="text-center">
                         <p className="text-sm text-slate-600 mb-1">{t('আমরা একটি কোড পাঠিয়েছি:', 'We sent a code to:')}</p>
-                        <p className="font-bold text-slate-900">{user.email}</p>
+                        <p className="font-bold text-slate-900">
+                          {user.email?.includes('@phone.shotabdi-abashik.bd') ? user.email.split('@')[0] : user.email}
+                        </p>
                       </div>
                       <input 
                         type="text" 
