@@ -1,7 +1,9 @@
 {
-  "name": "react-example",
+  "name": "hotel-shotabdi-abashik",
+  "description": "Hotel Shotabdi Abashik - Premium Hotel in Sylhet",
+  "author": "Hotel Shotabdi Abashik",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",

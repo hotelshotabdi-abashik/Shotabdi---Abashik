@@ -48,7 +48,8 @@ export const uploadToR2 = async (file: File, folder: string = 'shotabdi-abashik'
     throw new Error(`Upload failed with status ${response.status}`);
   }
   
-  return `${WORKER_URL}/${fileName}`;
+  const PUBLIC_URL = 'https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev';
+  return `${PUBLIC_URL}/${fileName}`;
 };
 
 export const deleteFromR2 = async (url: string): Promise<void> => {
@@ -58,10 +59,18 @@ export const deleteFromR2 = async (url: string): Promise<void> => {
   if (!WORKER_URL || !AUTH_KEY) return;
   
   try {
-    const fileName = url.split('/').pop();
-    if (!fileName) return;
+    let pathToDelete = '';
+    if (url.includes('pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev')) {
+      pathToDelete = url.split('pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/')[1];
+    } else if (url.includes('workers.dev')) {
+      pathToDelete = url.split('.dev/')[1];
+    } else {
+      pathToDelete = url.split('/').pop() || '';
+    }
     
-    await fetch(`${WORKER_URL}/${fileName}`, {
+    if (!pathToDelete) return;
+    
+    await fetch(`${WORKER_URL}/${pathToDelete}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${AUTH_KEY}`,
