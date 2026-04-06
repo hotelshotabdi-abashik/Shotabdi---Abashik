@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { updatePassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -195,9 +196,24 @@ export default function Profile() {
       toast.error(t('পাসওয়ার্ড মিলছে না।', 'Passwords do not match.'));
       return;
     }
-    // In a real app, you'd call Firebase updatePassword
-    toast.success(t('পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!', 'Password changed successfully!'));
-    setSecurityData({ ...securityData, step: 'initial', currentPassword: '', newPassword: '', confirmPassword: '', enteredCode: '' });
+    
+    if (!auth.currentUser) return;
+
+    setLoading(true);
+    try {
+      await updatePassword(auth.currentUser, securityData.newPassword);
+      toast.success(t('পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে!', 'Password changed successfully!'));
+      setSecurityData({ ...securityData, step: 'initial', currentPassword: '', newPassword: '', confirmPassword: '', enteredCode: '' });
+    } catch (error: any) {
+      console.error("Error updating password:", error);
+      if (error.code === 'auth/requires-recent-login') {
+        toast.error(t('অনুগ্রহ করে আবার লগইন করে চেষ্টা করুন।', 'Please login again to change password.'));
+      } else {
+        toast.error(t('পাসওয়ার্ড পরিবর্তন করতে সমস্যা হয়েছে।', 'Failed to change password.'));
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!user) {
@@ -438,22 +454,35 @@ export default function Profile() {
                   
                   {securityData.step === 'initial' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <button 
-                        onClick={() => handleSecurityAction('change')}
-                        className="p-4 border border-slate-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all text-left group"
-                      >
-                        <Lock className="w-6 h-6 text-slate-400 group-hover:text-red-600 mb-2" />
-                        <p className="font-bold text-slate-900">{t('পাসওয়ার্ড পরিবর্তন', 'Change Password')}</p>
-                        <p className="text-xs text-slate-500">{t('ইমেইল কোড ভেরিফাই করে পরিবর্তন করুন।', 'Change by verifying email code.')}</p>
-                      </button>
-                      <button 
-                        onClick={() => handleSecurityAction('reset')}
-                        className="p-4 border border-slate-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all text-left group"
-                      >
-                        <Key className="w-6 h-6 text-slate-400 group-hover:text-red-600 mb-2" />
-                        <p className="font-bold text-slate-900">{t('পাসওয়ার্ড রিসেট', 'Reset Password')}</p>
-                        <p className="text-xs text-slate-500">{t('পাসওয়ার্ড ভুলে গেলে রিসেট করুন।', 'Reset if you forgot your password.')}</p>
-                      </button>
+                      {auth.currentUser?.providerData.some(p => p.providerId === 'password') ? (
+                        <>
+                          <button 
+                            onClick={() => handleSecurityAction('change')}
+                            className="p-4 border border-slate-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all text-left group"
+                          >
+                            <Lock className="w-6 h-6 text-slate-400 group-hover:text-red-600 mb-2" />
+                            <p className="font-bold text-slate-900">{t('পাসওয়ার্ড পরিবর্তন', 'Change Password')}</p>
+                            <p className="text-xs text-slate-500">{t('ইমেইল কোড ভেরিফাই করে পরিবর্তন করুন।', 'Change by verifying email code.')}</p>
+                          </button>
+                          <button 
+                            onClick={() => handleSecurityAction('reset')}
+                            className="p-4 border border-slate-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all text-left group"
+                          >
+                            <Key className="w-6 h-6 text-slate-400 group-hover:text-red-600 mb-2" />
+                            <p className="font-bold text-slate-900">{t('পাসওয়ার্ড রিসেট', 'Reset Password')}</p>
+                            <p className="text-xs text-slate-500">{t('পাসওয়ার্ড ভুলে গেলে রিসেট করুন।', 'Reset if you forgot your password.')}</p>
+                          </button>
+                        </>
+                      ) : (
+                        <button 
+                          onClick={() => handleSecurityAction('change')}
+                          className="p-4 border border-slate-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all text-left group sm:col-span-2"
+                        >
+                          <Lock className="w-6 h-6 text-slate-400 group-hover:text-red-600 mb-2" />
+                          <p className="font-bold text-slate-900">{t('পাসওয়ার্ড সেট করুন', 'Set Password')}</p>
+                          <p className="text-xs text-slate-500">{t('ইমেইল কোড ভেরিফাই করে পাসওয়ার্ড সেট করুন।', 'Set password by verifying email code.')}</p>
+                        </button>
+                      )}
                     </div>
                   )}
 
