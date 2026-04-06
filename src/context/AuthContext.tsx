@@ -37,6 +37,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const GoogleOneTap = () => {
   const { t } = useLanguage();
   const { user, loading } = useAuth();
+  const [isDismissed, setIsDismissed] = useState(() => {
+    return sessionStorage.getItem('googleOneTapDismissed') === 'true';
+  });
 
   useGoogleOneTapLogin({
     onSuccess: async (credentialResponse) => {
@@ -70,9 +73,16 @@ const GoogleOneTap = () => {
     onError: () => {
       console.log('Google One Tap Failed');
     },
-    disabled: !!user || loading,
+    disabled: !!user || loading || isDismissed,
     use_fedcm_for_prompt: true,
-    auto_select: true,
+    auto_select: false,
+    cancel_on_tap_outside: true,
+    promptMomentNotification: (notification) => {
+      if (notification.isDismissedMoment() || notification.isSkippedMoment()) {
+        sessionStorage.setItem('googleOneTapDismissed', 'true');
+        setIsDismissed(true);
+      }
+    }
   });
 
   return null;
