@@ -42,3 +42,10 @@ body {
 .goog-te-gadget span {
   display: none;
 }
+.goog-text-highlight {
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+#goog-gt-tt {
+  display: none !important;
+}
