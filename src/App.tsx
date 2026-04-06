@@ -146,30 +146,7 @@ export default function App() {
               <ProfileEnforcer />
               <div className="flex flex-col min-h-screen font-sans bg-slate-50 text-slate-900">
                 <Navbar />
-                <main className="flex-grow pt-14">
-                  <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-                    <Routes>
-                      <Route path="/" element={<Home />} />
-                      <Route path="/rooms" element={<Rooms />} />
-                      <Route path="/about" element={<About />} />
-                      <Route path="/restaurant" element={<Restaurant />} />
-                      <Route path="/tour-desk" element={<TourDesk />} />
-                      <Route path="/gallery" element={<Gallery />} />
-                      <Route path="/gallery/:id" element={<GalleryPost />} />
-                      <Route path="/logo" element={<Navigate to="/" />} />
-                      <Route path="/rooms/:title" element={<RoomDetails />} />
-                      <Route path="/restaurant/:id" element={<RestaurantDetails />} />
-                      <Route path="/tour-desk/:id" element={<TourDeskDetails />} />
-                      <Route path="/reviews" element={<Reviews />} />
-                      <Route path="/help-desk" element={<HelpDesk />} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                      <Route path="/terms-of-service" element={<TermsOfService />} />
-                      <Route path="/my-stays" element={<ProtectedRoute><MyStays /></ProtectedRoute>} />
-                      <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-                    </Routes>
-                  </Suspense>
-                </main>
+                <MainContent />
                 <Footer />
                 <Toaster position="top-center" richColors />
               </div>
@@ -178,5 +155,37 @@ export default function App() {
         </AuthProvider>
       </LanguageProvider>
     </HelmetProvider>
+  );
+}
+
+function MainContent() {
+  const location = useLocation();
+  const isHome = location.pathname === '/';
+  
+  return (
+    <main className={`flex-grow ${isHome ? 'pt-0' : 'pt-14'}`}>
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/rooms" element={<Rooms />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/restaurant" element={<Restaurant />} />
+          <Route path="/tour-desk" element={<TourDesk />} />
+          <Route path="/gallery" element={<Gallery />} />
+          <Route path="/gallery/:id" element={<GalleryPost />} />
+          <Route path="/logo" element={<Navigate to="/" />} />
+          <Route path="/rooms/:title" element={<RoomDetails />} />
+          <Route path="/restaurant/:id" element={<RestaurantDetails />} />
+          <Route path="/tour-desk/:id" element={<TourDeskDetails />} />
+          <Route path="/reviews" element={<Reviews />} />
+          <Route path="/help-desk" element={<HelpDesk />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/my-stays" element={<ProtectedRoute><MyStays /></ProtectedRoute>} />
+          <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+        </Routes>
+      </Suspense>
+    </main>
   );
 }

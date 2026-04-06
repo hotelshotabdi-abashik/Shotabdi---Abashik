@@ -250,7 +250,7 @@ export default function Navbar() {
 
             <button
               onClick={() => setLanguage(language === 'bn' ? 'en' : 'bn')}
-              className={`flex items-center justify-center ml-1 px-2 xl:px-3 py-1.5 rounded-full transition-colors text-xs xl:text-sm font-bold flex-shrink-0 ${isSolid ? 'bg-black text-white hover:bg-slate-800' : 'bg-white/20 text-white hover:bg-white/30'}`}
+              className={`flex items-center justify-center ml-1 px-2 xl:px-3 py-1.5 rounded-full transition-colors text-xs xl:text-sm font-bold flex-shrink-0 ${isSolid ? 'bg-slate-100 text-black hover:bg-slate-200' : 'bg-white/20 text-white hover:bg-white/30'}`}
             >
               <Globe className="w-3 h-3 xl:w-4 xl:h-4 mr-1" />
               {language === 'bn' ? 'EN' : 'BN'}
@@ -263,7 +263,7 @@ export default function Navbar() {
                 <div className="relative" ref={notificationDropdownRef}>
                   <button 
                     onClick={user ? handleNotificationClick : login}
-                    className={`relative flex items-center justify-center w-8 h-8 xl:w-10 xl:h-10 rounded-full transition-colors focus:outline-none mr-1 xl:mr-2 flex-shrink-0 ${isSolid ? 'bg-black text-white hover:bg-slate-800' : 'bg-white/20 text-white hover:bg-white/30'}`}
+                    className={`relative flex items-center justify-center w-8 h-8 xl:w-10 xl:h-10 rounded-full transition-colors focus:outline-none mr-1 xl:mr-2 flex-shrink-0 ${isSolid ? 'bg-slate-100 text-black hover:bg-slate-200' : 'bg-white/20 text-white hover:bg-white/30'}`}
                     title={user ? "Notifications" : "Login to see notifications"}
                   >
                     <Bell className="w-4 h-4 xl:w-5 xl:h-5" />
@@ -321,7 +321,7 @@ export default function Navbar() {
                     <div className="relative" ref={dropdownRef}>
                       <button 
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
-                        className={`flex items-center gap-2 p-1 rounded-full transition-colors focus:outline-none hover:bg-slate-100`}
+                        className={`flex items-center gap-2 p-1 rounded-full transition-colors focus:outline-none ${isSolid ? 'hover:bg-slate-100' : 'hover:bg-white/10'}`}
                       >
                         {user.photoURL || profile?.photoURL ? (
                           <img 
@@ -331,7 +331,7 @@ export default function Navbar() {
                             referrerPolicy="no-referrer"
                           />
                         ) : (
-                          <div className={`w-8 h-8 xl:w-9 xl:h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-slate-200 text-slate-500`}>
+                          <div className={`w-8 h-8 xl:w-9 xl:h-9 rounded-full flex items-center justify-center flex-shrink-0 ${isSolid ? 'bg-slate-200 text-slate-500' : 'bg-white/20 text-white'}`}>
                             <User className="w-4 h-4 xl:w-5 xl:h-5" />
                           </div>
                         )}
@@ -370,7 +370,7 @@ export default function Navbar() {
                       )}
                     </div>
                   ) : (
-                  <button onClick={login} className={`flex items-center px-2 md:px-3 xl:px-4 py-1.5 xl:py-2 rounded-md text-[10px] md:text-xs xl:text-sm font-bold transition-colors flex-shrink-0 ${isSolid ? 'bg-black text-white hover:bg-slate-800' : 'bg-red-700 text-white hover:bg-red-800'}`}>
+                  <button onClick={login} className={`flex items-center px-2 md:px-3 xl:px-4 py-1.5 xl:py-2 rounded-md text-[10px] md:text-xs xl:text-sm font-bold transition-colors flex-shrink-0 ${isSolid ? 'bg-red-700 text-white hover:bg-red-800' : 'bg-white text-red-700 hover:bg-slate-100'}`}>
                     <LogIn className="w-3 h-3 xl:w-4 xl:h-4 mr-1 xl:mr-2" /> {t('লগইন', 'Login')}
                   </button>
                 )}
@@ -382,7 +382,7 @@ export default function Navbar() {
           <div className="md:hidden flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <button
               onClick={() => setLanguage(language === 'bn' ? 'en' : 'bn')}
-              className={`flex items-center justify-center px-2 sm:px-3 py-1.5 rounded-full transition-colors text-xs sm:text-sm font-bold flex-shrink-0 ${isSolid ? 'bg-black text-white' : 'bg-white/20 text-white'}`}
+              className={`flex items-center justify-center px-2 sm:px-3 py-1.5 rounded-full transition-colors text-xs sm:text-sm font-bold flex-shrink-0 ${isSolid ? 'bg-slate-100 text-black hover:bg-slate-200' : 'bg-white/20 text-white hover:bg-white/30'}`}
             >
               <Globe className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
               {language === 'bn' ? 'EN' : 'BN'}
@@ -439,7 +439,7 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <button onClick={login} className={`flex items-center px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-bold transition-colors flex-shrink-0 ${isSolid ? 'bg-black text-white hover:bg-slate-800' : 'bg-red-700 text-white hover:bg-red-800'}`}>
+              <button onClick={login} className={`flex items-center px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-bold transition-colors flex-shrink-0 ${isSolid ? 'bg-red-700 text-white hover:bg-red-800' : 'bg-white text-red-700 hover:bg-slate-100'}`}>
                 <LogIn className="w-3 h-3 sm:w-4 sm:h-4 mr-1" /> {t('লগইন', 'Login')}
               </button>
             )}
