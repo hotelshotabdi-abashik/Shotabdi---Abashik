@@ -11,6 +11,7 @@ import { EditableImage } from '../components/EditableImage';
 import { RatingsSection } from '../components/RatingsSection';
 import { ImageViewModal } from '../components/ImageViewModal';
 import { uploadToR2, deleteFromR2 } from '../lib/r2';
+import { getOptimizedUrl } from '../lib/imageUtils';
 import { toast } from 'sonner';
 
 import { Helmet } from 'react-helmet-async';
@@ -391,7 +392,8 @@ export default function Home() {
             transition={{ type: "tween", duration: 2.0, ease: [0.25, 1, 0.5, 1] }}
           >
             {activeHeroImages.map((slot) => {
-              const imageUrl = content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : slot.default;
+              const rawImageUrl = content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : slot.default;
+              const imageUrl = getOptimizedUrl(rawImageUrl);
               const isLoaded = loadedImages[slot.key];
 
               return (
@@ -666,7 +668,7 @@ export default function Home() {
               {rooms.map((room) => (
                 <div key={room.id} className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col hover:shadow-xl transition-shadow relative group">
                   <div className="relative aspect-video sm:h-64 bg-slate-100 overflow-hidden">
-                    <img src={room.imageUrl || room.images?.[0] || 'https://picsum.photos/seed/room/800/600'} alt={room.name} title={room.description || room.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
+                    <img src={getOptimizedUrl(room.imageUrl || room.images?.[0] || 'https://picsum.photos/seed/room/800/600')} alt={room.name} title={room.description || room.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
                   </div>
                   <div className="p-5 sm:p-8 flex-grow flex flex-col">
                     <div className="flex justify-between items-start mb-4">
@@ -743,7 +745,7 @@ export default function Home() {
             {restaurants.slice(0, 4).map((res: any, index: number) => (
               <div key={index} className="bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 group hover:shadow-xl transition-all duration-300">
                 <div className="relative h-48 overflow-hidden">
-                  <img src={res.imageUrl} alt={res.name} title={`${res.type} at ${res.location}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
+                  <img src={getOptimizedUrl(res.imageUrl)} alt={res.name} title={`${res.type} at ${res.location}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
                   <div className="absolute top-4 right-4 bg-white/90 px-2 py-1 rounded text-[10px] font-bold text-red-700 shadow-sm">
                     {res.type}
                   </div>
@@ -788,7 +790,7 @@ export default function Home() {
             {tourSpots.slice(0, 4).map((spot: any, index: number) => (
               <div key={index} className="bg-white rounded-2xl overflow-hidden border border-slate-100 group hover:shadow-xl transition-all duration-300">
                 <div className="relative h-48 overflow-hidden">
-                  <img src={spot.imageUrl} alt={spot.name} title={spot.description || spot.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
+                  <img src={getOptimizedUrl(spot.imageUrl)} alt={spot.name} title={spot.description || spot.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
                   <div className="absolute top-4 right-4 bg-red-700 text-white px-2 py-1 rounded text-[10px] font-bold shadow-sm">
                     {spot.distance}
                   </div>

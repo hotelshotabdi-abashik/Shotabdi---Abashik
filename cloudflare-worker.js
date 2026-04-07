@@ -16,6 +16,15 @@ class MetaRewriter {
   }
 }
 
+class InitialStateRewriter {
+  constructor(content) {
+    this.content = content;
+  }
+  element(element) {
+    element.append(`<script>window.__INITIAL_CONTENT__ = ${JSON.stringify(this.content)};</script>`, { html: true });
+  }
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -52,6 +61,31 @@ async function fetchContent(docId) {
     return null;
   } catch (e) {
     return null;
+  }
+}
+
+async function fetchAllContent() {
+  try {
+    const res = await fetch(`${FIRESTORE_URL}/content`);
+    if (!res.ok) return {};
+    const data = await res.json();
+    const allContent = {};
+    if (data.documents) {
+      data.documents.forEach(doc => {
+        const id = doc.name.split('/').pop();
+        const jsonStr = doc.fields?.data?.stringValue;
+        if (jsonStr) {
+          try {
+            allContent[id] = JSON.parse(jsonStr);
+          } catch (e) {
+            allContent[id] = jsonStr;
+          }
+        }
+      });
+    }
+    return allContent;
+  } catch (e) {
+    return {};
   }
 }
 
@@ -246,8 +280,12 @@ export default {
         }
       }
 
+      // Fetch all content for instant client-side rendering (like Netflix SSR)
+      const initialContent = await fetchAllContent();
+
       return new HTMLRewriter()
         .on("meta", new MetaRewriter(meta))
+        .on("head", new InitialStateRewriter(initialContent))
         .transform(response);
     }
 

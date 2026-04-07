@@ -12,6 +12,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { notifyBookingSubmitted, notifyAdminNewBooking } from '../services/NotificationService';
 import { collection, getDocs, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, onSnapshot, query, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
+import { getOptimizedUrl } from '../lib/imageUtils';
 
 interface Room {
   id: string;

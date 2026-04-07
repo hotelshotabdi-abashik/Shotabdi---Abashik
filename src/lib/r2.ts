@@ -48,7 +48,7 @@ export const uploadToR2 = async (file: File, folder: string = 'shotabdi-abashik'
     throw new Error(`Upload failed with status ${response.status}`);
   }
   
-  const PUBLIC_URL = 'https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev';
+  const PUBLIC_URL = 'https://shotabdi-abashik.bd';
   return `${PUBLIC_URL}/${fileName}`;
 };
 

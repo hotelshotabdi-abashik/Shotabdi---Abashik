@@ -8,6 +8,7 @@ import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 import { EditableImage } from './EditableImage';
+import { getOptimizedUrl } from '../lib/imageUtils';
 
 export default function Navbar() {
   const { user, profile, login, logout, loading } = useAuth();
@@ -39,7 +40,7 @@ export default function Navbar() {
   }, []);
 
   const websiteName = settings?.websiteName || t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik');
-  const logoUrl = settings?.logoUrl || "https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png";
+  const logoUrl = getOptimizedUrl(settings?.logoUrl || "https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png");
 
   const navLinks = [
     { name: t('হোম', 'Home'), path: '/' },

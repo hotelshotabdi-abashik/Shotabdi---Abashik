@@ -18,9 +18,16 @@ interface ContentContextType {
 const ContentContext = createContext<ContentContextType | undefined>(undefined);
 
 export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [content, setContent] = useState<any>({});
+  const [content, setContent] = useState<any>(() => {
+    if (typeof window !== 'undefined' && (window as any).__INITIAL_CONTENT__) {
+      return (window as any).__INITIAL_CONTENT__;
+    }
+    return {};
+  });
   const [editMode, setEditMode] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    return !(typeof window !== 'undefined' && (window as any).__INITIAL_CONTENT__);
+  });
   const { profile } = useAuth();
 
   useEffect(() => {
