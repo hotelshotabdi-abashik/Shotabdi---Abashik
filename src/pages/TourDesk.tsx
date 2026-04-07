@@ -304,7 +304,7 @@ export default function TourDesk() {
                   <>
                     {spot.imageUrl && (
                       <div className="h-24 sm:h-48 w-full relative">
-                        <img src={spot.imageUrl} alt={spot.name} title={spot.description || spot.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <img src={spot.imageUrl} alt={spot.name} title={spot.description || spot.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
                       </div>
                     )}
                     <div className="p-3 sm:p-6 flex-grow flex flex-col">

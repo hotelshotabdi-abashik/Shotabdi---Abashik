@@ -107,7 +107,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange, f
     <div className={`relative border-2 border-dashed border-slate-300 rounded-lg p-4 flex flex-col items-center justify-center bg-slate-50 ${className}`}>
       {value ? (
         <div className="relative w-full group">
-          <img src={value} alt="Uploaded" className="w-full h-32 object-cover rounded-md" referrerPolicy="no-referrer" />
+          <img src={value} alt="Uploaded" className="w-full h-32 object-cover rounded-md" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded-md">
             <button
               onClick={() => fileInputRef.current?.click()}

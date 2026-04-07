@@ -35,6 +35,7 @@ export const ImageViewModal: React.FC<ImageViewModalProps> = ({ isOpen, onClose,
             alt={selectedImage.title || 'Gallery Image'} 
             className="max-w-full max-h-full object-contain"
             referrerPolicy="no-referrer"
+            loading="eager" fetchPriority="high" decoding="async"
           />
         </div>
         

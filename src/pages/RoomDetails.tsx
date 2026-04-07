@@ -101,6 +101,7 @@ export default function RoomDetails() {
                 title={room.description || room.name}
                 className="max-w-full max-h-full object-contain"
                 referrerPolicy="no-referrer"
+                loading="eager" fetchPriority="high" decoding="async"
               />
               {!room.isAvailable && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">

@@ -131,7 +131,7 @@ export const EditableImage: React.FC<EditableImageProps> = ({ contentKey, defaul
         </svg>
       );
     }
-    return <img src={src} alt={alt} className={className} referrerPolicy="no-referrer" />;
+    return <img src={src} alt={alt} className={className} referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />;
   };
 
   if (editMode) {
