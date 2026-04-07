@@ -164,9 +164,9 @@ function AppContent() {
 export default function App() {
   useEffect(() => {
     const lenis = new Lenis({
-      lerp: 0.03, // Lower value for smoother, more gradual interpolation
-      wheelMultiplier: 0.6, // Reduces the scroll distance per wheel tick (slower)
-      touchMultiplier: 1.5, // Slightly slower touch scrolling
+      lerp: 0.1, // Higher value for faster, more responsive interpolation
+      wheelMultiplier: 1.2, // Increases the scroll distance per wheel tick (faster)
+      touchMultiplier: 2.0, // Faster touch scrolling
       smoothWheel: true,
       syncTouch: true, // Syncs touch scroll for smoother mobile experience
     });
