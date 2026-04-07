@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 interface ContentContextType {
   content: any;
   editMode: boolean;
+  loading: boolean;
   setEditMode: (mode: boolean) => void;
   updateContent: (path: string, value: any) => Promise<void>;
   addToList: (listKey: string, item: any) => Promise<void>;
@@ -19,6 +20,7 @@ const ContentContext = createContext<ContentContextType | undefined>(undefined);
 export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [content, setContent] = useState<any>({});
   const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { profile } = useAuth();
 
   useEffect(() => {
@@ -34,8 +36,10 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
       });
       setContent(newContent);
+      setLoading(false);
     }, (error) => {
       console.error("Error fetching content:", error);
+      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -96,7 +100,7 @@ export const ContentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   return (
-    <ContentContext.Provider value={{ content, editMode, setEditMode, updateContent, addToList, removeFromList, updateListItem }}>
+    <ContentContext.Provider value={{ content, editMode, loading, setEditMode, updateContent, addToList, removeFromList, updateListItem }}>
       {children}
     </ContentContext.Provider>
   );

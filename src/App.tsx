@@ -135,6 +135,32 @@ const SEO = () => {
   );
 };
 
+function AppContent() {
+  const { loading: contentLoading } = useContent();
+
+  if (contentLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <SEO />
+      <ScrollToTop />
+      <ProfileEnforcer />
+      <div className="flex flex-col min-h-screen font-sans bg-slate-50 text-slate-900">
+        <Navbar />
+        <MainContent />
+        <Footer />
+        <Toaster position="top-center" richColors />
+      </div>
+    </>
+  );
+}
+
 export default function App() {
   return (
     <HelmetProvider>
@@ -142,15 +168,7 @@ export default function App() {
         <AuthProvider>
           <ContentProvider>
             <Router>
-              <SEO />
-              <ScrollToTop />
-              <ProfileEnforcer />
-              <div className="flex flex-col min-h-screen font-sans bg-slate-50 text-slate-900">
-                <Navbar />
-                <MainContent />
-                <Footer />
-                <Toaster position="top-center" richColors />
-              </div>
+              <AppContent />
             </Router>
           </ContentProvider>
         </AuthProvider>
@@ -165,7 +183,7 @@ function MainContent() {
   
   return (
     <main className={`flex-grow ${isHome ? 'pt-0' : 'pt-14'}`}>
-      <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div></div>}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Navigate to="/" />} />
