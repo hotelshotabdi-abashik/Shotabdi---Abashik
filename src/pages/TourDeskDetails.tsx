@@ -6,6 +6,7 @@ import { ArrowLeft, MapPin, Navigation, Share2, Home, Compass } from 'lucide-rea
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
+import { getOptimizedUrl } from '../lib/imageUtils';
 
 export default function TourDeskDetails() {
   const { id } = useParams<{ id: string }>();
@@ -104,7 +105,7 @@ export default function TourDeskDetails() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 1.05 }}
                   transition={{ duration: 0.4 }}
-                  src={spot.imageUrl}
+                  src={getOptimizedUrl(spot.imageUrl)}
                   alt={spot.name}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"

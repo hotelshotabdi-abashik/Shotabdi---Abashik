@@ -9,6 +9,7 @@ import { ImageUploader } from '../components/ImageUploader';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
 import { Helmet } from 'react-helmet-async';
+import { getOptimizedUrl } from '../lib/imageUtils';
 
 const defaultRestaurants = [
   { name: 'Al-Modina Restaurant', location: 'Kumargaon Bus Stand', distance: '0.1 km', type: 'Local Bengali', imageUrl: 'https://picsum.photos/seed/almodina/400/300', mapUrl: '' },
@@ -258,7 +259,7 @@ export default function Restaurant() {
                 )}
                 {restaurant.imageUrl && (
                   <div className="h-24 sm:h-48 w-full relative">
-                    <img src={restaurant.imageUrl} alt={restaurant.name} title={`${restaurant.type} at ${restaurant.location}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
+                    <img src={getOptimizedUrl(restaurant.imageUrl)} alt={restaurant.name} title={`${restaurant.type} at ${restaurant.location}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
                   </div>
                 )}
                 {restaurant.isRecommended && (

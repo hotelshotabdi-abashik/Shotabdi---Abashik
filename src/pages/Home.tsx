@@ -112,11 +112,11 @@ export default function Home() {
   }, []);
 
   const heroSlots = [
-    { key: 'home_hero_bg_1', default: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1280&q=70' },
-    { key: 'home_hero_bg_2', default: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1280&q=70' },
-    { key: 'home_hero_bg_3', default: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1280&q=70' },
-    { key: 'home_hero_bg_4', default: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1280&q=70' },
-    { key: 'home_hero_bg_5', default: 'https://images.unsplash.com/photo-1542314831-c6a4d14d8373?auto=format&fit=crop&w=1280&q=70' },
+    { key: 'home_hero_bg_1', mobileKey: 'home_hero_bg_1_mobile', default: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1280&q=70', defaultMobile: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=70' },
+    { key: 'home_hero_bg_2', mobileKey: 'home_hero_bg_2_mobile', default: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1280&q=70', defaultMobile: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=70' },
+    { key: 'home_hero_bg_3', mobileKey: 'home_hero_bg_3_mobile', default: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1280&q=70', defaultMobile: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=70' },
+    { key: 'home_hero_bg_4', mobileKey: 'home_hero_bg_4_mobile', default: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1280&q=70', defaultMobile: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=70' },
+    { key: 'home_hero_bg_5', mobileKey: 'home_hero_bg_5_mobile', default: 'https://images.unsplash.com/photo-1542314831-c6a4d14d8373?auto=format&fit=crop&w=1280&q=70', defaultMobile: 'https://images.unsplash.com/photo-1542314831-c6a4d14d8373?auto=format&fit=crop&w=800&q=70' },
   ];
 
   const activeHeroImages = heroSlots.filter(slot => {
@@ -394,6 +394,8 @@ export default function Home() {
             {activeHeroImages.map((slot) => {
               const rawImageUrl = content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : slot.default;
               const imageUrl = getOptimizedUrl(rawImageUrl);
+              const rawMobileImageUrl = content[slot.mobileKey] && content[slot.mobileKey] !== 'deleted' ? content[slot.mobileKey] : slot.defaultMobile;
+              const mobileImageUrl = getOptimizedUrl(rawMobileImageUrl);
               const isLoaded = loadedImages[slot.key];
 
               return (
@@ -410,7 +412,22 @@ export default function Home() {
                       src={imageUrl} 
                       alt={`${websiteName} Hero Image`} 
                       title={`${websiteName} - Luxury and Comfort in Bogura`}
-                      className={`w-full h-[130%] object-cover pointer-events-none -mt-[15%] transition-opacity duration-1000 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`} 
+                      className={`hidden sm:block w-full h-[130%] object-cover pointer-events-none -mt-[15%] transition-opacity duration-1000 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`} 
+                      referrerPolicy="no-referrer"
+                      draggable={false}
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                      onLoad={() => setLoadedImages(prev => ({ ...prev, [slot.key]: true }))}
+                    />
+                  )}
+                  {mobileImageUrl && (
+                    <motion.img 
+                      style={{ y: parallaxY, willChange: "transform" }}
+                      src={mobileImageUrl} 
+                      alt={`${websiteName} Hero Image`} 
+                      title={`${websiteName} - Luxury and Comfort in Bogura`}
+                      className={`block sm:hidden w-full h-[130%] object-cover pointer-events-none -mt-[15%] transition-opacity duration-1000 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`} 
                       referrerPolicy="no-referrer"
                       draggable={false}
                       loading="eager"

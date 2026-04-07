@@ -3,11 +3,12 @@ import { useLanguage } from '../context/LanguageContext';
 import { EditableText } from '../components/EditableText';
 import { Helmet } from 'react-helmet-async';
 import { useContent } from '../context/ContentContext';
+import { getOptimizedUrl } from '../lib/imageUtils';
 
 export default function About() {
   const { t } = useLanguage();
   const { content } = useContent();
-  const logoUrl = content.site_logo || "https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png";
+  const logoUrl = getOptimizedUrl(content.site_logo || "https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png");
   const websiteName = "HOTEL SHOTABDI ABASHIK";
   const pageTitle = `${t('আমাদের সম্পর্কে', 'About Us')} | ${websiteName}`;
   const description = t(

@@ -9,6 +9,7 @@ import { ImageUploader } from '../components/ImageUploader';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { toast } from 'sonner';
 import { Helmet } from 'react-helmet-async';
+import { getOptimizedUrl } from '../lib/imageUtils';
 
 const defaultTourSpots = [
   { id: '1', name: 'SUST Campus & Shahid Minar', location: 'Kumargaon', distance: '1.5 km', type: 'University / Monument', imageUrl: 'https://picsum.photos/seed/sust/400/300', mapUrl: '' },
@@ -304,7 +305,7 @@ export default function TourDesk() {
                   <>
                     {spot.imageUrl && (
                       <div className="h-24 sm:h-48 w-full relative">
-                        <img src={spot.imageUrl} alt={spot.name} title={spot.description || spot.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
+                        <img src={getOptimizedUrl(spot.imageUrl)} alt={spot.name} title={spot.description || spot.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
                       </div>
                     )}
                     <div className="p-3 sm:p-6 flex-grow flex flex-col">

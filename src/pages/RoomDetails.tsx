@@ -6,6 +6,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, CheckCircle2, BedDouble } from 'lucide-react';
 
+import { getOptimizedUrl } from '../lib/imageUtils';
+
 export default function RoomDetails() {
   const { title } = useParams<{ title: string }>();
   const navigate = useNavigate();
@@ -106,7 +108,7 @@ export default function RoomDetails() {
 
               {room.imageUrl && (
                 <img 
-                  src={room.imageUrl} 
+                  src={getOptimizedUrl(room.imageUrl)} 
                   alt={`${room.name} - Hotel Shotabdi Abashik`} 
                   title={room.description || room.name}
                   className={`max-w-full max-h-full object-contain transition-opacity duration-700 ease-in-out ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}

@@ -6,6 +6,7 @@ import { ArrowLeft, MapPin, Navigation, Share2, Home, Utensils } from 'lucide-re
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
+import { getOptimizedUrl } from '../lib/imageUtils';
 
 export default function RestaurantDetails() {
   const { id } = useParams<{ id: string }>();
@@ -103,7 +104,7 @@ export default function RestaurantDetails() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 1.05 }}
                   transition={{ duration: 0.4 }}
-                  src={restaurant.imageUrl}
+                  src={getOptimizedUrl(restaurant.imageUrl)}
                   alt={restaurant.name}
                   className="w-full h-full object-cover"
                   referrerPolicy="no-referrer"
