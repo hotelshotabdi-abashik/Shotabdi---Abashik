@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BedDouble, CheckCircle2, MapPin, Percent, Utensils, Compass, PhoneCall, ArrowRight, Star, Camera, Calendar, Search, Edit2, X, Upload, Trash2, Loader2, Wifi, Wind, Coffee, Shield, Clock, Navigation } from 'lucide-react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 import { collection, getDocs, query, limit, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useLanguage } from '../context/LanguageContext';
@@ -43,7 +43,12 @@ export default function Home() {
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
   const { scrollY } = useScroll();
-  const parallaxY = useTransform(scrollY, [0, 1000], ['0%', '30%']);
+  const rawParallaxY = useTransform(scrollY, [0, 1000], ['0%', '30%']);
+  const parallaxY = useSpring(rawParallaxY, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  });
 
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, 'settings', 'general'), (doc) => {
@@ -399,7 +404,7 @@ export default function Home() {
 
                   {imageUrl && (
                     <motion.img 
-                      style={{ y: parallaxY }}
+                      style={{ y: parallaxY, willChange: "transform" }}
                       src={imageUrl} 
                       alt={`${websiteName} Hero Image`} 
                       title={`${websiteName} - Luxury and Comfort in Bogura`}
