@@ -40,6 +40,10 @@ export default function Home() {
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const [rooms, setRooms] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+
+  const { scrollY } = useScroll();
+  const parallaxY = useTransform(scrollY, [0, 1000], ['0%', '30%']);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(doc(db, 'settings', 'general'), (doc) => {
@@ -381,21 +385,36 @@ export default function Home() {
             animate={{ x: `-${currentImageIndex * 100}%` }}
             transition={{ type: "tween", duration: 2.0, ease: [0.25, 1, 0.5, 1] }}
           >
-            {activeHeroImages.map((slot) => (
-              <div key={slot.key} className="min-w-full h-full relative">
-                <img 
-                  src={content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : slot.default} 
-                  alt={`${websiteName} Hero Image`} 
-                  title={`${websiteName} - Luxury and Comfort in Bogura`}
-                  className="w-full h-full object-cover pointer-events-none" 
-                  referrerPolicy="no-referrer"
-                  draggable={false}
-                  loading="eager"
-                  fetchPriority="high"
-                  decoding="async"
-                />
-              </div>
-            ))}
+            {activeHeroImages.map((slot) => {
+              const imageUrl = content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : slot.default;
+              const isLoaded = loadedImages[slot.key];
+
+              return (
+                <div key={slot.key} className="min-w-full h-full relative overflow-hidden">
+                  {/* Skeleton Loader */}
+                  {(!imageUrl || !isLoaded) && (
+                    <div className="absolute inset-0 bg-slate-800 animate-pulse flex items-center justify-center z-0">
+                    </div>
+                  )}
+
+                  {imageUrl && (
+                    <motion.img 
+                      style={{ y: parallaxY }}
+                      src={imageUrl} 
+                      alt={`${websiteName} Hero Image`} 
+                      title={`${websiteName} - Luxury and Comfort in Bogura`}
+                      className={`w-full h-[130%] object-cover pointer-events-none -mt-[15%] transition-opacity duration-1000 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`} 
+                      referrerPolicy="no-referrer"
+                      draggable={false}
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                      onLoad={() => setLoadedImages(prev => ({ ...prev, [slot.key]: true }))}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </motion.div>
           <div className="absolute inset-0 bg-black/40 pointer-events-none z-10"></div>
         </div>
