@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BedDouble, CheckCircle2, MapPin, Percent, Utensils, Compass, PhoneCall, ArrowRight, Star, Camera, Calendar, Search, Edit2, X, Upload, Trash2, Loader2, Wifi, Wind, Coffee, Shield, Clock, Navigation } from 'lucide-react';
-import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'motion/react';
 import { collection, getDocs, query, limit, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useLanguage } from '../context/LanguageContext';
@@ -44,10 +44,11 @@ export default function Home() {
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
 
   const { scrollY } = useScroll();
-  const rawParallaxY = useTransform(scrollY, [0, 1000], ['0%', '30%']);
+  const rawParallaxY = useTransform(scrollY, [0, 1000], ['0%', '15%']);
   const parallaxY = useSpring(rawParallaxY, {
-    stiffness: 100,
+    stiffness: 40,
     damping: 30,
+    mass: 1.5,
     restDelta: 0.001
   });
 
@@ -112,35 +113,38 @@ export default function Home() {
   }, []);
 
   const heroSlots = [
-    { key: 'home_hero_bg_1', mobileKey: 'home_hero_bg_1_mobile', default: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1280&q=70', defaultMobile: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=70' },
-    { key: 'home_hero_bg_2', mobileKey: 'home_hero_bg_2_mobile', default: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1280&q=70', defaultMobile: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=70' },
-    { key: 'home_hero_bg_3', mobileKey: 'home_hero_bg_3_mobile', default: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1280&q=70', defaultMobile: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=70' },
-    { key: 'home_hero_bg_4', mobileKey: 'home_hero_bg_4_mobile', default: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1280&q=70', defaultMobile: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=70' },
-    { key: 'home_hero_bg_5', mobileKey: 'home_hero_bg_5_mobile', default: 'https://images.unsplash.com/photo-1542314831-c6a4d14d8373?auto=format&fit=crop&w=1280&q=70', defaultMobile: 'https://images.unsplash.com/photo-1542314831-c6a4d14d8373?auto=format&fit=crop&w=800&q=70' },
+    { key: 'home_hero_bg_1', mobileKey: 'home_hero_bg_1_mobile' },
+    { key: 'home_hero_bg_2', mobileKey: 'home_hero_bg_2_mobile' },
+    { key: 'home_hero_bg_3', mobileKey: 'home_hero_bg_3_mobile' },
+    { key: 'home_hero_bg_4', mobileKey: 'home_hero_bg_4_mobile' },
+    { key: 'home_hero_bg_5', mobileKey: 'home_hero_bg_5_mobile' },
   ];
 
   const activeHeroImages = heroSlots.filter(slot => {
     const val = content[slot.key];
     if (editMode) return true; // Show all slots in edit mode
-    if (val === 'deleted') return false;
-    return true; // Show if it has a custom URL or falls back to default
+    if (!val || val === 'deleted') return false; // Hide if empty or deleted
+    return true; 
   });
 
   // Pre-load images
   useEffect(() => {
     activeHeroImages.forEach(slot => {
-      const img = new Image();
-      img.src = content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : slot.default;
+      const url = content[slot.key];
+      if (url && url !== 'deleted') {
+        const img = new Image();
+        img.src = getOptimizedUrl(url);
+      }
     });
   }, [activeHeroImages, content]);
 
-  // If somehow all are deleted, show at least one default so it's not empty
-  if (activeHeroImages.length === 0 && !editMode) {
+  // If somehow all are deleted, show at least one slot so it's not empty
+  if (activeHeroImages.length === 0) {
     activeHeroImages.push(heroSlots[0]);
   }
 
   useEffect(() => {
-    if (currentImageIndex >= activeHeroImages.length) {
+    if (activeHeroImages.length > 0 && currentImageIndex >= activeHeroImages.length) {
       setCurrentImageIndex(0);
     }
   }, [activeHeroImages.length, currentImageIndex]);
@@ -286,14 +290,14 @@ export default function Home() {
         
         <meta property="og:title" content={`${websiteName} | Best Hotel in Bogura`} />
         <meta property="og:description" content={`Welcome to ${websiteName}. Experience luxury and comfort in the heart of Bogura. 24h Residential Service.`} />
-        <meta property="og:image" content={content[activeHeroImages[0]?.key] || activeHeroImages[0]?.default || ''} />
+        <meta property="og:image" content={content[activeHeroImages[0]?.key] || ''} />
         <meta property="og:url" content={window.location.origin} />
         <meta property="og:type" content="website" />
         
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={`${websiteName} | Best Hotel in Bogura`} />
         <meta name="twitter:description" content={`Welcome to ${websiteName}. Experience luxury and comfort in the heart of Bogura. 24h Residential Service.`} />
-        <meta name="twitter:image" content={content[activeHeroImages[0]?.key] || activeHeroImages[0]?.default || ''} />
+        <meta name="twitter:image" content={content[activeHeroImages[0]?.key] || ''} />
 
         {/* Structured Data for Hotel */}
         <script type="application/ld+json">
@@ -322,7 +326,7 @@ export default function Home() {
               "latitude": 24.8481,
               "longitude": 89.3730
             },
-            "image": activeHeroImages.map(slot => content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : slot.default),
+            "image": activeHeroImages.map(slot => content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : null).filter(Boolean),
             "priceRange": "$$",
             "amenityFeature": [
               { "@type": "LocationFeatureSpecification", "name": "Free Wi-Fi", "value": true },
@@ -392,32 +396,28 @@ export default function Home() {
             transition={{ type: "tween", duration: 2.0, ease: [0.25, 1, 0.5, 1] }}
           >
             {activeHeroImages.map((slot) => {
-              const rawImageUrl = content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : slot.default;
-              const imageUrl = getOptimizedUrl(rawImageUrl);
-              const isLoaded = loadedImages[slot.key];
+              const rawImageUrl = content[slot.key] === 'deleted' ? null : content[slot.key];
+              const imageUrl = rawImageUrl ? getOptimizedUrl(rawImageUrl) : null;
 
               return (
                 <div key={slot.key} className="min-w-full h-full relative overflow-hidden">
-                  {/* Skeleton Loader */}
-                  {(!imageUrl || !isLoaded) && (
-                    <div className="absolute inset-0 bg-slate-800 animate-pulse flex items-center justify-center z-0">
-                    </div>
-                  )}
-
-                  {imageUrl && (
+                  {imageUrl ? (
                     <motion.img 
                       style={{ y: parallaxY, willChange: "transform" }}
                       src={imageUrl} 
                       alt={`${websiteName} Hero Image`} 
                       title={`${websiteName} - Luxury and Comfort in Bogura`}
-                      className={`w-full h-[130%] object-cover pointer-events-none -mt-[15%] transition-opacity duration-1000 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`} 
+                      className="w-full h-[130%] object-cover pointer-events-none -mt-[15%]" 
                       referrerPolicy="no-referrer"
                       draggable={false}
                       loading="eager"
                       fetchPriority="high"
                       decoding="async"
-                      onLoad={() => setLoadedImages(prev => ({ ...prev, [slot.key]: true }))}
                     />
+                  ) : (
+                    <div className="w-full h-full bg-slate-800 flex items-center justify-center">
+                      <span className="text-slate-500">Image Removed</span>
+                    </div>
                   )}
                 </div>
               );
@@ -711,12 +711,11 @@ export default function Home() {
                 </div>
               ))}
             </div>
-          ) : (
+          ) : rooms.length === 0 ? (
             <div className="text-center py-12 text-slate-400">
-              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-              <p>{t('রুম লোড হচ্ছে...', 'Loading rooms...')}</p>
+              <p>{t('কোন রুম পাওয়া যায়নি।', 'No rooms available.')}</p>
             </div>
-          )}
+          ) : null}
           
           <div className="mt-8 text-center sm:hidden">
             <Link to="/rooms" className="inline-flex items-center text-red-600 font-bold hover:text-red-700 transition-colors">
@@ -852,7 +851,7 @@ export default function Home() {
               {heroSlots.map((slot, index) => {
                 const currentUrl = content[slot.key];
                 const isDeleted = currentUrl === 'deleted';
-                const displayUrl = currentUrl && !isDeleted ? currentUrl : slot.default;
+                const displayUrl = currentUrl && !isDeleted ? currentUrl : null;
 
                 return (
                   <div key={slot.key} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
@@ -883,7 +882,7 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden bg-slate-200 relative">
-                      {isDeleted ? (
+                      {!displayUrl ? (
                         <div className="absolute inset-0 flex items-center justify-center text-slate-400">
                           No image selected
                         </div>

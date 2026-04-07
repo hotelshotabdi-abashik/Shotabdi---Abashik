@@ -58,11 +58,7 @@ export default function RoomDetails() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
-      </div>
-    );
+    return null;
   }
 
   if (!room) {
@@ -99,24 +95,16 @@ export default function RoomDetails() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
             {/* Image Section / Hero Component */}
             <div className="relative h-[300px] sm:h-[400px] lg:h-auto bg-slate-100 flex items-center justify-center overflow-hidden">
-              {/* CSS Skeleton Loader / Shimmer Effect */}
-              {(!room.imageUrl || !isImageLoaded) && (
-                <div className="absolute inset-0 bg-slate-200 animate-pulse flex items-center justify-center">
-                  {/* Optional: Brand matching background color or subtle icon */}
-                </div>
-              )}
-
               {room.imageUrl && (
                 <img 
                   src={getOptimizedUrl(room.imageUrl)} 
                   alt={`${room.name} - Hotel Shotabdi Abashik`} 
                   title={room.description || room.name}
-                  className={`max-w-full max-h-full object-contain transition-opacity duration-700 ease-in-out ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  className="max-w-full max-h-full object-contain"
                   referrerPolicy="no-referrer"
                   loading="eager" 
                   fetchPriority="high" 
                   decoding="async"
-                  onLoad={() => setIsImageLoaded(true)}
                 />
               )}
               

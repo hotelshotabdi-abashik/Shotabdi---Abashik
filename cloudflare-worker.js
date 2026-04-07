@@ -13,6 +13,11 @@ class MetaRewriter {
     if (property === "og:description" || property === "twitter:description") {
       element.setAttribute("content", this.metadata.description);
     }
+    if (property === "og:url" || property === "twitter:url") {
+      if (this.metadata.url) {
+        element.setAttribute("content", this.metadata.url);
+      }
+    }
   }
 }
 
@@ -46,6 +51,53 @@ async function fetchAllFromCollection(collectionName) {
     return data.documents || [];
   } catch (e) {
     return [];
+  }
+}
+
+async function getItemData(type, id) {
+  // Placeholder function that connects to Firestore
+  // You can replace this with your own R2 or custom database logic
+  try {
+    const collectionName = type === 'rooms' ? 'rooms' : 
+                           type === 'restaurant' ? 'restaurants' : 
+                           (type === 'tours' || type === 'tour-desk') ? 'tourSpots' : 
+                           type === 'gallery' ? 'gallery' : null;
+    
+    if (!collectionName) return null;
+
+    const items = await fetchAllFromCollection(collectionName);
+    
+    const item = items.find((i, index) => {
+      const name = i.fields?.name?.stringValue || '';
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      return slug === id || i.name.split('/').pop() === id || index.toString() === id;
+    });
+
+    if (!item) return null;
+
+    let title, description, image;
+
+    if (type === 'rooms') {
+      title = item.fields?.name?.stringValue ? `${item.fields.name.stringValue} - Hotel Shotabdi` : "Luxury Room - Hotel Shotabdi";
+      description = item.fields?.description?.stringValue || "Book your stay at the best price.";
+      image = item.fields?.imageUrl?.stringValue || (item.fields?.images?.arrayValue?.values?.[0]?.stringValue);
+    } else if (type === 'restaurant') {
+      title = `${item.fields?.name?.stringValue || 'Restaurant'} | Restaurant in Sylhet`;
+      description = `${item.fields?.type?.stringValue || 'Local'} restaurant located at ${item.fields?.location?.stringValue || 'Sylhet'}.`;
+      image = item.fields?.imageUrl?.stringValue;
+    } else if (type === 'tours' || type === 'tour-desk') {
+      title = `${item.fields?.name?.stringValue || 'Tour Spot'} | Tour Spot in Sylhet`;
+      description = item.fields?.description?.stringValue || `Explore ${item.fields?.name?.stringValue || 'Sylhet'} with Hotel Shotabdi.`;
+      image = item.fields?.imageUrl?.stringValue;
+    } else if (type === 'gallery') {
+      title = item.fields?.title?.stringValue ? `${item.fields.title.stringValue} | Hotel Shotabdi Gallery` : "Gallery | Hotel Shotabdi";
+      description = item.fields?.description?.stringValue || "View our beautiful hotel gallery.";
+      image = item.fields?.url?.stringValue;
+    }
+
+    return { title, description, image };
+  } catch (e) {
+    return null;
   }
 }
 
@@ -206,7 +258,8 @@ export default {
       let meta = {
         title: "Hotel Shotabdi Abashik",
         description: "Boutique Hotel in Sylhet, Bangladesh",
-        image: "https://shotabdi-abashik.bd/logo.png" // Default
+        image: "https://shotabdi-abashik.bd/logo.png", // Default
+        url: url.toString()
       };
 
       // DETECT LIST PAGES
@@ -228,25 +281,11 @@ export default {
       if (url.pathname.includes("/rooms/")) {
         const slug = url.pathname.split("/rooms/")[1];
         if (slug) {
-          const rooms = await fetchAllFromCollection("rooms");
-          const room = rooms.find(r => {
-            const name = r.fields?.name?.stringValue || '';
-            const roomSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-            return roomSlug === slug;
-          });
-          
-          if (room) {
-            meta.title = room.fields?.name?.stringValue ? `${room.fields.name.stringValue} - Hotel Shotabdi` : "Luxury Room - Hotel Shotabdi";
-            meta.description = room.fields?.description?.stringValue || "Book your stay at the best price.";
-            
-            if (room.fields?.imageUrl?.stringValue) {
-              meta.image = room.fields.imageUrl.stringValue;
-            } else {
-              const images = room.fields?.images?.arrayValue?.values;
-              if (images && images.length > 0 && images[0].stringValue) {
-                meta.image = images[0].stringValue;
-              }
-            }
+          const itemData = await getItemData('rooms', slug);
+          if (itemData) {
+            meta.title = itemData.title;
+            meta.description = itemData.description;
+            if (itemData.image) meta.image = itemData.image;
           }
         }
       } 
@@ -254,39 +293,23 @@ export default {
       else if (url.pathname.includes("/restaurant/")) {
         const slug = url.pathname.split("/restaurant/")[1];
         if (slug) {
-          const restaurants = await fetchAllFromCollection("restaurants");
-          const restaurant = restaurants.find(r => {
-            const name = r.fields?.name?.stringValue || '';
-            const resSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-            return resSlug === slug || r.name.split('/').pop() === slug;
-          });
-          
-          if (restaurant) {
-            meta.title = `${restaurant.fields?.name?.stringValue || 'Restaurant'} | Restaurant in Sylhet`;
-            meta.description = `${restaurant.fields?.type?.stringValue || 'Local'} restaurant located at ${restaurant.fields?.location?.stringValue || 'Sylhet'}.`;
-            if (restaurant.fields?.imageUrl?.stringValue) {
-              meta.image = restaurant.fields.imageUrl.stringValue;
-            }
+          const itemData = await getItemData('restaurant', slug);
+          if (itemData) {
+            meta.title = itemData.title;
+            meta.description = itemData.description;
+            if (itemData.image) meta.image = itemData.image;
           }
         }
       }
       // DETECT TOUR LINKS
-      else if (url.pathname.includes("/tour-desk/")) {
-        const slug = url.pathname.split("/tour-desk/")[1];
+      else if (url.pathname.includes("/tour-desk/") || url.pathname.includes("/tours/")) {
+        const slug = url.pathname.includes("/tour-desk/") ? url.pathname.split("/tour-desk/")[1] : url.pathname.split("/tours/")[1];
         if (slug) {
-          const tourSpots = await fetchAllFromCollection("tourSpots");
-          const spot = tourSpots.find(t => {
-            const name = t.fields?.name?.stringValue || '';
-            const spotSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-            return spotSlug === slug || t.name.split('/').pop() === slug;
-          });
-          
-          if (spot) {
-            meta.title = `${spot.fields?.name?.stringValue || 'Tour Spot'} | Tour Spot in Sylhet`;
-            meta.description = spot.fields?.description?.stringValue || `Explore ${spot.fields?.name?.stringValue || 'Sylhet'} with Hotel Shotabdi.`;
-            if (spot.fields?.imageUrl?.stringValue) {
-              meta.image = spot.fields.imageUrl.stringValue;
-            }
+          const itemData = await getItemData('tours', slug);
+          if (itemData) {
+            meta.title = itemData.title;
+            meta.description = itemData.description;
+            if (itemData.image) meta.image = itemData.image;
           }
         }
       }
@@ -294,15 +317,11 @@ export default {
       else if (url.pathname.includes("/gallery/")) {
         const id = url.pathname.split("/gallery/")[1];
         if (id) {
-          const gallery = await fetchAllFromCollection("gallery");
-          const img = gallery.find((g, index) => g.name.split('/').pop() === id || index.toString() === id);
-          
-          if (img) {
-            meta.title = img.fields?.title?.stringValue ? `${img.fields.title.stringValue} | Hotel Shotabdi Gallery` : "Gallery | Hotel Shotabdi";
-            meta.description = img.fields?.description?.stringValue || "View our beautiful hotel gallery.";
-            if (img.fields?.url?.stringValue) {
-              meta.image = img.fields.url.stringValue;
-            }
+          const itemData = await getItemData('gallery', id);
+          if (itemData) {
+            meta.title = itemData.title;
+            meta.description = itemData.description;
+            if (itemData.image) meta.image = itemData.image;
           }
         }
       }

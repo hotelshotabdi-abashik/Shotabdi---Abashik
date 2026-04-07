@@ -529,9 +529,7 @@ export default function Rooms() {
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-10">
-          {loading ? (
-            <div className="col-span-full text-center py-12 text-slate-500">Loading rooms...</div>
-          ) : rooms.length === 0 ? (
+          {rooms.length === 0 && !loading ? (
             <div className="col-span-full text-center py-12 text-slate-500">No rooms available.</div>
           ) : rooms.map((room: Room) => (
             <div key={room.id} className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col hover:shadow-xl transition-shadow relative group">

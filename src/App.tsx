@@ -7,6 +7,7 @@ import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
+import Lenis from 'lenis';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ContentProvider, useContent } from './context/ContentContext';
@@ -140,14 +141,6 @@ function AppContent() {
   const { loading: contentLoading } = useContent();
   const location = useLocation();
 
-  if (contentLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
-      </div>
-    );
-  }
-
   const isStandalonePage = location.pathname.startsWith('/gallery') || 
                            location.pathname.startsWith('/rooms') || 
                            location.pathname.startsWith('/restaurant') || 
@@ -169,6 +162,27 @@ function AppContent() {
 }
 
 export default function App() {
+  useEffect(() => {
+    const lenis = new Lenis({
+      lerp: 0.03, // Lower value for smoother, more gradual interpolation
+      wheelMultiplier: 0.6, // Reduces the scroll distance per wheel tick (slower)
+      touchMultiplier: 1.5, // Slightly slower touch scrolling
+      smoothWheel: true,
+      syncTouch: true, // Syncs touch scroll for smoother mobile experience
+    });
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+    return () => {
+      lenis.destroy();
+    };
+  }, []);
+
   return (
     <HelmetProvider>
       <LanguageProvider>
@@ -190,7 +204,7 @@ function MainContent({ isStandalonePage }: { isStandalonePage: boolean }) {
   
   return (
     <main className={`flex-grow ${isHome || isStandalonePage ? 'pt-0' : 'pt-14'}`}>
-      <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div></div>}>
+      <Suspense fallback={<div className="min-h-screen bg-slate-50"></div>}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Navigate to="/" />} />

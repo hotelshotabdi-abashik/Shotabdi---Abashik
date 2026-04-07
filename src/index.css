@@ -5,7 +5,6 @@ html, body {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
   overflow-x: clip;
-  scroll-behavior: smooth;
 }
 
 html::-webkit-scrollbar, body::-webkit-scrollbar {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy, limit, addDoc, serverTimestamp } from 'firebase/firestore';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { db } from '../firebase';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';

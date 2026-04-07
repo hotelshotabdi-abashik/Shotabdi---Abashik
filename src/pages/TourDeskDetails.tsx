@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useContent } from '../context/ContentContext';
 import { useLanguage } from '../context/LanguageContext';
 import { ArrowLeft, MapPin, Navigation, Share2, Home, Compass } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
 import { getOptimizedUrl } from '../lib/imageUtils';
