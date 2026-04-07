@@ -13,6 +13,8 @@ export default function RoomDetails() {
   const [room, setRoom] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
+
   useEffect(() => {
     const fetchRoom = async () => {
       if (!title) return;
@@ -93,16 +95,29 @@ export default function RoomDetails() {
 
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-            {/* Image Section */}
-            <div className="relative h-[300px] sm:h-[400px] lg:h-auto bg-slate-100 flex items-center justify-center">
-              <img 
-                src={room.imageUrl} 
-                alt={room.name} 
-                title={room.description || room.name}
-                className="max-w-full max-h-full object-contain"
-                referrerPolicy="no-referrer"
-                loading="eager" fetchPriority="high" decoding="async"
-              />
+            {/* Image Section / Hero Component */}
+            <div className="relative h-[300px] sm:h-[400px] lg:h-auto bg-slate-100 flex items-center justify-center overflow-hidden">
+              {/* CSS Skeleton Loader / Shimmer Effect */}
+              {(!room.imageUrl || !isImageLoaded) && (
+                <div className="absolute inset-0 bg-slate-200 animate-pulse flex items-center justify-center">
+                  {/* Optional: Brand matching background color or subtle icon */}
+                </div>
+              )}
+
+              {room.imageUrl && (
+                <img 
+                  src={room.imageUrl} 
+                  alt={`${room.name} - Hotel Shotabdi Abashik`} 
+                  title={room.description || room.name}
+                  className={`max-w-full max-h-full object-contain transition-opacity duration-700 ease-in-out ${isImageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  referrerPolicy="no-referrer"
+                  loading="eager" 
+                  fetchPriority="high" 
+                  decoding="async"
+                  onLoad={() => setIsImageLoaded(true)}
+                />
+              )}
+              
               {!room.isAvailable && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
                   <span className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold text-xl uppercase tracking-widest shadow-lg">
