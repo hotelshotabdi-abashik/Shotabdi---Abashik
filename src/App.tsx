@@ -138,6 +138,7 @@ const SEO = () => {
 
 function AppContent() {
   const { loading: contentLoading } = useContent();
+  const location = useLocation();
 
   if (contentLoading) {
     return (
@@ -147,15 +148,20 @@ function AppContent() {
     );
   }
 
+  const isStandalonePage = location.pathname.startsWith('/gallery') || 
+                           location.pathname.startsWith('/rooms') || 
+                           location.pathname.startsWith('/restaurant') || 
+                           location.pathname.startsWith('/tour-desk');
+
   return (
     <>
       <SEO />
       <ScrollToTop />
       <ProfileEnforcer />
       <div className="flex flex-col min-h-screen font-sans bg-slate-50 text-slate-900">
-        <Navbar />
-        <MainContent />
-        <Footer />
+        {!isStandalonePage && <Navbar />}
+        <MainContent isStandalonePage={isStandalonePage} />
+        {!isStandalonePage && <Footer />}
         <Toaster position="top-center" richColors />
       </div>
     </>
@@ -178,12 +184,12 @@ export default function App() {
   );
 }
 
-function MainContent() {
+function MainContent({ isStandalonePage }: { isStandalonePage: boolean }) {
   const location = useLocation();
   const isHome = location.pathname === '/';
   
   return (
-    <main className={`flex-grow ${isHome ? 'pt-0' : 'pt-14'}`}>
+    <main className={`flex-grow ${isHome || isStandalonePage ? 'pt-0' : 'pt-14'}`}>
       <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div></div>}>
         <Routes>
           <Route path="/" element={<Home />} />

@@ -394,8 +394,6 @@ export default function Home() {
             {activeHeroImages.map((slot) => {
               const rawImageUrl = content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : slot.default;
               const imageUrl = getOptimizedUrl(rawImageUrl);
-              const rawMobileImageUrl = content[slot.mobileKey] && content[slot.mobileKey] !== 'deleted' ? content[slot.mobileKey] : slot.defaultMobile;
-              const mobileImageUrl = getOptimizedUrl(rawMobileImageUrl);
               const isLoaded = loadedImages[slot.key];
 
               return (
@@ -412,22 +410,7 @@ export default function Home() {
                       src={imageUrl} 
                       alt={`${websiteName} Hero Image`} 
                       title={`${websiteName} - Luxury and Comfort in Bogura`}
-                      className={`hidden sm:block w-full h-[130%] object-cover pointer-events-none -mt-[15%] transition-opacity duration-1000 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`} 
-                      referrerPolicy="no-referrer"
-                      draggable={false}
-                      loading="eager"
-                      fetchPriority="high"
-                      decoding="async"
-                      onLoad={() => setLoadedImages(prev => ({ ...prev, [slot.key]: true }))}
-                    />
-                  )}
-                  {mobileImageUrl && (
-                    <motion.img 
-                      style={{ y: parallaxY, willChange: "transform" }}
-                      src={mobileImageUrl} 
-                      alt={`${websiteName} Hero Image`} 
-                      title={`${websiteName} - Luxury and Comfort in Bogura`}
-                      className={`block sm:hidden w-full h-[130%] object-cover pointer-events-none -mt-[15%] transition-opacity duration-1000 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`} 
+                      className={`w-full h-[130%] object-cover pointer-events-none -mt-[15%] transition-opacity duration-1000 ease-in-out ${isLoaded ? 'opacity-100' : 'opacity-0'}`} 
                       referrerPolicy="no-referrer"
                       draggable={false}
                       loading="eager"

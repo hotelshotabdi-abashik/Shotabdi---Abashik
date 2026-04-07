@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Utensils, Coffee, Clock, MapPin, Navigation, Search, Plus, Trash2, Edit2, Save, X, Star } from 'lucide-react';
+import { Utensils, Coffee, Clock, MapPin, Navigation, Search, Plus, Trash2, Edit2, Save, X, Star, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
 import { useAuth } from '../context/AuthContext';
@@ -139,7 +139,10 @@ export default function Restaurant() {
   };
 
   return (
-    <div className="bg-slate-50 py-16 min-h-screen">
+    <div className="bg-slate-50 py-16 min-h-screen relative">
+      <Link to="/" className="absolute top-4 left-4 sm:top-8 sm:left-8 z-20 bg-white shadow-md hover:shadow-lg text-slate-700 p-2 sm:p-3 rounded-full transition-all">
+        <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+      </Link>
       <Helmet>
         <title>Restaurants & Dining | Hotel Shotabdi Abashik</title>
         <meta name="description" content="Discover the best restaurants and dining options near Hotel Shotabdi Abashik in Sylhet. From local Bengali cuisine to fast food." />

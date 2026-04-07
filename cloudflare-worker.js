@@ -38,29 +38,14 @@ const FROM_EMAIL = "hotel@shotabdi-abashik.bd";
 const PAGES_URL = "shotabdi-abashik.pages.dev";
 const FIRESTORE_URL = "https://firestore.googleapis.com/v1/projects/helical-realm-476704-m0/databases/ai-studio-f14820b0-2a32-464e-8aca-957a8401f25f/documents";
 
-async function fetchRoom(roomId) {
+async function fetchAllFromCollection(collectionName) {
   try {
-    const res = await fetch(`${FIRESTORE_URL}/rooms/${roomId}`);
-    if (!res.ok) return null;
+    const res = await fetch(`${FIRESTORE_URL}/${collectionName}`);
+    if (!res.ok) return [];
     const data = await res.json();
-    return data.fields;
+    return data.documents || [];
   } catch (e) {
-    return null;
-  }
-}
-
-async function fetchContent(docId) {
-  try {
-    const res = await fetch(`${FIRESTORE_URL}/content/${docId}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const jsonStr = data.fields?.data?.stringValue;
-    if (jsonStr) {
-      return JSON.parse(jsonStr);
-    }
-    return null;
-  } catch (e) {
-    return null;
+    return [];
   }
 }
 
@@ -224,19 +209,43 @@ export default {
         image: "https://shotabdi-abashik.bd/logo.png" // Default
       };
 
+      // DETECT LIST PAGES
+      if (url.pathname === "/rooms") {
+        meta.title = "Our Rooms | Hotel Shotabdi Abashik";
+        meta.description = "Explore our comfortable and affordable rooms in Sylhet. Choose from Single Delux, Double Delux, Family Suit, and Super Delux.";
+      } else if (url.pathname === "/restaurant") {
+        meta.title = "Restaurants & Dining | Hotel Shotabdi Abashik";
+        meta.description = "Discover the best restaurants and dining options near Hotel Shotabdi Abashik in Sylhet.";
+      } else if (url.pathname === "/tour-desk") {
+        meta.title = "Tour Desk & Attractions | Hotel Shotabdi Abashik";
+        meta.description = "Explore top tourist spots in Sylhet with our Tour Desk. Visit SUST Campus, Hazrat Shahjalal Mazar, Ratargul, Jaflong and more.";
+      } else if (url.pathname === "/gallery") {
+        meta.title = "Gallery | Hotel Shotabdi Abashik";
+        meta.description = "View photos of Hotel Shotabdi Abashik. See our rooms, facilities, and the beautiful surroundings in Sylhet.";
+      }
+
       // DETECT ROOM LINKS
       if (url.pathname.includes("/rooms/")) {
-        const roomId = url.pathname.split("/rooms/")[1];
-        if (roomId) {
-          const room = await fetchRoom(roomId);
+        const slug = url.pathname.split("/rooms/")[1];
+        if (slug) {
+          const rooms = await fetchAllFromCollection("rooms");
+          const room = rooms.find(r => {
+            const name = r.fields?.name?.stringValue || '';
+            const roomSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+            return roomSlug === slug;
+          });
+          
           if (room) {
-            meta.title = room.name?.stringValue ? `${room.name.stringValue} - Hotel Shotabdi` : "Luxury Room - Hotel Shotabdi";
-            meta.description = room.description?.stringValue || "Book your stay at the best price.";
+            meta.title = room.fields?.name?.stringValue ? `${room.fields.name.stringValue} - Hotel Shotabdi` : "Luxury Room - Hotel Shotabdi";
+            meta.description = room.fields?.description?.stringValue || "Book your stay at the best price.";
             
-            // Try to get the first image from the images array
-            const images = room.images?.arrayValue?.values;
-            if (images && images.length > 0 && images[0].stringValue) {
-              meta.image = images[0].stringValue;
+            if (room.fields?.imageUrl?.stringValue) {
+              meta.image = room.fields.imageUrl.stringValue;
+            } else {
+              const images = room.fields?.images?.arrayValue?.values;
+              if (images && images.length > 0 && images[0].stringValue) {
+                meta.image = images[0].stringValue;
+              }
             }
           }
         }
@@ -245,17 +254,18 @@ export default {
       else if (url.pathname.includes("/restaurant/")) {
         const slug = url.pathname.split("/restaurant/")[1];
         if (slug) {
-          const restaurants = await fetchContent("restaurants");
-          if (restaurants && Array.isArray(restaurants)) {
-            const restaurant = restaurants.find(r => 
-              r.name && r.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') === slug
-            );
-            if (restaurant) {
-              meta.title = `${restaurant.name} | Restaurant in Sylhet`;
-              meta.description = `${restaurant.type} restaurant located at ${restaurant.location}.`;
-              if (restaurant.imageUrl) {
-                meta.image = restaurant.imageUrl;
-              }
+          const restaurants = await fetchAllFromCollection("restaurants");
+          const restaurant = restaurants.find(r => {
+            const name = r.fields?.name?.stringValue || '';
+            const resSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+            return resSlug === slug || r.name.split('/').pop() === slug;
+          });
+          
+          if (restaurant) {
+            meta.title = `${restaurant.fields?.name?.stringValue || 'Restaurant'} | Restaurant in Sylhet`;
+            meta.description = `${restaurant.fields?.type?.stringValue || 'Local'} restaurant located at ${restaurant.fields?.location?.stringValue || 'Sylhet'}.`;
+            if (restaurant.fields?.imageUrl?.stringValue) {
+              meta.image = restaurant.fields.imageUrl.stringValue;
             }
           }
         }
@@ -264,17 +274,34 @@ export default {
       else if (url.pathname.includes("/tour-desk/")) {
         const slug = url.pathname.split("/tour-desk/")[1];
         if (slug) {
-          const tourSpots = await fetchContent("tourSpots");
-          if (tourSpots && Array.isArray(tourSpots)) {
-            const spot = tourSpots.find(t => 
-              t.name && t.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') === slug
-            );
-            if (spot) {
-              meta.title = `${spot.name} | Tour Spot in Sylhet`;
-              meta.description = spot.description || `Explore ${spot.name} with Hotel Shotabdi.`;
-              if (spot.imageUrl) {
-                meta.image = spot.imageUrl;
-              }
+          const tourSpots = await fetchAllFromCollection("tourSpots");
+          const spot = tourSpots.find(t => {
+            const name = t.fields?.name?.stringValue || '';
+            const spotSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+            return spotSlug === slug || t.name.split('/').pop() === slug;
+          });
+          
+          if (spot) {
+            meta.title = `${spot.fields?.name?.stringValue || 'Tour Spot'} | Tour Spot in Sylhet`;
+            meta.description = spot.fields?.description?.stringValue || `Explore ${spot.fields?.name?.stringValue || 'Sylhet'} with Hotel Shotabdi.`;
+            if (spot.fields?.imageUrl?.stringValue) {
+              meta.image = spot.fields.imageUrl.stringValue;
+            }
+          }
+        }
+      }
+      // DETECT GALLERY LINKS
+      else if (url.pathname.includes("/gallery/")) {
+        const id = url.pathname.split("/gallery/")[1];
+        if (id) {
+          const gallery = await fetchAllFromCollection("gallery");
+          const img = gallery.find((g, index) => g.name.split('/').pop() === id || index.toString() === id);
+          
+          if (img) {
+            meta.title = img.fields?.title?.stringValue ? `${img.fields.title.stringValue} | Hotel Shotabdi Gallery` : "Gallery | Hotel Shotabdi";
+            meta.description = img.fields?.description?.stringValue || "View our beautiful hotel gallery.";
+            if (img.fields?.url?.stringValue) {
+              meta.image = img.fields.url.stringValue;
             }
           }
         }

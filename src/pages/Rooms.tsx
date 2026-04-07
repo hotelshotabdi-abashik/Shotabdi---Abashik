@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BedDouble, CheckCircle2, Wifi, Tv, Wind, Plus, Trash2, Edit2, Save, X, Phone, MessageCircle, Star } from 'lucide-react';
+import { BedDouble, CheckCircle2, Wifi, Tv, Wind, Plus, Trash2, Edit2, Save, X, Phone, MessageCircle, Star, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -427,7 +427,10 @@ export default function Rooms() {
   };
 
   return (
-    <div className="bg-slate-50 py-16">
+    <div className="bg-slate-50 py-16 relative">
+      <Link to="/" className="absolute top-4 left-4 sm:top-8 sm:left-8 z-20 bg-white shadow-md hover:shadow-lg text-slate-700 p-2 sm:p-3 rounded-full transition-all">
+        <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+      </Link>
       <Helmet>
         <title>Our Rooms | Hotel Shotabdi Abashik</title>
         <meta name="description" content="Explore our comfortable and affordable rooms in Sylhet. Choose from Single Delux, Double Delux, Family Suit, and Super Delux." />

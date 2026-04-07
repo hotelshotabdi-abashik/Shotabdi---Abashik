@@ -3,7 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
 import { EditableText } from '../components/EditableText';
 import { uploadToR2, deleteFromR2 } from '../lib/r2';
-import { Trash2, Upload, Loader2, X, Image as ImageIcon, Edit2, Search, Star } from 'lucide-react';
+import { Trash2, Upload, Loader2, X, Image as ImageIcon, Edit2, Search, Star, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { Helmet } from 'react-helmet-async';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -191,7 +191,10 @@ export default function Gallery() {
   const metaKeywords = `Hotel Shotabdi Abashik photos, Sylhet hotel gallery, room pictures Sylhet${allKeywords ? ', ' + allKeywords : ''}`;
 
   return (
-    <div className="bg-white py-16 min-h-screen">
+    <div className="bg-white py-16 min-h-screen relative">
+      <Link to="/" className="absolute top-4 left-4 sm:top-8 sm:left-8 z-20 bg-white shadow-md hover:shadow-lg text-slate-700 p-2 sm:p-3 rounded-full transition-all">
+        <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+      </Link>
       <Helmet>
         <title>Gallery | Hotel Shotabdi Abashik</title>
         <meta name="description" content="View photos of Hotel Shotabdi Abashik. See our rooms, facilities, and the beautiful surroundings in Sylhet." />
