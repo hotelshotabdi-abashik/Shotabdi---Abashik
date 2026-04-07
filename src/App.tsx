@@ -37,7 +37,7 @@ const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
   }, [pathname]);
   return null;
 };
@@ -178,7 +178,20 @@ export default function App() {
 
     requestAnimationFrame(raf);
 
+    // Force Lenis to recalculate layout when DOM changes (fixes stuck scrolling)
+    const observer = new MutationObserver(() => {
+      lenis.resize();
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true
+    });
+
     return () => {
+      observer.disconnect();
       lenis.destroy();
     };
   }, []);
