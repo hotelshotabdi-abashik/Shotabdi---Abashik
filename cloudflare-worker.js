@@ -164,7 +164,13 @@ export default {
       }
     }
 
-    // 4. WEBSITE PROXY WITH DYNAMIC PREVIEWS
+    // 4. FIREBASE AUTH PROXY
+    if (url.pathname.startsWith("/__/auth/")) {
+      url.hostname = "helical-realm-476704-m0.firebaseapp.com";
+      return fetch(new Request(url.toString(), request));
+    }
+
+    // 5. WEBSITE PROXY WITH DYNAMIC PREVIEWS
     url.hostname = PAGES_URL;
     const modifiedRequest = new Request(url.toString(), {
       method: request.method,
