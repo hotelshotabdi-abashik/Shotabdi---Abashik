@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, Suspense, lazy } from 'react';
+import React, { useEffect, useLayoutEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
@@ -162,13 +162,19 @@ function AppContent() {
 }
 
 export default function App() {
-  useEffect(() => {
+  useLayoutEffect(() => {
+    // Mobile Optimization: Disable on devices with coarse pointers (touch)
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    
+    if (isTouchDevice) {
+      return; // Fallback to native scrolling
+    }
+
     const lenis = new Lenis({
-      lerp: 0.08, // Lower value for smoother, slightly slower interpolation
-      wheelMultiplier: 1.0, // Standard scroll distance per wheel tick
-      touchMultiplier: 1.5, // Smoother touch scrolling
+      lerp: 0.1, // Smoothness Config
+      wheelMultiplier: 3, // Smoothness Config
       smoothWheel: true,
-      syncTouch: true, // Syncs touch scroll for smoother mobile experience
+      syncTouch: true,
     });
 
     function raf(time: number) {
@@ -190,8 +196,25 @@ export default function App() {
       attributes: true
     });
 
+    // Disable on Heavy Interaction: Pause smooth scroll when a Modal is open
+    const bodyObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'style' || mutation.attributeName === 'class') {
+          const isModalOpen = document.body.style.overflow === 'hidden' || document.body.classList.contains('modal-open');
+          if (isModalOpen) {
+            lenis.stop();
+          } else {
+            lenis.start();
+          }
+        }
+      });
+    });
+
+    bodyObserver.observe(document.body, { attributes: true });
+
     return () => {
       observer.disconnect();
+      bodyObserver.disconnect();
       lenis.destroy();
     };
   }, []);
@@ -216,7 +239,7 @@ function MainContent({ isStandalonePage }: { isStandalonePage: boolean }) {
   const isHome = location.pathname === '/';
   
   return (
-    <main className={`flex-grow ${isHome || isStandalonePage ? 'pt-0' : 'pt-14'}`}>
+    <main className={`flex-grow main-content-wrapper ${isHome || isStandalonePage ? 'pt-0' : 'pt-14'}`}>
       <Suspense fallback={<div className="min-h-screen bg-slate-50"></div>}>
         <Routes>
           <Route path="/" element={<Home />} />

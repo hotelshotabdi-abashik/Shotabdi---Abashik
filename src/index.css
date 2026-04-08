@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Hardware Acceleration for Lenis */
+.main-content-wrapper {
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
 /* Hide scrollbar globally */
 html, body {
   -ms-overflow-style: none;  /* IE and Edge */
