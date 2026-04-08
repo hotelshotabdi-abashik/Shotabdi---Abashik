@@ -7,7 +7,7 @@ import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
-import Lenis from 'lenis';
+import SmoothScrolling from './components/SmoothScrolling';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ContentProvider, useContent } from './context/ContentContext';
@@ -33,14 +33,6 @@ const Admin = lazy(() => import('./pages/Admin'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
-
-const ScrollToTop = () => {
-  const { pathname } = useLocation();
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
-  return null;
-};
 
 const ProfileEnforcer = () => {
   const { user, profile, loading } = useAuth();
@@ -149,7 +141,7 @@ function AppContent() {
   return (
     <>
       <SEO />
-      <ScrollToTop />
+      <SmoothScrolling />
       <ProfileEnforcer />
       <div className="flex flex-col min-h-screen font-sans bg-slate-50 text-slate-900">
         {!isStandalonePage && <Navbar />}
@@ -162,40 +154,6 @@ function AppContent() {
 }
 
 export default function App() {
-  useEffect(() => {
-    const lenis = new Lenis({
-      lerp: 0.1, // Higher value for faster, more responsive interpolation
-      wheelMultiplier: 1.2, // Increases the scroll distance per wheel tick (faster)
-      touchMultiplier: 2.0, // Faster touch scrolling
-      smoothWheel: true,
-      syncTouch: true, // Syncs touch scroll for smoother mobile experience
-    });
-
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-
-    requestAnimationFrame(raf);
-
-    // Force Lenis to recalculate layout when DOM changes (fixes stuck scrolling)
-    const observer = new MutationObserver(() => {
-      lenis.resize();
-    });
-    
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-      attributes: true
-    });
-
-    return () => {
-      observer.disconnect();
-      lenis.destroy();
-    };
-  }, []);
-
   return (
     <HelmetProvider>
       <LanguageProvider>
