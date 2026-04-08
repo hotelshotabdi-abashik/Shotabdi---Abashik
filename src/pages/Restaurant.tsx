@@ -139,10 +139,7 @@ export default function Restaurant() {
   };
 
   return (
-    <div className="bg-slate-50 py-16 min-h-screen relative">
-      <Link to="/" className="absolute top-4 left-4 sm:top-8 sm:left-8 z-20 bg-white shadow-md hover:shadow-lg text-slate-700 p-2 sm:p-3 rounded-full transition-all">
-        <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-      </Link>
+    <div className="bg-slate-50 min-h-screen relative pb-16">
       <Helmet>
         <title>Restaurants & Dining | Hotel Shotabdi Abashik</title>
         <meta name="description" content="Discover the best restaurants and dining options near Hotel Shotabdi Abashik in Sylhet. From local Bengali cuisine to fast food." />
@@ -178,48 +175,61 @@ export default function Restaurant() {
           })}
         </script>
       </Helmet>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Nearby Restaurants List */}
-        <div>
-          <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-            <h2 className="text-2xl font-bold text-slate-900">
-              {t(`সিলেটের জনপ্রিয় ${restaurants.length}টি রেস্টুরেন্ট`, `Top ${restaurants.length} Popular Restaurants in Sylhet`)}
-            </h2>
+
+      {/* Modern Sticky Header */}
+      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center py-4 gap-4">
             <div className="flex items-center gap-4 w-full md:w-auto">
-              <div className="relative w-full md:w-72">
+              <Link to="/" className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 sm:p-2.5 rounded-full transition-all flex-shrink-0">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
+                {t(`সিলেটের জনপ্রিয় ${restaurants.length}টি রেস্টুরেন্ট`, `Top ${restaurants.length} Restaurants`)}
+              </h2>
+            </div>
+            
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="relative w-full md:w-64 lg:w-72">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="h-5 w-5 text-slate-400" />
+                  <Search className="h-4 w-4 text-slate-400" />
                 </div>
                 <input
                   type="text"
                   placeholder={t("রেস্টুরেন্ট খুঁজুন...", "Search restaurants...")}
-                  className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-xl leading-5 bg-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 sm:text-sm transition-colors"
+                  className="block w-full pl-9 pr-3 py-2 border border-slate-300 rounded-xl leading-5 bg-slate-50 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 sm:text-sm transition-colors"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               {editMode && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-shrink-0">
                   <button
                     onClick={() => {
                       setIsAdding(true);
                       setEditForm({ name: '', location: '', distance: '', type: '', mapUrl: '', imageUrl: '', order: 0, isRecommended: false });
                     }}
-                    className="bg-green-600 text-white p-2 rounded-xl hover:bg-green-700 transition-colors flex-shrink-0"
+                    className="bg-green-600 text-white p-2 rounded-xl hover:bg-green-700 transition-colors"
                     title="Add Restaurant"
                   >
                     <Plus className="w-5 h-5" />
                   </button>
                   <button
                     onClick={handleRestoreDefaults}
-                    className="bg-amber-500 text-white p-2 rounded-xl hover:bg-amber-600 transition-colors flex-shrink-0 text-sm font-bold px-4"
+                    className="bg-amber-500 text-white p-2 rounded-xl hover:bg-amber-600 transition-colors text-sm font-bold px-3 hidden sm:block"
                   >
-                    Restore Defaults
+                    Restore
                   </button>
                 </div>
               )}
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        {/* Nearby Restaurants List */}
+        <div>
 
           {(isAdding || editingIndex !== null) && editMode && (
             <div className="bg-white p-6 rounded-2xl shadow-md border border-red-200 mb-8">

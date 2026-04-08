@@ -192,9 +192,14 @@ export default function Gallery() {
 
   return (
     <div className="bg-white py-16 min-h-screen relative">
-      <Link to="/" className="absolute top-4 left-4 sm:top-8 sm:left-8 z-20 bg-white shadow-md hover:shadow-lg text-slate-700 p-2 sm:p-3 rounded-full transition-all">
-        <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
-      </Link>
+      <div className="fixed top-0 left-0 w-full z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/50 py-3 px-4 sm:px-6 lg:px-8 flex items-center shadow-sm">
+        <Link to="/" className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 sm:p-2.5 rounded-full transition-all flex-shrink-0 mr-4">
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
+        <h2 className="text-lg sm:text-xl font-bold text-slate-900 truncate">
+          {t('গ্যালারি', 'Gallery')}
+        </h2>
+      </div>
       <Helmet>
         <title>Gallery | Hotel Shotabdi Abashik</title>
         <meta name="description" content="View photos of Hotel Shotabdi Abashik. See our rooms, facilities, and the beautiful surroundings in Sylhet." />
