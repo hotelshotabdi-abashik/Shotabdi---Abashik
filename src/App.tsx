@@ -3,17 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, Suspense, lazy } from 'react';
+import React, { useEffect, useLayoutEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
+import Lenis from 'lenis';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ContentProvider, useContent } from './context/ContentContext';
 import { getOptimizedUrl } from './lib/imageUtils';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import SmoothScrolling from './components/SmoothScrolling';
 
 const Home = lazy(() => import('./pages/Home'));
 const Rooms = lazy(() => import('./pages/Rooms'));
@@ -33,6 +33,14 @@ const Admin = lazy(() => import('./pages/Admin'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
 
 const ProfileEnforcer = () => {
   const { user, profile, loading } = useAuth();
@@ -141,7 +149,7 @@ function AppContent() {
   return (
     <>
       <SEO />
-      <SmoothScrolling />
+      <ScrollToTop />
       <ProfileEnforcer />
       <div className="flex flex-col min-h-screen font-sans bg-slate-50 text-slate-900">
         {!isStandalonePage && <Navbar />}
@@ -154,6 +162,63 @@ function AppContent() {
 }
 
 export default function App() {
+  useLayoutEffect(() => {
+    // Mobile Optimization: Disable on devices with coarse pointers (touch)
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    
+    if (isTouchDevice) {
+      return; // Fallback to native scrolling
+    }
+
+    const lenis = new Lenis({
+      lerp: 0.1, // Smoothness Config
+      wheelMultiplier: 3, // Smoothness Config
+      smoothWheel: true,
+      syncTouch: true,
+    });
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+    // Force Lenis to recalculate layout when DOM changes (fixes stuck scrolling)
+    const observer = new MutationObserver(() => {
+      lenis.resize();
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true
+    });
+
+    // Disable on Heavy Interaction: Pause smooth scroll when a Modal is open
+    const bodyObserver = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'style' || mutation.attributeName === 'class') {
+          const isModalOpen = document.body.style.overflow === 'hidden' || document.body.classList.contains('modal-open');
+          if (isModalOpen) {
+            lenis.stop();
+          } else {
+            lenis.start();
+          }
+        }
+      });
+    });
+
+    bodyObserver.observe(document.body, { attributes: true });
+
+    return () => {
+      observer.disconnect();
+      bodyObserver.disconnect();
+      lenis.destroy();
+    };
+  }, []);
+
   return (
     <HelmetProvider>
       <LanguageProvider>
