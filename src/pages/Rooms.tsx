@@ -75,6 +75,8 @@ const defaultRooms = [
   }
 ];
 
+import { useScrollLock } from '../hooks/useScrollLock';
+
 export default function Rooms() {
   const { t } = useLanguage();
   const { editMode, content } = useContent();
@@ -98,6 +100,8 @@ export default function Rooms() {
 
   // Booking Modal State
   const [bookingRoom, setBookingRoom] = useState<Room | null>(null);
+
+  useScrollLock(confirmModal.isOpen || passwordModal.isOpen || bookingRoom !== null);
   const [checkIn, setCheckIn] = useState(new Date().toISOString().split('T')[0]);
   const [checkOut, setCheckOut] = useState(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
   const [bookingSuccess, setBookingSuccess] = useState(false);

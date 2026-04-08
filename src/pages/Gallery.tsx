@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Helmet } from 'react-helmet-async';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { Link } from 'react-router-dom';
+import { useScrollLock } from '../hooks/useScrollLock';
 
 export interface GalleryImage {
   id: string;
@@ -38,6 +39,8 @@ export default function Gallery() {
     order: 0,
     isRecommended: false
   });
+
+  useScrollLock(confirmModal.isOpen || isUploadModalOpen || editingIndex !== null);
 
   const rawImages: any[] = content.galleryImages || [];
   const images: GalleryImage[] = rawImages

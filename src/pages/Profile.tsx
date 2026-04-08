@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import PhoneInput from '../components/PhoneInput';
 import { sendEmail } from '../services/NotificationService';
+import { useScrollLock } from '../hooks/useScrollLock';
 
 export default function Profile() {
   const { t } = useLanguage();
@@ -86,6 +87,8 @@ export default function Profile() {
   };
 
   const [showTermsModal, setShowTermsModal] = useState(false);
+
+  useScrollLock(showTermsModal);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

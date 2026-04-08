@@ -11,6 +11,17 @@ interface ImageViewModalProps {
 export const ImageViewModal: React.FC<ImageViewModalProps> = ({ isOpen, onClose, selectedImage }) => {
   const { content } = useContent();
 
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   if (!isOpen || !selectedImage) return null;
 
   const logoUrl = content.site_logo || 'https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png';
