@@ -398,27 +398,22 @@ export default function Home() {
             {activeHeroImages.map((slot) => {
               const rawImageUrl = content[slot.key] === 'deleted' ? null : content[slot.key];
               const imageUrl = rawImageUrl ? getOptimizedUrl(rawImageUrl) : null;
-              
-              const rawMobileUrl = content[slot.mobileKey] === 'deleted' ? null : content[slot.mobileKey];
-              const mobileUrl = rawMobileUrl ? getOptimizedUrl(rawMobileUrl) : imageUrl; // Fallback to desktop if mobile not provided
 
               return (
                 <div key={slot.key} className="min-w-full h-full relative overflow-hidden">
                   {imageUrl ? (
-                    <motion.picture style={{ y: parallaxY, willChange: "transform" }} className="block w-full h-[130%] -mt-[15%]">
-                      <source media="(max-width: 768px)" srcSet={mobileUrl || imageUrl} />
-                      <img 
-                        src={imageUrl} 
-                        alt={`${websiteName} Hero Image`} 
-                        title={`${websiteName} - Luxury and Comfort in Bogura`}
-                        className="w-full h-full object-cover pointer-events-none" 
-                        referrerPolicy="no-referrer"
-                        draggable={false}
-                        loading="eager"
-                        fetchPriority="high"
-                        decoding="async"
-                      />
-                    </motion.picture>
+                    <motion.img 
+                      style={{ y: parallaxY, willChange: "transform" }}
+                      src={imageUrl} 
+                      alt={`${websiteName} Hero Image`} 
+                      title={`${websiteName} - Luxury and Comfort in Bogura`}
+                      className="w-full h-[130%] object-cover pointer-events-none -mt-[15%]" 
+                      referrerPolicy="no-referrer"
+                      draggable={false}
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                    />
                   ) : (
                     <div className="w-full h-full bg-slate-800 flex items-center justify-center">
                       <span className="text-slate-500">Image Removed</span>
@@ -858,84 +853,48 @@ export default function Home() {
                 const isDeleted = currentUrl === 'deleted';
                 const displayUrl = currentUrl && !isDeleted ? currentUrl : null;
 
-                const currentMobileUrl = content[slot.mobileKey];
-                const isMobileDeleted = currentMobileUrl === 'deleted';
-                const displayMobileUrl = currentMobileUrl && !isMobileDeleted ? currentMobileUrl : null;
-
                 return (
                   <div key={slot.key} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                    <h3 className="font-semibold text-slate-800 mb-4">Image Slot {index + 1}</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Desktop Image */}
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-slate-600">Desktop View</span>
-                          <div className="flex gap-2">
-                            <label className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors cursor-pointer text-xs font-medium">
-                              {uploadingSlot === slot.key ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                              <input 
-                                type="file" 
-                                accept="image/*" 
-                                className="hidden" 
-                                onChange={(e) => handleHeroImageUpload(slot.key, e)}
-                                disabled={uploadingSlot === slot.key}
-                                ref={(el) => { fileInputRefs.current[slot.key] = el; }}
-                              />
-                            </label>
-                            {currentUrl && !isDeleted && (
-                              <button 
-                                onClick={() => handleHeroImageDelete(slot.key)}
-                                className="flex items-center gap-1 bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200 transition-colors text-xs font-medium"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        <div className="aspect-video rounded-lg overflow-hidden bg-slate-200 relative">
-                          {!displayUrl ? (
-                            <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm">No image</div>
-                          ) : (
-                            <img src={displayUrl} alt={`Desktop slot ${index + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                          )}
-                        </div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-slate-800">Image Slot {index + 1}</h3>
+                      <div className="flex gap-2">
+                        <label className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors cursor-pointer text-sm font-medium">
+                          {uploadingSlot === slot.key ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                          {uploadingSlot === slot.key ? 'Uploading...' : 'Upload'}
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => handleHeroImageUpload(slot.key, e)}
+                            disabled={uploadingSlot === slot.key}
+                            ref={(el) => { fileInputRefs.current[slot.key] = el; }}
+                          />
+                        </label>
+                        {currentUrl && !isDeleted && (
+                          <button 
+                            onClick={() => handleHeroImageDelete(slot.key)}
+                            className="flex items-center gap-2 bg-red-100 text-red-600 px-4 py-2 rounded-lg hover:bg-red-200 transition-colors text-sm font-medium"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Remove
+                          </button>
+                        )}
                       </div>
-
-                      {/* Mobile Image */}
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-slate-600">Mobile View</span>
-                          <div className="flex gap-2">
-                            <label className="flex items-center gap-1 bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors cursor-pointer text-xs font-medium">
-                              {uploadingSlot === slot.mobileKey ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                              <input 
-                                type="file" 
-                                accept="image/*" 
-                                className="hidden" 
-                                onChange={(e) => handleHeroImageUpload(slot.mobileKey, e)}
-                                disabled={uploadingSlot === slot.mobileKey}
-                                ref={(el) => { fileInputRefs.current[slot.mobileKey] = el; }}
-                              />
-                            </label>
-                            {currentMobileUrl && !isMobileDeleted && (
-                              <button 
-                                onClick={() => handleHeroImageDelete(slot.mobileKey)}
-                                className="flex items-center gap-1 bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200 transition-colors text-xs font-medium"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
+                    </div>
+                    <div className="aspect-w-16 aspect-h-9 rounded-lg overflow-hidden bg-slate-200 relative">
+                      {!displayUrl ? (
+                        <div className="absolute inset-0 flex items-center justify-center text-slate-400">
+                          No image selected
                         </div>
-                        <div className="aspect-[9/16] w-[120px] mx-auto rounded-lg overflow-hidden bg-slate-200 relative">
-                          {!displayMobileUrl ? (
-                            <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-xs text-center p-2">No image</div>
-                          ) : (
-                            <img src={displayMobileUrl} alt={`Mobile slot ${index + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                          )}
-                        </div>
-                      </div>
+                      ) : (
+                        <img 
+                          src={displayUrl} 
+                          alt={`Hero slot ${index + 1}`} 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                          loading="eager" fetchPriority="high" decoding="async"
+                        />
+                      )}
                     </div>
                   </div>
                 );

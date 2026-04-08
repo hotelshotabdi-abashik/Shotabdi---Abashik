@@ -73,15 +73,15 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    if (isOpen || isFullScreenNotification) {
+    if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = 'unset';
     }
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = 'unset';
     };
-  }, [isOpen, isFullScreenNotification]);
+  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -137,6 +137,17 @@ export default function Navbar() {
 
     return () => unsubscribe();
   }, [user, profile]);
+
+  useEffect(() => {
+    if (isOpen || isFullScreenNotification || isProfileOpen || isNotificationOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, isFullScreenNotification, isProfileOpen, isNotificationOpen]);
 
   const handleNotificationClick = () => {
     setIsNotificationOpen(!isNotificationOpen);

@@ -7,7 +7,7 @@ import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
-import SmoothScrolling from './components/SmoothScrolling';
+import Lenis from 'lenis';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ContentProvider, useContent } from './context/ContentContext';
@@ -33,6 +33,14 @@ const Admin = lazy(() => import('./pages/Admin'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+};
 
 const ProfileEnforcer = () => {
   const { user, profile, loading } = useAuth();
@@ -141,7 +149,7 @@ function AppContent() {
   return (
     <>
       <SEO />
-      <SmoothScrolling />
+      <ScrollToTop />
       <ProfileEnforcer />
       <div className="flex flex-col min-h-screen font-sans bg-slate-50 text-slate-900">
         {!isStandalonePage && <Navbar />}
@@ -154,6 +162,40 @@ function AppContent() {
 }
 
 export default function App() {
+  useEffect(() => {
+    const lenis = new Lenis({
+      lerp: 0.08, // Lower value for smoother, slightly slower interpolation
+      wheelMultiplier: 1.0, // Standard scroll distance per wheel tick
+      touchMultiplier: 1.5, // Smoother touch scrolling
+      smoothWheel: true,
+      syncTouch: true, // Syncs touch scroll for smoother mobile experience
+    });
+
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+
+    requestAnimationFrame(raf);
+
+    // Force Lenis to recalculate layout when DOM changes (fixes stuck scrolling)
+    const observer = new MutationObserver(() => {
+      lenis.resize();
+    });
+    
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true
+    });
+
+    return () => {
+      observer.disconnect();
+      lenis.destroy();
+    };
+  }, []);
+
   return (
     <HelmetProvider>
       <LanguageProvider>

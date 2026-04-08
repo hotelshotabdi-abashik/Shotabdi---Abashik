@@ -61,17 +61,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
   const handleClose = async () => {
     if (verificationStep && tempUser && !isForgotPassword) {
       await auth.signOut();

@@ -1,25 +1,6 @@
-# robots.txt for Hotel Shotabdi Abashik
-# Keywords: shotabdi abashik, hotel shotabdi, shotabdi hotel, kumargaon hotel nearby, adbul kahar, kodor, abdul kahar kodor, polina rahman hotel, kahar hotel, rose view, rose view sylhet, Grand Sylhet Hotel & Resort, Rose View Hotel, Nazimgarh Garden Resort, Hotel Noorjahan Grand, Hotel Star Pacific
-
 User-agent: *
 Allow: /
-Disallow: /admin/
-Disallow: /api/
-Disallow: /private/
-Disallow: /*?*
-
-# Allow search engines to index dynamic routes
-Allow: /gallery/*
-Allow: /restaurant/*
-Allow: /tour-desk/*
-Allow: /rooms/*
-
-User-agent: Googlebot
-Allow: /
-Disallow: /admin/
-
-User-agent: Bingbot
-Allow: /
-Disallow: /admin/
+Disallow: /admin
+Disallow: /api
 
 Sitemap: https://shotabdi-abashik.bd/sitemap.xml
