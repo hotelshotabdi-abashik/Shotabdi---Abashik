@@ -2,8 +2,7 @@
 
 /* Hardware Acceleration for Lenis */
 .main-content-wrapper {
-  will-change: transform;
-  transform: translate3d(0, 0, 0);
+  /* Removed transform: translate3d(0, 0, 0) as it breaks position: sticky and fixed elements */
 }
 
 /* Hide scrollbar globally */

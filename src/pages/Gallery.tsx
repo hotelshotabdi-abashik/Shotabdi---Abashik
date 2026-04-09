@@ -191,14 +191,21 @@ export default function Gallery() {
   const metaKeywords = `Hotel Shotabdi Abashik photos, Sylhet hotel gallery, room pictures Sylhet${allKeywords ? ', ' + allKeywords : ''}`;
 
   return (
-    <div className="bg-white py-16 min-h-screen relative">
-      <div className="fixed top-0 left-0 w-full z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/50 py-3 px-4 sm:px-6 lg:px-8 flex items-center shadow-sm">
-        <Link to="/" className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 sm:p-2.5 rounded-full transition-all flex-shrink-0 mr-4">
-          <ArrowLeft className="w-5 h-5" />
-        </Link>
-        <h2 className="text-lg sm:text-xl font-bold text-slate-900 truncate">
-          {t('গ্যালারি', 'Gallery')}
-        </h2>
+    <div className="bg-white min-h-screen relative pb-16">
+      {/* Modern Sticky Header */}
+      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center py-4 gap-4">
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <Link to="/" className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 sm:p-2.5 rounded-full transition-all flex-shrink-0">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
+                <EditableText contentKey="gallery_title" defaultText={t('গ্যালারি', 'Gallery')} />
+              </h2>
+            </div>
+          </div>
+        </div>
       </div>
       <Helmet>
         <title>Gallery | Hotel Shotabdi Abashik</title>
@@ -210,11 +217,8 @@ export default function Gallery() {
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
       </Helmet>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold text-slate-900 mb-4">
-            <EditableText contentKey="gallery_title" defaultText={t('গ্যালারি', 'Gallery')} />
-          </h1>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">
             <EditableText contentKey="gallery_subtitle" defaultText={t('আমাদের হোটেলের কিছু দৃশ্য।', 'Some views of our hotel.')} multiline />
           </p>

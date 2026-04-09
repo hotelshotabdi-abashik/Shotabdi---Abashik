@@ -4,7 +4,7 @@ import { db, auth } from '../firebase';
 import { useLanguage } from '../context/LanguageContext';
 import { EditableText } from '../components/EditableText';
 import { notifyAdminNewReview } from '../services/NotificationService';
-import { Star, User, Loader2, Link as LinkIcon, Check } from 'lucide-react';
+import { Star, User, Loader2, Link as LinkIcon, Check, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 
@@ -157,12 +157,35 @@ export const Reviews: React.FC = () => {
   const currentRatings = ratings.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <div className="pt-24 pb-16 min-h-screen bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 pb-16">
+      {/* Modern Sticky Header */}
+      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center py-4 gap-4">
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <Link to="/" className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 sm:p-2.5 rounded-full transition-all flex-shrink-0">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
+                <EditableText contentKey="reviews_page_title" defaultText={t('অতিথিদের মতামত', 'Guest Reviews')} />
+              </h2>
+            </div>
+            
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <button 
+                onClick={copyLink}
+                className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors text-sm font-medium"
+              >
+                {copied ? <Check className="w-4 h-4 text-green-600" /> : <LinkIcon className="w-4 h-4" />}
+                {copied ? t('কপি হয়েছে', 'Copied') : t('লিঙ্ক কপি করুন', 'Copy Link')}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-slate-900 mb-4">
-            <EditableText contentKey="reviews_page_title" defaultText={t('অতিথিদের মতামত', 'Guest Reviews')} />
-          </h1>
           <div className="w-24 h-1 bg-red-600 mx-auto rounded-full mb-6"></div>
           <p className="text-slate-600 max-w-2xl mx-auto">
             <EditableText contentKey="reviews_page_desc" defaultText={t('আমাদের সম্মানিত অতিথিদের অভিজ্ঞতা ও মতামত।', 'Experiences and reviews from our honorable guests.')} multiline />
@@ -175,13 +198,6 @@ export const Reviews: React.FC = () => {
             <h3 className="text-2xl font-bold text-slate-900">
               {t('আপনার অভিজ্ঞতা শেয়ার করুন', 'Share Your Experience')}
             </h3>
-            <button 
-              onClick={copyLink}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors text-sm font-medium"
-            >
-              {copied ? <Check className="w-4 h-4 text-green-600" /> : <LinkIcon className="w-4 h-4" />}
-              {copied ? t('কপি হয়েছে', 'Copied') : t('লিঙ্ক কপি করুন', 'Copy Link')}
-            </button>
           </div>
           
           {auth.currentUser ? (

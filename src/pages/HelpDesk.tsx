@@ -1,13 +1,29 @@
-import { MessageCircle, PhoneCall, Mail, Phone, Send } from 'lucide-react';
+import { MessageCircle, PhoneCall, Mail, Phone, Send, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { Link } from 'react-router-dom';
 
 export default function HelpDesk() {
   const { t } = useLanguage();
   return (
-    <div className="bg-slate-50 py-16 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="bg-slate-50 min-h-screen pb-16">
+      {/* Modern Sticky Header */}
+      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center py-4 gap-4">
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <Link to="/" className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 sm:p-2.5 rounded-full transition-all flex-shrink-0">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
+                {t('হেল্প ডেস্ক', 'Help Desk')}
+              </h2>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold text-slate-900 mb-4">{t('হেল্প ডেস্ক', 'Help Desk')}</h1>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">{t('যেকোনো প্রয়োজনে আমাদের সাথে যোগাযোগ করুন। আমরা ২৪ ঘণ্টা আপনার সেবায় নিয়োজিত।', 'Contact us for any need. We are at your service 24 hours a day.')}</p>
           <div className="w-24 h-1 bg-red-600 mx-auto rounded-full mt-6"></div>
         </div>

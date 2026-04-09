@@ -1,9 +1,10 @@
-import { MapPin, Phone, Mail, Globe, Clock, ShieldCheck, Users } from 'lucide-react';
+import { MapPin, Phone, Mail, Globe, Clock, ShieldCheck, Users, ArrowLeft } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { EditableText } from '../components/EditableText';
 import { Helmet } from 'react-helmet-async';
 import { useContent } from '../context/ContentContext';
 import { getOptimizedUrl } from '../lib/imageUtils';
+import { Link } from 'react-router-dom';
 
 export default function About() {
   const { t } = useLanguage();
@@ -17,7 +18,7 @@ export default function About() {
   );
 
   return (
-    <div className="bg-slate-50 py-16 min-h-screen">
+    <div className="bg-slate-50 min-h-screen pb-16">
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={description} />
@@ -28,11 +29,25 @@ export default function About() {
         <meta property="twitter:description" content={description} />
         <meta property="twitter:image" content={logoUrl} />
       </Helmet>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+      {/* Modern Sticky Header */}
+      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center py-4 gap-4">
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <Link to="/" className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 sm:p-2.5 rounded-full transition-all flex-shrink-0">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
+                <EditableText contentKey="about_title" defaultText={t('আমাদের সম্পর্কে', 'About Us')} />
+              </h2>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-extrabold text-slate-900 mb-4">
-            <EditableText contentKey="about_title" defaultText={t('আমাদের সম্পর্কে', 'About Us')} />
-          </h1>
           <div className="w-24 h-1 bg-red-600 mx-auto rounded-full mt-6"></div>
         </div>
 
