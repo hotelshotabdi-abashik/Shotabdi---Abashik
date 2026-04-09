@@ -73,17 +73,6 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       
@@ -139,7 +128,7 @@ export default function Navbar() {
   }, [user, profile]);
 
   useEffect(() => {
-    if (isOpen || isFullScreenNotification || isProfileOpen || isNotificationOpen) {
+    if (isOpen || isFullScreenNotification) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -147,7 +136,7 @@ export default function Navbar() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isOpen, isFullScreenNotification, isProfileOpen, isNotificationOpen]);
+  }, [isOpen, isFullScreenNotification]);
 
   const handleNotificationClick = () => {
     setIsNotificationOpen(!isNotificationOpen);

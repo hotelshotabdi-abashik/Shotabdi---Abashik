@@ -18,13 +18,8 @@ export default function SmoothScrolling() {
     }
 
     const lenis = new Lenis({
-      duration: 2.0,
-      easing: (t) => 1 - Math.pow(1 - t, 5),
-      orientation: 'vertical',
-      gestureOrientation: 'vertical',
-      smoothWheel: true,
-      wheelMultiplier: 0.8,
-      touchMultiplier: 2,
+      lerp: 0.1,
+      wheelMultiplier: 1,
     });
 
     lenisRef.current = lenis;
