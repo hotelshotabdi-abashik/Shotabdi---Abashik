@@ -73,17 +73,49 @@ export default function RoomDetails() {
   }
 
   const slugifiedName = room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+  const canonicalUrl = `https://shotabdi-abashik.bd/rooms/${slugifiedName}`;
 
   return (
     <div className="min-h-screen bg-slate-50 pt-24 pb-16">
       <Helmet>
         <title>{room.name} | Hotel Shotabdi Abashik</title>
         <meta name="description" content={room.description} />
+        <link rel="canonical" href={canonicalUrl} />
         <meta property="og:title" content={`${room.name} | Hotel Shotabdi Abashik`} />
         <meta property="og:description" content={room.description} />
         <meta property="og:image" content={room.imageUrl} />
-        <meta property="og:url" content={`https://hotelshotabdiabashik.com/rooms/${slugifiedName}`} />
+        <meta property="og:url" content={canonicalUrl} />
         <meta property="og:type" content="website" />
+        <meta property="twitter:card" content="summary_large_image" />
+        <meta property="twitter:title" content={`${room.name} | Hotel Shotabdi Abashik`} />
+        <meta property="twitter:description" content={room.description} />
+        <meta property="twitter:image" content={room.imageUrl} />
+        
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "HotelRoom",
+            "name": room.name,
+            "description": room.description,
+            "image": room.imageUrl,
+            "url": canonicalUrl,
+            "bed": {
+              "@type": "BedDetails",
+              "numberOfBeds": room.beds || 1,
+              "typeOfBed": room.bedType || "Double"
+            },
+            "occupancy": {
+              "@type": "QuantitativeValue",
+              "value": room.capacity || 2
+            },
+            "offers": {
+              "@type": "Offer",
+              "price": room.price,
+              "priceCurrency": "BDT",
+              "availability": room.isAvailable ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"
+            }
+          })}
+        </script>
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

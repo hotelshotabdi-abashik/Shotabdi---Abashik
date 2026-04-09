@@ -136,6 +136,67 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
+    // Dynamic Sitemap Generation
+    if (url.pathname === "/sitemap.xml") {
+      try {
+        const allContent = await fetchAllContent();
+        const baseUrl = "https://shotabdi-abashik.bd";
+        
+        let sitemapUrls = `
+          <url><loc>${baseUrl}/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+          <url><loc>${baseUrl}/rooms</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+          <url><loc>${baseUrl}/restaurant</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+          <url><loc>${baseUrl}/tourdesk</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+          <url><loc>${baseUrl}/gallery</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+          <url><loc>${baseUrl}/contact</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+        `;
+
+        // Add Rooms
+        const rooms = await fetchAllFromCollection('rooms');
+        rooms.forEach(room => {
+          const name = room.fields?.name?.stringValue || '';
+          if (name) {
+            const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+            sitemapUrls += `<url><loc>${baseUrl}/rooms/${slug}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+          }
+        });
+
+        // Add Restaurants
+        if (allContent.restaurants) {
+          allContent.restaurants.forEach(res => {
+            if (res.name) {
+              const slug = res.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+              sitemapUrls += `<url><loc>${baseUrl}/restaurant/${slug}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`;
+            }
+          });
+        }
+
+        // Add Tour Spots
+        if (allContent.tourSpots) {
+          allContent.tourSpots.forEach(spot => {
+            if (spot.name) {
+              const slug = spot.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+              sitemapUrls += `<url><loc>${baseUrl}/tour-desk/${slug}</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`;
+            }
+          });
+        }
+
+        const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  ${sitemapUrls}
+</urlset>`;
+
+        return new Response(sitemapXml, {
+          headers: {
+            "Content-Type": "application/xml; charset=utf-8",
+            "Cache-Control": "public, max-age=3600"
+          }
+        });
+      } catch (e) {
+        console.error("Sitemap generation error:", e);
+      }
+    }
+
     // 2. EMAIL ROUTE (FIXED)
     if (url.pathname === "/send-email" && request.method === "POST") {
       try {

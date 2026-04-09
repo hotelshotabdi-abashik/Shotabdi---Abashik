@@ -70,21 +70,42 @@ export default function GalleryPost() {
     );
   }
 
+  const pageTitle = `${currentImage.title || 'Gallery Post'} | Hotel Shotabdi Abashik`;
+  const pageDescription = currentImage.description || 'View this beautiful moment from Hotel Shotabdi Abashik.';
+  const canonicalUrl = `https://shotabdi-abashik.bd/gallery/${currentImage.id || id}`;
+
   return (
     <div className="min-h-screen bg-white pt-24 pb-12">
       <Helmet>
-        <title>{currentImage.title || 'Gallery Post'} | Hotel Shotabdi Abashik</title>
-        <meta name="description" content={currentImage.description || 'View this beautiful moment from Hotel Shotabdi Abashik.'} />
-        <meta property="og:title" content={currentImage.title || 'Gallery Post'} />
-        <meta property="og:description" content={currentImage.description || 'View this beautiful moment from Hotel Shotabdi Abashik.'} />
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={pageDescription} />
         <meta property="og:image" content={currentImage.url} />
+        <meta property="og:url" content={canonicalUrl} />
         <meta property="og:type" content="article" />
         
         {/* Twitter */}
         <meta property="twitter:card" content="summary_large_image" />
-        <meta property="twitter:title" content={`${currentImage.title || 'Gallery Post'} | Hotel Shotabdi Abashik`} />
-        <meta property="twitter:description" content={currentImage.description || 'View this beautiful moment from Hotel Shotabdi Abashik.'} />
+        <meta property="twitter:title" content={pageTitle} />
+        <meta property="twitter:description" content={pageDescription} />
         <meta property="twitter:image" content={currentImage.url} />
+
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ImageObject",
+            "contentUrl": currentImage.url,
+            "name": currentImage.title || "Hotel Shotabdi Abashik Gallery Image",
+            "description": pageDescription,
+            "url": canonicalUrl,
+            "author": {
+              "@type": "Organization",
+              "name": "Hotel Shotabdi Abashik"
+            }
+          })}
+        </script>
       </Helmet>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

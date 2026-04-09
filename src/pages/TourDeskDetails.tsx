@@ -48,15 +48,19 @@ export default function TourDeskDetails() {
 
   const pageTitle = `${spot.name} | Tourist Spot in Sylhet | Hotel Shotabdi Abashik`;
   const pageDescription = `${spot.type} located at ${spot.location}. Distance: ${spot.distance} from Hotel Shotabdi Abashik.`;
+  const slugifiedName = spot.name ? spot.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') : id;
+  const canonicalUrl = `https://shotabdi-abashik.bd/tour-desk/${slugifiedName}`;
 
   return (
     <div className="min-h-screen bg-white pt-24 pb-12">
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={canonicalUrl} />
         <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={pageDescription} />
         <meta property="og:image" content={spot.imageUrl} />
+        <meta property="og:url" content={canonicalUrl} />
         <meta property="og:type" content="article" />
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:title" content={pageTitle} />
@@ -69,6 +73,7 @@ export default function TourDeskDetails() {
             "@type": "TouristAttraction",
             "name": spot.name,
             "image": spot.imageUrl,
+            "url": canonicalUrl,
             "description": pageDescription,
             "address": {
               "@type": "PostalAddress",

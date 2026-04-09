@@ -47,15 +47,19 @@ export default function RestaurantDetails() {
 
   const pageTitle = `${restaurant.name} | Restaurant in Sylhet | Hotel Shotabdi Abashik`;
   const pageDescription = `${restaurant.type} restaurant located at ${restaurant.location}. Distance: ${restaurant.distance} from Hotel Shotabdi Abashik.`;
+  const slugifiedName = restaurant.name ? restaurant.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') : id;
+  const canonicalUrl = `https://shotabdi-abashik.bd/restaurant/${slugifiedName}`;
 
   return (
     <div className="min-h-screen bg-white pt-24 pb-12">
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={pageDescription} />
+        <link rel="canonical" href={canonicalUrl} />
         <meta property="og:title" content={pageTitle} />
         <meta property="og:description" content={pageDescription} />
         <meta property="og:image" content={restaurant.imageUrl} />
+        <meta property="og:url" content={canonicalUrl} />
         <meta property="og:type" content="article" />
         <meta property="twitter:card" content="summary_large_image" />
         <meta property="twitter:title" content={pageTitle} />
@@ -68,6 +72,7 @@ export default function RestaurantDetails() {
             "@type": "Restaurant",
             "name": restaurant.name,
             "image": restaurant.imageUrl,
+            "url": canonicalUrl,
             "address": {
               "@type": "PostalAddress",
               "streetAddress": restaurant.location,
