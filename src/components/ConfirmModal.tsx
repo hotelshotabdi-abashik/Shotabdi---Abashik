@@ -23,11 +23,28 @@ export function ConfirmModal({
 }: ConfirmModalProps) {
   const { t } = useLanguage();
 
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      window.dispatchEvent(new CustomEvent('stop-lenis'));
+    } else {
+      document.body.style.overflow = '';
+      window.dispatchEvent(new CustomEvent('start-lenis'));
+    }
+    return () => {
+      document.body.style.overflow = '';
+      window.dispatchEvent(new CustomEvent('start-lenis'));
+    };
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div 
+        data-lenis-prevent
+        className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200"
+      >
         <div className="p-6">
           <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4 mx-auto">
             <AlertTriangle className="w-6 h-6 text-red-600" />

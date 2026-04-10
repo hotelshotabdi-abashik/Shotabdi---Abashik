@@ -131,6 +131,20 @@ export default function Profile() {
     setShowTermsModal(true);
   };
 
+  useEffect(() => {
+    if (showTermsModal) {
+      document.body.style.overflow = 'hidden';
+      window.dispatchEvent(new CustomEvent('stop-lenis'));
+    } else {
+      document.body.style.overflow = '';
+      window.dispatchEvent(new CustomEvent('start-lenis'));
+    }
+    return () => {
+      document.body.style.overflow = '';
+      window.dispatchEvent(new CustomEvent('start-lenis'));
+    };
+  }, [showTermsModal]);
+
   const confirmSaveProfile = async () => {
     if (!user) return;
     setLoading(true);
@@ -568,7 +582,10 @@ export default function Profile() {
 
       {showTermsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+          <div 
+            data-lenis-prevent
+            className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
+          >
             <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
               <h3 className="text-2xl font-bold text-slate-900">
                 {t('শর্তাবলী', 'Terms and Conditions')}

@@ -36,11 +36,17 @@ export default function SmoothScrolling() {
       lenis.start();
     }, 100);
 
+    const stopCounter = { count: 0 };
+
     const handleStop = () => {
+      stopCounter.count++;
       if (lenisRef.current) lenisRef.current.stop();
     };
     const handleStart = () => {
-      if (lenisRef.current) lenisRef.current.start();
+      stopCounter.count = Math.max(0, stopCounter.count - 1);
+      if (stopCounter.count === 0 && lenisRef.current) {
+        lenisRef.current.start();
+      }
     };
     window.addEventListener('stop-lenis', handleStop);
     window.addEventListener('start-lenis', handleStart);

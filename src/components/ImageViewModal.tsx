@@ -11,6 +11,20 @@ interface ImageViewModalProps {
 export const ImageViewModal: React.FC<ImageViewModalProps> = ({ isOpen, onClose, selectedImage }) => {
   const { content } = useContent();
 
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      window.dispatchEvent(new CustomEvent('stop-lenis'));
+    } else {
+      document.body.style.overflow = '';
+      window.dispatchEvent(new CustomEvent('start-lenis'));
+    }
+    return () => {
+      document.body.style.overflow = '';
+      window.dispatchEvent(new CustomEvent('start-lenis'));
+    };
+  }, [isOpen]);
+
   if (!isOpen || !selectedImage) return null;
 
   const logoUrl = content.site_logo || 'https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png';
@@ -25,6 +39,7 @@ export const ImageViewModal: React.FC<ImageViewModalProps> = ({ isOpen, onClose,
       </button>
       
       <div 
+        data-lenis-prevent
         className="bg-white md:rounded-2xl overflow-hidden w-full h-[100dvh] md:h-auto md:max-h-[90vh] max-w-6xl flex flex-col md:flex-row shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
