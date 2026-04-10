@@ -9,6 +9,7 @@ import { getFirestore as getAdminFirestore, FieldValue } from 'firebase-admin/fi
 import { initializeApp as initClient } from 'firebase/app';
 import { getFirestore as getClientFirestore, collection, getDocs } from 'firebase/firestore';
 import fs from 'fs';
+import axios from 'axios';
 
 dotenv.config();
 
@@ -69,6 +70,27 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Image Proxy for social crawlers
+  app.get('/api/proxy-image', async (req, res) => {
+    const imageUrl = req.query.url as string;
+    if (!imageUrl) return res.status(400).send('URL is required');
+
+    try {
+      const response = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+      res.set('Content-Type', response.headers['content-type']);
+      res.set('Cache-Control', 'public, max-age=86400');
+      res.send(response.data);
+    } catch (error) {
+      console.error('Error proxying image:', error);
+      res.status(500).send('Error proxying image');
+    }
+  });
+
   // API Routes
   app.get('/robots.txt', (req, res) => {
     res.type('text/plain');
@@ -79,11 +101,30 @@ async function startServer() {
     try {
       let rooms: any[] = [];
       let content: any = {};
+      let designs: any[] = [];
+      let forms: any[] = [];
+      let marketplace: any[] = [];
 
       if (adminDb) {
         try {
           const roomsSnapshot = await adminDb.collection('rooms').get();
           rooms = roomsSnapshot.docs.map((doc: any) => doc.data());
+
+          // Fetch additional collections requested by user if they exist
+          try {
+            const designsSnap = await adminDb.collection('designs').get();
+            designs = designsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+          } catch (e) {}
+
+          try {
+            const formsSnap = await adminDb.collection('forms').get();
+            forms = formsSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+          } catch (e) {}
+
+          try {
+            const marketplaceSnap = await adminDb.collection('marketplace').get();
+            marketplace = marketplaceSnap.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+          } catch (e) {}
 
           const contentSnapshot = await adminDb.collection('content').get();
           contentSnapshot.docs.forEach((doc: any) => {
@@ -176,6 +217,19 @@ async function startServer() {
         xml += `  </url>\n`;
       });
 
+      // Dynamic collections from user request
+      designs.forEach(item => {
+        xml += `  <url>\n    <loc>${baseUrl}/designs/${item.id}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+      });
+
+      forms.forEach(item => {
+        xml += `  <url>\n    <loc>${baseUrl}/f/${item.id}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+      });
+
+      marketplace.forEach(item => {
+        xml += `  <url>\n    <loc>${baseUrl}/marketplace/${item.id}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+      });
+
       xml += `</urlset>`;
       res.header('Content-Type', 'application/xml');
       res.send(xml);
@@ -243,7 +297,7 @@ async function startServer() {
         let template = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf-8');
         template = await vite.transformIndexHtml(req.originalUrl, template);
         
-        const modifiedHtml = await injectMetaTags(req.originalUrl, template);
+        const modifiedHtml = await injectMetaTags(req.originalUrl, template, req.headers['user-agent'] || '');
         res.status(200).set({ 'Content-Type': 'text/html' }).end(modifiedHtml);
       } catch (e) {
         vite.ssrFixStacktrace(e as Error);
@@ -259,7 +313,7 @@ async function startServer() {
     app.get('*', async (req, res) => {
       try {
         const template = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
-        const modifiedHtml = await injectMetaTags(req.originalUrl, template);
+        const modifiedHtml = await injectMetaTags(req.originalUrl, template, req.headers['user-agent'] || '');
         res.status(200).set({ 'Content-Type': 'text/html' }).send(modifiedHtml);
       } catch (e) {
         res.sendFile(path.join(distPath, 'index.html'));
@@ -272,13 +326,18 @@ async function startServer() {
   });
 }
 
-async function injectMetaTags(url: string, html: string): Promise<string> {
+async function injectMetaTags(url: string, html: string, userAgent: string): Promise<string> {
   if (!adminDb) return html;
 
+  const isBot = /facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot|Googlebot|bingbot/i.test(userAgent);
+  const baseUrl = 'https://www.shotabdi-abashik.bd';
+
   try {
-    let title = '';
-    let description = '';
-    let imageUrl = '';
+    let title = 'Hotel Shotabdi Abashik | Premium Hotel in Sylhet';
+    let description = 'Experience luxury and comfort at Hotel Shotabdi Abashik, the premier choice for travelers in Sylhet, Bangladesh.';
+    let imageUrl = 'https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png';
+    let videoUrl = '';
+    let jsonLd: any = null;
 
     if (url.startsWith('/restaurant/')) {
       const id = url.split('/restaurant/')[1].split('?')[0];
@@ -293,6 +352,18 @@ async function injectMetaTags(url: string, html: string): Promise<string> {
           title = `${item.name} | Restaurant in Sylhet | Hotel Shotabdi Abashik`;
           description = `${item.type} restaurant located at ${item.location}. Distance: ${item.distance} from Hotel Shotabdi Abashik.`;
           imageUrl = item.imageUrl;
+          jsonLd = {
+            "@context": "https://schema.org",
+            "@type": "Restaurant",
+            "name": item.name,
+            "image": item.imageUrl,
+            "description": description,
+            "address": {
+              "@type": "PostalAddress",
+              "addressLocality": "Sylhet",
+              "addressCountry": "BD"
+            }
+          };
         }
       }
     } else if (url.startsWith('/tour-desk/')) {
@@ -309,6 +380,13 @@ async function injectMetaTags(url: string, html: string): Promise<string> {
           title = `${item.name} | Tour Desk | Hotel Shotabdi Abashik`;
           description = `${item.type} located at ${item.location}. Distance: ${item.distance} from Hotel Shotabdi Abashik.`;
           imageUrl = item.imageUrl;
+          jsonLd = {
+            "@context": "https://schema.org",
+            "@type": "Place",
+            "name": item.name,
+            "image": item.imageUrl,
+            "description": description
+          };
         }
       }
     } else if (url.startsWith('/gallery/')) {
@@ -321,6 +399,13 @@ async function injectMetaTags(url: string, html: string): Promise<string> {
           title = `${item.title || 'Gallery'} | Hotel Shotabdi Abashik`;
           description = item.description || 'View our gallery';
           imageUrl = item.imageUrl;
+          jsonLd = {
+            "@context": "https://schema.org",
+            "@type": "CreativeWork",
+            "name": title,
+            "image": imageUrl,
+            "description": description
+          };
         }
       }
     } else if (url.startsWith('/rooms/')) {
@@ -334,36 +419,81 @@ async function injectMetaTags(url: string, html: string): Promise<string> {
         title = `${item.name} | Rooms | Hotel Shotabdi Abashik`;
         description = `${item.description || 'View our room details'}. Price: ${item.price} BDT.`;
         imageUrl = item.imageUrl;
+        jsonLd = {
+          "@context": "https://schema.org",
+          "@type": "HotelRoom",
+          "name": item.name,
+          "image": item.imageUrl,
+          "description": description,
+          "offers": {
+            "@type": "Offer",
+            "price": item.price,
+            "priceCurrency": "BDT"
+          }
+        };
+      }
+    } else if (url.startsWith('/f/') || url.startsWith('/designs/') || url.startsWith('/marketplace/')) {
+      // Handle dynamic user-requested paths
+      const parts = url.split('/');
+      const collectionName = parts[1] === 'f' ? 'forms' : parts[1];
+      const id = parts[2]?.split('?')[0];
+      
+      if (id) {
+        try {
+          const docSnap = await adminDb.collection(collectionName).doc(id).get();
+          if (docSnap.exists) {
+            const item = docSnap.data();
+            title = `${item.title || item.name || id} | Hotel Shotabdi Abashik`;
+            description = item.description || `View ${collectionName} details`;
+            imageUrl = item.imageUrl || item.image || imageUrl;
+            videoUrl = item.videoUrl || '';
+            jsonLd = {
+              "@context": "https://schema.org",
+              "@type": collectionName === 'marketplace' ? "Product" : "CreativeWork",
+              "name": title,
+              "image": imageUrl,
+              "description": description
+            };
+          }
+        } catch (e) {}
       }
     }
 
-    if (title && imageUrl) {
-      // Replace existing meta tags or inject new ones
-      let newHtml = html;
-      
-      // Replace title
-      newHtml = newHtml.replace(/<title>(.*?)<\/title>/, `<title>${escapeXml(title)}</title>`);
-      
-      // Replace og:title
-      newHtml = newHtml.replace(/<meta property="og:title" content="(.*?)" \/>/, `<meta property="og:title" content="${escapeXml(title)}" />`);
-      
-      // Replace og:description
-      if (description) {
-        newHtml = newHtml.replace(/<meta property="og:description" content="(.*?)" \/>/, `<meta property="og:description" content="${escapeXml(description)}" />`);
-        newHtml = newHtml.replace(/<meta name="description" content="(.*?)" \/>/, `<meta name="description" content="${escapeXml(description)}" />`);
-      }
-      
-      // Replace og:image
-      newHtml = newHtml.replace(/<meta property="og:image" content="(.*?)" \/>/, `<meta property="og:image" content="${escapeXml(imageUrl)}" />`);
-      
-      // Replace og:url
-      newHtml = newHtml.replace(/<meta property="og:url" content="(.*?)" \/>/, `<meta property="og:url" content="${escapeXml('https://www.shotabdi-abashik.bd' + url)}" />`);
-      
-      // Replace twitter:image
-      newHtml = newHtml.replace(/<meta property="twitter:image" content="(.*?)" \/>/, `<meta property="twitter:image" content="${escapeXml(imageUrl)}" />`);
-      
-      return newHtml;
+    // Use image proxy for bots if requested
+    if (isBot && imageUrl) {
+      imageUrl = `${baseUrl}/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
     }
+
+    let newHtml = html;
+    
+    // Inject Meta Tags
+    const metaTags = `
+      <title>${escapeXml(title)}</title>
+      <meta name="description" content="${escapeXml(description)}" />
+      <meta property="og:title" content="${escapeXml(title)}" />
+      <meta property="og:description" content="${escapeXml(description)}" />
+      <meta property="og:image" content="${escapeXml(imageUrl)}" />
+      <meta property="og:url" content="${escapeXml(baseUrl + url)}" />
+      <meta property="og:type" content="website" />
+      ${videoUrl ? `<meta property="og:video" content="${escapeXml(videoUrl)}" />` : ''}
+      <meta property="fb:app_id" content="${process.env.FB_APP_ID || ''}" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content="${escapeXml(title)}" />
+      <meta name="twitter:description" content="${escapeXml(description)}" />
+      <meta name="twitter:image" content="${escapeXml(imageUrl)}" />
+      ${jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>` : ''}
+    `;
+
+    // Remove existing title and meta tags to avoid duplicates
+    newHtml = newHtml.replace(/<title>.*?<\/title>/i, '');
+    newHtml = newHtml.replace(/<meta name="description".*?>/i, '');
+    newHtml = newHtml.replace(/<meta property="og:.*?".*?>/gi, '');
+    newHtml = newHtml.replace(/<meta name="twitter:.*?".*?>/gi, '');
+
+    // Inject new tags into <head>
+    newHtml = newHtml.replace('<head>', `<head>\n${metaTags}`);
+
+    return newHtml;
   } catch (error) {
     console.error('Error injecting meta tags:', error);
   }
