@@ -81,17 +81,30 @@ async function startServer() {
       let content: any = {};
 
       if (adminDb) {
-        const roomsSnapshot = await adminDb.collection('rooms').get();
-        rooms = roomsSnapshot.docs.map((doc: any) => doc.data());
+        try {
+          const roomsSnapshot = await adminDb.collection('rooms').get();
+          rooms = roomsSnapshot.docs.map((doc: any) => doc.data());
 
-        const contentSnapshot = await adminDb.collection('content').get();
-        contentSnapshot.docs.forEach((doc: any) => {
-          try {
-            content[doc.id] = JSON.parse(doc.data().data);
-          } catch (e) {
-            content[doc.id] = doc.data().data;
+          const contentSnapshot = await adminDb.collection('content').get();
+          contentSnapshot.docs.forEach((doc: any) => {
+            try {
+              content[doc.id] = JSON.parse(doc.data().data);
+            } catch (e) {
+              content[doc.id] = doc.data().data;
+            }
+          });
+        } catch (dbError) {
+          console.error('Database error during sitemap generation:', dbError);
+          // Fallback to static sitemap if DB fails
+          if (fs.existsSync(path.join(process.cwd(), 'public', 'sitemap.xml'))) {
+            return res.sendFile(path.join(process.cwd(), 'public', 'sitemap.xml'));
           }
-        });
+        }
+      } else {
+        console.warn('adminDb not initialized for sitemap generation');
+        if (fs.existsSync(path.join(process.cwd(), 'public', 'sitemap.xml'))) {
+          return res.sendFile(path.join(process.cwd(), 'public', 'sitemap.xml'));
+        }
       }
 
       const baseUrl = 'https://www.shotabdi-abashik.bd';
@@ -108,15 +121,12 @@ async function startServer() {
       });
       xml += `  </url>\n`;
 
-      // Rooms Page
-      xml += `  <url>\n    <loc>${baseUrl}/rooms</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n`;
-      rooms.forEach(room => {
-        if (room.imageUrl) {
-          xml += `    <image:image>\n      <image:loc>${escapeXml(room.imageUrl)}</image:loc>\n      <image:title>${escapeXml(room.name)}</image:title>\n    </image:image>\n`;
-        }
+      // Main Pages
+      ['rooms', 'restaurant', 'tour-desk', 'gallery', 'about', 'help-desk', 'privacy-policy', 'terms-of-service', 'sitemap'].forEach(page => {
+        xml += `  <url>\n    <loc>${baseUrl}/${page}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
       });
-      xml += `  </url>\n`;
-      
+
+      // Individual Rooms
       rooms.forEach(room => {
         const slug = room.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
         if (slug) {
@@ -128,16 +138,8 @@ async function startServer() {
         }
       });
 
-      // Restaurant Page
-      xml += `  <url>\n    <loc>${baseUrl}/restaurant</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n`;
+      // Individual Restaurants
       const restaurants = content.restaurants || [];
-      restaurants.forEach((rest: any) => {
-        if (rest.imageUrl) {
-          xml += `    <image:image>\n      <image:loc>${escapeXml(rest.imageUrl)}</image:loc>\n      <image:title>${escapeXml(rest.name)}</image:title>\n    </image:image>\n`;
-        }
-      });
-      xml += `  </url>\n`;
-      
       restaurants.forEach((rest: any) => {
         if (rest.name) {
           const slug = rest.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -149,16 +151,8 @@ async function startServer() {
         }
       });
 
-      // Tour Desk Page
-      xml += `  <url>\n    <loc>${baseUrl}/tour-desk</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n`;
+      // Individual Tour Spots
       const tourSpots = content.tourSpots || [];
-      tourSpots.forEach((spot: any) => {
-        if (spot.imageUrl) {
-          xml += `    <image:image>\n      <image:loc>${escapeXml(spot.imageUrl)}</image:loc>\n      <image:title>${escapeXml(spot.name)}</image:title>\n    </image:image>\n`;
-        }
-      });
-      xml += `  </url>\n`;
-      
       tourSpots.forEach((spot: any) => {
         if (spot.name) {
           const slug = spot.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -170,17 +164,8 @@ async function startServer() {
         }
       });
 
-      // Gallery Page
-      xml += `  <url>\n    <loc>${baseUrl}/gallery</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n`;
+      // Gallery Items
       const galleryImages = content.galleryImages || [];
-      galleryImages.forEach((img: any) => {
-        const url = typeof img === 'string' ? img : img.url;
-        if (url) {
-          xml += `    <image:image>\n      <image:loc>${escapeXml(url)}</image:loc>\n    </image:image>\n`;
-        }
-      });
-      xml += `  </url>\n`;
-      
       galleryImages.forEach((img: any, index: number) => {
         const id = typeof img === 'string' ? index.toString() : (img.id || index.toString());
         const url = typeof img === 'string' ? img : img.url;
@@ -191,16 +176,14 @@ async function startServer() {
         xml += `  </url>\n`;
       });
 
-      // Static Pages
-      ['about', 'help-desk', 'privacy-policy', 'terms-of-service'].forEach(page => {
-        xml += `  <url>\n    <loc>${baseUrl}/${page}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
-      });
-
       xml += `</urlset>`;
       res.header('Content-Type', 'application/xml');
       res.send(xml);
     } catch (error) {
-      console.error('Error generating sitemap:', error);
+      console.error('Error generating dynamic sitemap:', error);
+      if (fs.existsSync(path.join(process.cwd(), 'public', 'sitemap.xml'))) {
+        return res.sendFile(path.join(process.cwd(), 'public', 'sitemap.xml'));
+      }
       res.status(500).send('Error generating sitemap');
     }
   });
@@ -372,6 +355,9 @@ async function injectMetaTags(url: string, html: string): Promise<string> {
       
       // Replace og:image
       newHtml = newHtml.replace(/<meta property="og:image" content="(.*?)" \/>/, `<meta property="og:image" content="${escapeXml(imageUrl)}" />`);
+      
+      // Replace og:url
+      newHtml = newHtml.replace(/<meta property="og:url" content="(.*?)" \/>/, `<meta property="og:url" content="${escapeXml('https://www.shotabdi-abashik.bd' + url)}" />`);
       
       // Replace twitter:image
       newHtml = newHtml.replace(/<meta property="twitter:image" content="(.*?)" \/>/, `<meta property="twitter:image" content="${escapeXml(imageUrl)}" />`);

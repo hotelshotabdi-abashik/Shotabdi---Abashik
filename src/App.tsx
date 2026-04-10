@@ -13,6 +13,7 @@ import { ContentProvider, useContent } from './context/ContentContext';
 import { getOptimizedUrl } from './lib/imageUtils';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import SmoothScrolling from './components/SmoothScrolling';
 
 const Home = lazy(() => import('./pages/Home'));
 const Rooms = lazy(() => import('./pages/Rooms'));
@@ -32,6 +33,7 @@ const Admin = lazy(() => import('./pages/Admin'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
+const Sitemap = lazy(() => import('./pages/Sitemap'));
 
 const ProfileEnforcer = () => {
   const { user, profile, loading } = useAuth();
@@ -140,6 +142,7 @@ function AppContent() {
   return (
     <>
       <SEO />
+      <SmoothScrolling />
       <ProfileEnforcer />
       <div className="flex flex-col min-h-screen font-sans bg-slate-50 text-slate-900">
         {!isStandalonePage && <Navbar />}
@@ -193,6 +196,7 @@ function MainContent({ isStandalonePage }: { isStandalonePage: boolean }) {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/sitemap" element={<Sitemap />} />
           <Route path="/my-stays" element={<ProtectedRoute><MyStays /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
           <Route path="*" element={<Navigate to="/" />} />
