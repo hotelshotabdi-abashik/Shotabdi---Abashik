@@ -49,7 +49,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
-      window.dispatchEvent(new CustomEvent('stop-lenis'));
       setIsLogin(true);
       setIsForgotPassword(false);
       setEmail('');
@@ -62,11 +61,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
       setTimeLeft(300);
     } else {
       document.body.style.overflow = '';
-      window.dispatchEvent(new CustomEvent('start-lenis'));
     }
     return () => {
       document.body.style.overflow = '';
-      window.dispatchEvent(new CustomEvent('start-lenis'));
     };
   }, [isOpen]);
 
@@ -293,7 +290,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, logoUrl
   return (
     <div className="fixed inset-0 z-[100000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
       <div 
-        data-lenis-prevent
         className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative animate-in zoom-in-95 duration-300"
       >
         <button 

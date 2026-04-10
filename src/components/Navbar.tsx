@@ -130,14 +130,11 @@ export default function Navbar() {
   useEffect(() => {
     if (isOpen || isFullScreenNotification) {
       document.body.style.overflow = 'hidden';
-      window.dispatchEvent(new CustomEvent('stop-lenis'));
     } else {
       document.body.style.overflow = '';
-      window.dispatchEvent(new CustomEvent('start-lenis'));
     }
     return () => {
       document.body.style.overflow = '';
-      window.dispatchEvent(new CustomEvent('start-lenis'));
     };
   }, [isOpen, isFullScreenNotification]);
 
@@ -507,7 +504,6 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isOpen && (
         <div 
-          data-lenis-prevent
           className="md:hidden fixed inset-0 z-[100000] bg-white flex flex-col h-[100dvh] overflow-hidden animate-in fade-in slide-in-from-right duration-300"
         >
           <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white sticky top-0 z-[100001]">
@@ -608,7 +604,6 @@ export default function Navbar() {
       {/* Full Screen Notifications Modal */}
       {isFullScreenNotification && (
         <div 
-          data-lenis-prevent
           className="fixed inset-0 z-[10000] bg-white flex flex-col"
         >
           <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-white sticky top-0">

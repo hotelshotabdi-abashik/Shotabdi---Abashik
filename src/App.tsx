@@ -13,7 +13,6 @@ import { ContentProvider, useContent } from './context/ContentContext';
 import { getOptimizedUrl } from './lib/imageUtils';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import SmoothScrolling from './components/SmoothScrolling';
 
 const Home = lazy(() => import('./pages/Home'));
 const Rooms = lazy(() => import('./pages/Rooms'));
@@ -142,7 +141,6 @@ function AppContent() {
   return (
     <>
       <SEO />
-      <SmoothScrolling />
       <ProfileEnforcer />
       <div className="flex flex-col min-h-screen font-sans bg-slate-50 text-slate-900">
         {!isStandalonePage && <Navbar />}
