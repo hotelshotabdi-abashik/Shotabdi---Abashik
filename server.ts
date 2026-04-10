@@ -70,6 +70,141 @@ async function startServer() {
   app.use(express.json());
 
   // API Routes
+  app.get('/robots.txt', (req, res) => {
+    res.type('text/plain');
+    res.send('User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api\n\nSitemap: https://www.shotabdi-abashik.bd/sitemap.xml');
+  });
+
+  app.get('/sitemap.xml', async (req, res) => {
+    try {
+      let rooms: any[] = [];
+      let content: any = {};
+
+      if (adminDb) {
+        const roomsSnapshot = await adminDb.collection('rooms').get();
+        rooms = roomsSnapshot.docs.map((doc: any) => doc.data());
+
+        const contentSnapshot = await adminDb.collection('content').get();
+        contentSnapshot.docs.forEach((doc: any) => {
+          try {
+            content[doc.id] = JSON.parse(doc.data().data);
+          } catch (e) {
+            content[doc.id] = doc.data().data;
+          }
+        });
+      }
+
+      const baseUrl = 'https://www.shotabdi-abashik.bd';
+      let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+      xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n`;
+
+      // Home Page
+      xml += `  <url>\n    <loc>${baseUrl}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n`;
+      const heroImages = [
+        content.home_hero_bg_1, content.home_hero_bg_2, content.home_hero_bg_3, content.home_hero_bg_4, content.home_hero_bg_5
+      ].filter(img => img && img !== 'deleted');
+      heroImages.forEach(img => {
+        xml += `    <image:image>\n      <image:loc>${escapeXml(img)}</image:loc>\n      <image:title>Hotel Shotabdi Abashik Hero</image:title>\n    </image:image>\n`;
+      });
+      xml += `  </url>\n`;
+
+      // Rooms Page
+      xml += `  <url>\n    <loc>${baseUrl}/rooms</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n`;
+      rooms.forEach(room => {
+        if (room.imageUrl) {
+          xml += `    <image:image>\n      <image:loc>${escapeXml(room.imageUrl)}</image:loc>\n      <image:title>${escapeXml(room.name)}</image:title>\n    </image:image>\n`;
+        }
+      });
+      xml += `  </url>\n`;
+      
+      rooms.forEach(room => {
+        const slug = room.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+        if (slug) {
+          xml += `  <url>\n    <loc>${baseUrl}/rooms/${slug}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n`;
+          if (room.imageUrl) {
+            xml += `    <image:image>\n      <image:loc>${escapeXml(room.imageUrl)}</image:loc>\n      <image:title>${escapeXml(room.name)}</image:title>\n    </image:image>\n`;
+          }
+          xml += `  </url>\n`;
+        }
+      });
+
+      // Restaurant Page
+      xml += `  <url>\n    <loc>${baseUrl}/restaurant</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n`;
+      const restaurants = content.restaurants || [];
+      restaurants.forEach((rest: any) => {
+        if (rest.imageUrl) {
+          xml += `    <image:image>\n      <image:loc>${escapeXml(rest.imageUrl)}</image:loc>\n      <image:title>${escapeXml(rest.name)}</image:title>\n    </image:image>\n`;
+        }
+      });
+      xml += `  </url>\n`;
+      
+      restaurants.forEach((rest: any) => {
+        if (rest.name) {
+          const slug = rest.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+          xml += `  <url>\n    <loc>${baseUrl}/restaurant/${slug}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n`;
+          if (rest.imageUrl) {
+            xml += `    <image:image>\n      <image:loc>${escapeXml(rest.imageUrl)}</image:loc>\n      <image:title>${escapeXml(rest.name)}</image:title>\n    </image:image>\n`;
+          }
+          xml += `  </url>\n`;
+        }
+      });
+
+      // Tour Desk Page
+      xml += `  <url>\n    <loc>${baseUrl}/tour-desk</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n`;
+      const tourSpots = content.tourSpots || [];
+      tourSpots.forEach((spot: any) => {
+        if (spot.imageUrl) {
+          xml += `    <image:image>\n      <image:loc>${escapeXml(spot.imageUrl)}</image:loc>\n      <image:title>${escapeXml(spot.name)}</image:title>\n    </image:image>\n`;
+        }
+      });
+      xml += `  </url>\n`;
+      
+      tourSpots.forEach((spot: any) => {
+        if (spot.name) {
+          const slug = spot.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+          xml += `  <url>\n    <loc>${baseUrl}/tour-desk/${slug}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n`;
+          if (spot.imageUrl) {
+            xml += `    <image:image>\n      <image:loc>${escapeXml(spot.imageUrl)}</image:loc>\n      <image:title>${escapeXml(spot.name)}</image:title>\n    </image:image>\n`;
+          }
+          xml += `  </url>\n`;
+        }
+      });
+
+      // Gallery Page
+      xml += `  <url>\n    <loc>${baseUrl}/gallery</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n`;
+      const galleryImages = content.galleryImages || [];
+      galleryImages.forEach((img: any) => {
+        const url = typeof img === 'string' ? img : img.url;
+        if (url) {
+          xml += `    <image:image>\n      <image:loc>${escapeXml(url)}</image:loc>\n    </image:image>\n`;
+        }
+      });
+      xml += `  </url>\n`;
+      
+      galleryImages.forEach((img: any, index: number) => {
+        const id = typeof img === 'string' ? index.toString() : (img.id || index.toString());
+        const url = typeof img === 'string' ? img : img.url;
+        xml += `  <url>\n    <loc>${baseUrl}/gallery/${id}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n`;
+        if (url) {
+          xml += `    <image:image>\n      <image:loc>${escapeXml(url)}</image:loc>\n    </image:image>\n`;
+        }
+        xml += `  </url>\n`;
+      });
+
+      // Static Pages
+      ['about', 'help-desk', 'privacy-policy', 'terms-of-service'].forEach(page => {
+        xml += `  <url>\n    <loc>${baseUrl}/${page}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.5</priority>\n  </url>\n`;
+      });
+
+      xml += `</urlset>`;
+      res.header('Content-Type', 'application/xml');
+      res.send(xml);
+    } catch (error) {
+      console.error('Error generating sitemap:', error);
+      res.status(500).send('Error generating sitemap');
+    }
+  });
+
   app.post('/api/send-email', async (req, res) => {
     const { to, subject, html } = req.body;
 
@@ -204,6 +339,18 @@ async function injectMetaTags(url: string, html: string): Promise<string> {
           description = item.description || 'View our gallery';
           imageUrl = item.imageUrl;
         }
+      }
+    } else if (url.startsWith('/rooms/')) {
+      const id = url.split('/rooms/')[1].split('?')[0];
+      const docSnap = await adminDb.collection('rooms').get();
+      const rooms = docSnap.docs.map((doc: any) => doc.data());
+      const item = rooms.find((r: any) => 
+        r.name && r.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') === id
+      );
+      if (item) {
+        title = `${item.name} | Rooms | Hotel Shotabdi Abashik`;
+        description = `${item.description || 'View our room details'}. Price: ${item.price} BDT.`;
+        imageUrl = item.imageUrl;
       }
     }
 

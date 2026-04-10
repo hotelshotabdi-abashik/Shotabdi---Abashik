@@ -79,6 +79,7 @@ export default function Rooms() {
   const { t } = useLanguage();
   const { editMode, content } = useContent();
   const { user, profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
   const navigate = useNavigate();
   const location = useLocation();
   
