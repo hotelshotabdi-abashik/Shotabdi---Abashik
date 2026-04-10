@@ -19,32 +19,34 @@ export default function SmoothScrolling() {
 
     // High performance smooth scroll configuration
     const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      autoRaf: true,
+      lerp: 0.1,
       orientation: 'vertical',
       gestureOrientation: 'vertical',
       smoothWheel: true,
-      syncTouch: true,
       wheelMultiplier: 1,
       touchMultiplier: 2,
       infinite: false,
     });
 
     lenisRef.current = lenis;
+    
+    // Ensure Lenis starts after a small delay to allow DOM to settle
+    const startTimeout = setTimeout(() => {
+      lenis.start();
+    }, 100);
 
-    const handleStop = () => lenis.stop();
-    const handleStart = () => lenis.start();
+    const handleStop = () => {
+      if (lenisRef.current) lenisRef.current.stop();
+    };
+    const handleStart = () => {
+      if (lenisRef.current) lenisRef.current.start();
+    };
     window.addEventListener('stop-lenis', handleStop);
     window.addEventListener('start-lenis', handleStart);
 
-    function raf(time: number) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-
-    requestAnimationFrame(raf);
-
     return () => {
+      clearTimeout(startTimeout);
       window.removeEventListener('stop-lenis', handleStop);
       window.removeEventListener('start-lenis', handleStart);
       lenis.destroy();
