@@ -212,7 +212,7 @@ export default function Profile() {
       Return ONLY a JSON object.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
+        model: "gemini-3.1-flash-lite-preview",
         contents: [
           {
             parts: [
