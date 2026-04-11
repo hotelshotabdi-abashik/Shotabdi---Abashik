@@ -147,20 +147,7 @@ service cloud.firestore {
                        (fieldUnchanged('role') || isAdmin()) &&
                        fieldUnchanged('uid') &&
                        fieldUnchanged('email') &&
-                       fieldUnchanged('createdAt') &&
-                       (
-                         resource.data.nidStatus != 'Verified' || 
-                         (
-                           fieldUnchanged('nidNumber') &&
-                           fieldUnchanged('nidStatus') &&
-                           fieldUnchanged('nidBanglaName') &&
-                           fieldUnchanged('fatherNameBangla') &&
-                           fieldUnchanged('motherNameBangla') &&
-                           fieldUnchanged('dateOfBirth') &&
-                           fieldUnchanged('legalName')
-                         ) || 
-                         isAdmin()
-                       )) || 
+                       fieldUnchanged('createdAt')) || 
                       isAdmin()
                     );
       
