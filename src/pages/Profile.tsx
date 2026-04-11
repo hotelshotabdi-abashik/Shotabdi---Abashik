@@ -4,12 +4,11 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { updatePassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X, AlertCircle } from 'lucide-react';
+import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import PhoneInput from '../components/PhoneInput';
 import { sendEmail } from '../services/NotificationService';
-import { extractNIDInfo } from '../services/VisionService';
 
 export default function Profile() {
   const { t } = useLanguage();
@@ -19,7 +18,6 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const nidInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('profileDraft');
@@ -112,55 +110,6 @@ export default function Profile() {
       toast.error(t('ছবি আপলোড করতে সমস্যা হয়েছে।', 'Failed to upload image.'));
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleNIDUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    setLoading(true);
-    try {
-      // 1. Convert to base64 for Vision API
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
-      const base64 = await base64Promise;
-
-      // 2. Extract info using Vision API
-      const extractedData = await extractNIDInfo(base64);
-      
-      if (extractedData) {
-        setFormData(prev => ({
-          ...prev,
-          legalName: extractedData.legalName || prev.legalName,
-          nidNumber: extractedData.nidNumber || prev.nidNumber
-        }));
-        
-        toast.success(t('NID থেকে তথ্য সংগ্রহ করা হয়েছে!', 'Information extracted from NID!'));
-        
-        // 3. Mark as verified in DB immediately or wait for save?
-        // User said "after extracting it will show verified account"
-        // Let's update the DB to mark as verified
-        const userRef = doc(db, 'users', user.uid);
-        await updateDoc(userRef, { 
-          isVerified: true,
-          legalName: extractedData.legalName || formData.legalName,
-          nidNumber: extractedData.nidNumber || formData.nidNumber
-        });
-        await refreshProfile();
-      } else {
-        toast.error(t('NID থেকে তথ্য সংগ্রহ করা সম্ভব হয়নি। অনুগ্রহ করে পরিষ্কার ছবি দিন।', 'Could not extract info from NID. Please provide a clear image.'));
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error(t('NID প্রসেস করতে সমস্যা হয়েছে।', 'Failed to process NID.'));
-    } finally {
-      setLoading(false);
-      // Clear input
-      if (nidInputRef.current) nidInputRef.current.value = '';
     }
   };
 
@@ -434,52 +383,9 @@ export default function Profile() {
 
                 {/* NID Info */}
                 <div className="space-y-4 pt-4">
-                  <div className="flex items-center justify-between border-b pb-2">
-                    <h3 className="text-lg font-bold text-slate-900 flex items-center">
-                      <FileText className="w-5 h-5 mr-2 text-red-600" /> {t('পরিচয়পত্র (NID)', 'Identity Card (NID)')}
-                    </h3>
-                    {profile?.isVerified && (
-                      <div className="flex items-center gap-1.5 bg-green-50 text-green-600 px-3 py-1 rounded-full text-xs font-bold border border-green-100">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        {t('ভেরিফাইড', 'Verified')}
-                      </div>
-                    )}
-                  </div>
-
-                  {!profile?.isVerified && (
-                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mb-4">
-                      <div className="flex gap-3">
-                        <div className="bg-blue-100 p-2 rounded-lg h-fit">
-                          <AlertCircle className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-blue-900 mb-1">
-                            {t('অ্যাকাউন্ট ভেরিফাই করুন', 'Verify Your Account')}
-                          </p>
-                          <p className="text-xs text-blue-700 mb-3 leading-relaxed">
-                            {t('আপনার NID কার্ডের সামনের দিকের ছবি আপলোড করুন। এটি স্বয়ংক্রিয়ভাবে আপনার তথ্য পূরণ করবে এবং আপনার অ্যাকাউন্ট ভেরিফাই করবে।', 'Upload your NID card front image. It will automatically fill your info and verify your account.')}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => nidInputRef.current?.click()}
-                            disabled={loading}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm font-bold shadow-sm"
-                          >
-                            <Camera className="w-4 h-4" />
-                            {t('NID আপলোড করুন', 'Upload NID')}
-                          </button>
-                          <input 
-                            type="file" 
-                            ref={nidInputRef} 
-                            onChange={handleNIDUpload} 
-                            className="hidden" 
-                            accept="image/*" 
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
+                  <h3 className="text-lg font-bold text-slate-900 border-b pb-2 flex items-center">
+                    <FileText className="w-5 h-5 mr-2 text-red-600" /> {t('পরিচয়পত্র (NID)', 'Identity Card (NID)')}
+                  </h3>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">{t('NID নম্বর', 'NID Number')} <span className="text-red-500">*</span></label>
                     <input 
@@ -488,7 +394,7 @@ export default function Profile() {
                       required 
                       value={formData.nidNumber} 
                       onChange={handleChange}
-                      disabled={timeRemaining !== null && timeRemaining > 0 || profile?.isVerified}
+                      disabled={timeRemaining !== null && timeRemaining > 0}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
                       placeholder={t("আপনার NID নম্বর", "Your NID number")}
                     />

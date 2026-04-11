@@ -7,9 +7,8 @@ import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
-import { AlertCircle } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { LanguageProvider, useLanguage } from './context/LanguageContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { ContentProvider, useContent } from './context/ContentContext';
 import { getOptimizedUrl } from './lib/imageUtils';
 import Navbar from './components/Navbar';
@@ -41,41 +40,12 @@ const ProfileEnforcer = () => {
   const location = useLocation();
 
   useEffect(() => {
-    if (!loading && user && profile && location.pathname !== '/profile') {
-      // Force profile completion AND verification for all users
-      if (!profile.profileCompleted || !profile.isVerified) {
-        navigate('/profile');
-      }
+    if (!loading && user && profile && !profile.profileCompleted && location.pathname !== '/profile') {
+      navigate('/profile');
     }
   }, [user, profile, loading, location, navigate]);
 
   return null;
-};
-
-const VerificationBanner = () => {
-  const { user, profile, loading } = useAuth();
-  const { t } = useLanguage();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  if (loading || !user || !profile || profile.isVerified || location.pathname === '/profile') {
-    return null;
-  }
-
-  return (
-    <div className="bg-red-600 text-white py-2 px-4 text-center text-sm font-bold animate-in slide-in-from-top duration-500 sticky top-0 z-[100001]">
-      <div className="max-w-7xl mx-auto flex items-center justify-center gap-3">
-        <AlertCircle className="w-4 h-4" />
-        <span>{t('আপনার অ্যাকাউন্ট ভেরিফাই করা নেই। অনুগ্রহ করে NID আপলোড করে ভেরিফাই করুন।', 'Your account is not verified. Please verify by uploading your NID.')}</span>
-        <button 
-          onClick={() => navigate('/profile')}
-          className="bg-white text-red-600 px-3 py-1 rounded-lg hover:bg-red-50 transition-colors text-xs"
-        >
-          {t('ভেরিফাই করুন', 'Verify Now')}
-        </button>
-      </div>
-    </div>
-  );
 };
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -171,7 +141,6 @@ function AppContent() {
   return (
     <>
       <SEO />
-      <VerificationBanner />
       <ProfileEnforcer />
       <div className="flex flex-col min-h-screen font-sans bg-slate-50 text-slate-900">
         {!isStandalonePage && <Navbar />}

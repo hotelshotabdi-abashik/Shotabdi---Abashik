@@ -19,7 +19,6 @@ export interface UserProfile {
   guardianName?: string;
   guardianPhone?: string;
   nidNumber?: string;
-  isVerified: boolean;
   createdAt: any;
   lastUpdated?: any;
 }
@@ -60,7 +59,6 @@ const GoogleOneTap = () => {
             email: result.user.email || '',
             role: adminEmails.includes(result.user.email || '') ? 'admin' : 'user',
             profileCompleted: false,
-            isVerified: false,
             displayName: result.user.displayName || '',
             photoURL: result.user.photoURL || '',
             createdAt: serverTimestamp()
