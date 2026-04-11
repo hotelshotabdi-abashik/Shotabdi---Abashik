@@ -16,6 +16,7 @@
         "guardianPhone": { "type": "string" },
         "nidNumber": { "type": "string" },
         "nidImageUrl": { "type": "string" },
+        "isVerified": { "type": "boolean" },
         "profileCompleted": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
         "lastUpdated": { "type": "string", "format": "date-time" }
