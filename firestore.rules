@@ -25,6 +25,7 @@ service cloud.firestore {
     //   - motherNameBangla: string (optional, max 200)
     //   - dateOfBirth: string (optional, max 20)
     //   - profileCompleted: bool (required)
+//   - lastExtractionTime: timestamp (optional)
     //   - createdAt: timestamp (required, immutable)
     //   - lastUpdated: timestamp (optional)
     //   - adminSecret: string (optional, for admins)
@@ -122,7 +123,8 @@ service cloud.firestore {
                (!('motherNameBangla' in data) || (data.motherNameBangla is string && data.motherNameBangla.size() <= 200)) &&
                (!('dateOfBirth' in data) || (data.dateOfBirth is string && data.dateOfBirth.size() <= 20)) &&
                (!('adminSecret' in data) || (data.adminSecret is string && data.adminSecret.size() <= 50)) &&
-               (!('lastUpdated' in data) || (data.lastUpdated is timestamp));
+               (!('lastUpdated' in data) || (data.lastUpdated is timestamp)) &&
+               (!('lastExtractionTime' in data) || (data.lastExtractionTime is timestamp));
       }
 
       allow read: if isOwner(userId) || isAdmin();
@@ -147,7 +149,14 @@ service cloud.firestore {
                        (fieldUnchanged('role') || isAdmin()) &&
                        fieldUnchanged('uid') &&
                        fieldUnchanged('email') &&
-                       fieldUnchanged('createdAt')) || 
+                       fieldUnchanged('createdAt') &&
+                       (
+                         // Manual changes allowed only within 30 minutes of extraction
+                         // EXCEPT if the update itself is an extraction (lastExtractionTime is changing)
+                         (request.resource.data.lastExtractionTime != resource.data.lastExtractionTime) ||
+                         (request.time < resource.data.lastExtractionTime + duration.value(30, 'm')) ||
+                         isAdmin()
+                       )) || 
                       isAdmin()
                     );
       

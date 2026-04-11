@@ -26,6 +26,7 @@ export interface UserProfile {
   dateOfBirth?: string;
   createdAt: any;
   lastUpdated?: any;
+  lastExtractionTime?: any;
 }
 
 interface AuthContextType {
