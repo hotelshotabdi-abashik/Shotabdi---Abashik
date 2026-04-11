@@ -4,23 +4,20 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { updatePassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X, Scan, Upload, AlertCircle, BadgeCheck } from 'lucide-react';
+import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import PhoneInput from '../components/PhoneInput';
 import { sendEmail } from '../services/NotificationService';
-import { GoogleGenAI, Type } from "@google/genai";
 
 export default function Profile() {
   const { t } = useLanguage();
   const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [isExtracting, setIsExtracting] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const nidInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('profileDraft');
@@ -36,12 +33,7 @@ export default function Profile() {
       phone: '',
       guardianName: '',
       guardianPhone: '',
-      nidNumber: '',
-      nidStatus: 'Unverified',
-      nidBanglaName: '',
-      fatherNameBangla: '',
-      motherNameBangla: '',
-      dateOfBirth: ''
+      nidNumber: ''
     };
   });
 
@@ -62,39 +54,20 @@ export default function Profile() {
           phone: profile.phone || '',
           guardianName: profile.guardianName || '',
           guardianPhone: profile.guardianPhone || '',
-          nidNumber: profile.nidNumber || '',
-          nidStatus: profile.nidStatus || 'Unverified',
-          nidBanglaName: profile.nidBanglaName || '',
-          fatherNameBangla: profile.fatherNameBangla || '',
-          motherNameBangla: profile.motherNameBangla || '',
-          dateOfBirth: profile.dateOfBirth || ''
+          nidNumber: profile.nidNumber || ''
         });
       }
 
-      if (profile.lastExtractionTime) {
-        const lastExtTime = typeof profile.lastExtractionTime === 'number' 
-          ? profile.lastExtractionTime 
-          : (profile.lastExtractionTime as any).toDate?.().getTime() || 0;
+      if (profile.lastUpdated) {
+        const lastUpdatedTime = typeof profile.lastUpdated === 'number' 
+          ? profile.lastUpdated 
+          : (profile.lastUpdated as any).toDate?.().getTime() || 0;
           
         const now = new Date().getTime();
-        const diff = now - lastExtTime;
+        const diff = now - lastUpdatedTime;
         const thirtyMins = 30 * 60 * 1000;
         if (diff < thirtyMins) {
           setTimeRemaining(Math.ceil((thirtyMins - diff) / 60000));
-          
-          // Set up interval to update timer
-          const interval = setInterval(() => {
-            const currentNow = new Date().getTime();
-            const currentDiff = currentNow - lastExtTime;
-            if (currentDiff < thirtyMins) {
-              setTimeRemaining(Math.ceil((thirtyMins - currentDiff) / 60000));
-            } else {
-              setTimeRemaining(null);
-              clearInterval(interval);
-            }
-          }, 60000);
-          
-          return () => clearInterval(interval);
         } else {
           setTimeRemaining(null);
         }
@@ -144,6 +117,11 @@ export default function Profile() {
     e.preventDefault();
     if (!user) return;
 
+    if (timeRemaining !== null && timeRemaining > 0) {
+      toast.error(t(`অনুগ্রহ করে আরও ${timeRemaining} মিনিট অপেক্ষা করুন।`, `Please wait ${timeRemaining} more minutes.`));
+      return;
+    }
+
     const { legalName, phone, guardianName, guardianPhone, nidNumber } = formData;
     if (!legalName.trim() || !phone.trim() || !guardianName.trim() || !guardianPhone.trim() || !nidNumber.trim()) {
       toast.error(t("সবগুলো তথ্য পূরণ করা বাধ্যতামূলক।", "All fields are required."));
@@ -151,159 +129,6 @@ export default function Profile() {
     }
 
     setShowTermsModal(true);
-  };
-
-  const [nidFront, setNidFront] = useState<File | null>(null);
-
-  const handleNidVerification = async (selectedFile?: File) => {
-    const fileToProcess = selectedFile || nidFront;
-    if (!user || !fileToProcess) {
-      toast.error(t('অনুগ্রহ করে NID-এর সামনের ছবি নির্বাচন করুন।', 'Please select the front image of your NID.'));
-      return;
-    }
-
-    setIsExtracting(true);
-    const toastId = toast.loading(t('NID ভেরিফাই করা হচ্ছে...', 'Verifying NID...'));
-
-    let frontUrl = '';
-
-    try {
-      const { uploadToR2, deleteFromR2 } = await import('../lib/r2');
-      
-      // 1. Upload to R2
-      frontUrl = await uploadToR2(fileToProcess, `nid/${user.uid}/front`);
-
-      // 2. Extract with Gemini (5-check logic for maximum accuracy)
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      
-      const getBase64 = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = () => resolve((reader.result as string).split(',')[1]);
-          reader.onerror = error => reject(error);
-        });
-      };
-
-      const frontBase64 = await getBase64(fileToProcess);
-      
-      const extractionPrompt = `You are an expert OCR system specialized in Bangladeshi National ID (NID) cards.
-      Analyze the provided image of the FRONT side of a Bangladeshi NID card.
-      
-      CRITICAL INSTRUCTIONS:
-      - Look for these specific labels on the card:
-        * "নাম" or "Name" (Bangla name is usually above the English name)
-        * "পিতা" or "Father"
-        * "মাতা" or "Mother"
-        * "জন্ম তারিখ" or "Date of Birth"
-        * "ID NO" or "NID No"
-      - Focus on the white/light text areas which contain the primary information.
-      - Perform 5 internal cross-checks to ensure the Bangla characters are extracted with 100% accuracy.
-      - If a field is partially obscured, try to infer it from context or leave it as an empty string.
-      
-      Extract these fields:
-      1. Name (English) -> legalName
-      2. Name (Bangla) -> nidBanglaName
-      3. Father's Name (Bangla) -> fatherNameBangla
-      4. Mother's Name (Bangla) -> motherNameBangla
-      5. NID No -> nidNumber
-      6. Date of Birth -> dateOfBirth (Format: DD MMM YYYY, e.g., 01 JAN 1990)
-      
-      Return ONLY a JSON object.`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite-preview",
-        contents: [
-          {
-            parts: [
-              { text: extractionPrompt },
-              { inlineData: { data: frontBase64, mimeType: fileToProcess.type } }
-            ]
-          }
-        ],
-        config: {
-          systemInstruction: "You are a specialized document extraction AI. Your goal is to extract text from Bangladeshi NID cards with extreme precision, especially for Bangla script.",
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              legalName: { type: Type.STRING },
-              nidBanglaName: { type: Type.STRING },
-              fatherNameBangla: { type: Type.STRING },
-              motherNameBangla: { type: Type.STRING },
-              nidNumber: { type: Type.STRING },
-              dateOfBirth: { type: Type.STRING }
-            },
-            required: ["legalName", "nidBanglaName", "fatherNameBangla", "motherNameBangla", "nidNumber", "dateOfBirth"]
-          }
-        }
-      });
-
-      const data = JSON.parse(response.text);
-
-      // 3. Update Firestore
-      const userRef = doc(db, 'users', user.uid);
-      const updateData = {
-        ...data,
-        nidStatus: 'Verified',
-        profileCompleted: true,
-        lastExtractionTime: serverTimestamp(),
-        lastUpdated: serverTimestamp()
-      };
-
-      await updateDoc(userRef, updateData);
-      await refreshProfile();
-
-      // 4. Delete from R2
-      await deleteFromR2(frontUrl);
-
-      // 5. Send Congratulations Email
-      if (user.email) {
-        await sendEmail({
-          to: user.email,
-          subject: 'Congratulations! Your NID is Verified - Hotel Shotabdi',
-          type: 'notification',
-          html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-              <div style="background-color: #dc2626; padding: 20px; text-align: center; color: white;">
-                <h1 style="margin: 0;">Congratulations!</h1>
-              </div>
-              <div style="padding: 30px; color: #1e293b; line-height: 1.6;">
-                <p>Dear ${data.legalName},</p>
-                <p>We are pleased to inform you that your NID verification is successful. Your account is now fully verified and ready for all services at Hotel Shotabdi Abashik.</p>
-                <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <p style="margin: 0 0 10px 0;"><strong>Verified Information:</strong></p>
-                  <ul style="margin: 0; padding-left: 20px;">
-                    <li>Name: ${data.legalName} (${data.nidBanglaName})</li>
-                    <li>NID: ${data.nidNumber}</li>
-                    <li>DOB: ${data.dateOfBirth}</li>
-                  </ul>
-                </div>
-                <p>Thank you for choosing Hotel Shotabdi Abashik.</p>
-                <p>Best regards,<br>The Management Team</p>
-              </div>
-            </div>
-          `
-        });
-      }
-
-      toast.success(t('অভিনন্দন! আপনার NID সফলভাবে ভেরিফাই করা হয়েছে।', 'Congratulations! Your NID has been successfully verified.'), { id: toastId });
-      setNidFront(null);
-    } catch (error: any) {
-      console.error(error);
-      
-      // Delete images if they were uploaded but extraction failed
-      const { deleteFromR2 } = await import('../lib/r2');
-      if (frontUrl) await deleteFromR2(frontUrl);
-
-      if (error.status === 429 || error.message?.includes('429') || error.message?.includes('quota')) {
-        toast.error(t('সিস্টেম এখন ব্যস্ত। অনুগ্রহ করে ২৪ ঘণ্টা পর আবার চেষ্টা করুন।', 'System is busy. Please try again after 24 hours.'), { id: toastId, duration: 5000 });
-      } else {
-        toast.error(t('ভেরিফিকেশন ব্যর্থ হয়েছে। অনুগ্রহ করে পরিষ্কার ছবি আপলোড করুন।', 'Verification failed. Please upload clear images.'), { id: toastId });
-      }
-    } finally {
-      setIsExtracting(false);
-    }
   };
 
   useEffect(() => {
@@ -322,19 +147,11 @@ export default function Profile() {
     setLoading(true);
     try {
       const userRef = doc(db, 'users', user.uid);
-      
-      const updateData: any = {
+      await updateDoc(userRef, {
         ...formData,
         profileCompleted: true,
         lastUpdated: serverTimestamp()
-      };
-
-      // Increment manualEditCount if not verified
-      if (profile?.nidStatus !== 'Verified') {
-        updateData.manualEditCount = (profile?.manualEditCount || 0) + 1;
-      }
-
-      await updateDoc(userRef, updateData);
+      });
       await refreshProfile();
       localStorage.removeItem('profileDraft');
       toast.success(t("প্রোফাইল সফলভাবে আপডেট করা হয়েছে!", "Profile updated successfully!"));
@@ -420,9 +237,6 @@ export default function Profile() {
     language: navigator.language
   };
 
-  const canEdit = (profile?.nidStatus === 'Verified' && timeRemaining !== null && timeRemaining > 0) || 
-                  (profile?.nidStatus !== 'Verified' && (profile?.manualEditCount || 0) < 1);
-
   return (
     <div className="bg-slate-50 py-10 sm:py-16 min-h-screen">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -499,99 +313,42 @@ export default function Profile() {
                   </div>
                 )}
 
-
+                {timeRemaining !== null && timeRemaining > 0 && (
+                  <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-xl mb-6 text-sm">
+                    {t('আপনি সম্প্রতি প্রোফাইল আপডেট করেছেন। আবার আপডেট করতে', 'You have recently updated your profile. To update again wait')} <strong>{timeRemaining} {t('মিনিট', 'minutes')}</strong> {t('অপেক্ষা করুন।', '')}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Personal Info */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <h3 className="text-lg font-bold text-slate-900 flex items-center">
+                  {/* Personal Info */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold text-slate-900 border-b pb-2 flex items-center">
                       <User className="w-5 h-5 mr-2 text-red-600" /> {t('ব্যক্তিগত তথ্য', 'Personal Information')}
                     </h3>
-                    {formData.nidStatus === 'Verified' && (
-                      <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-lg text-xs font-bold">
-                        <BadgeCheck className="w-4 h-4" />
-                        {t('ভেরিফাইড', 'Verified')}
-                      </div>
-                    )}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('পূর্ণ নাম (NID অনুযায়ী)', 'Full Name (As per NID)')} <span className="text-red-500">*</span></label>
+                      <input 
+                        type="text" 
+                        name="legalName" 
+                        required 
+                        value={formData.legalName} 
+                        onChange={handleChange}
+                        disabled={timeRemaining !== null && timeRemaining > 0}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
+                        placeholder={t("আপনার পূর্ণ নাম", "Your full name")}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('মোবাইল নম্বর', 'Mobile Number')} <span className="text-red-500">*</span></label>
+                      <PhoneInput 
+                        name="phone" 
+                        required 
+                        value={formData.phone} 
+                        onChange={(val) => setFormData({ ...formData, phone: val })}
+                        disabled={timeRemaining !== null && timeRemaining > 0}
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('পূর্ণ নাম (NID অনুযায়ী)', 'Full Name (As per NID)')} <span className="text-red-500">*</span></label>
-                    <input 
-                      type="text" 
-                      name="legalName" 
-                      required 
-                      value={formData.legalName} 
-                      onChange={handleChange}
-                      disabled={!canEdit}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
-                      placeholder={t("আপনার পূর্ণ নাম", "Your full name")}
-                    />
-                  </div>
-                  {formData.nidStatus === 'Verified' && (
-                    <>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">{t('নাম (বাংলায়)', 'Name (Bangla)')}</label>
-                        <input 
-                          type="text" 
-                          name="nidBanglaName"
-                          value={formData.nidBanglaName} 
-                          onChange={handleChange}
-                          disabled={!canEdit}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-1">{t('পিতার নাম (বাংলায়)', "Father's Name (Bangla)")}</label>
-                          <input 
-                            type="text" 
-                            name="fatherNameBangla"
-                            value={formData.fatherNameBangla} 
-                            onChange={handleChange}
-                            disabled={!canEdit}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-1">{t('মাতার নাম (বাংলায়)', "Mother's Name (Bangla)")}</label>
-                          <input 
-                            type="text" 
-                            name="motherNameBangla"
-                            value={formData.motherNameBangla} 
-                            onChange={handleChange}
-                            disabled={!canEdit}
-                            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">{t('জন্ম তারিখ', 'Date of Birth')}</label>
-                        <input 
-                          type="text" 
-                          name="dateOfBirth"
-                          value={formData.dateOfBirth} 
-                          onChange={handleChange}
-                          disabled={!canEdit}
-                          className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 text-[10px] text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100">
-                        <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                        <p>{t('আপনি যেকোনো সময় NID স্ক্যান করে তথ্য আপডেট করতে পারবেন। ম্যানুয়াল পরিবর্তনের জন্য স্ক্যান করার পর ৩০ মিনিট সময় পাবেন।', 'You can scan NID anytime. You have 30 minutes to manually edit after scanning.')}</p>
-                      </div>
-                    </>
-                  )}
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('মোবাইল নম্বর', 'Mobile Number')} <span className="text-red-500">*</span></label>
-                    <PhoneInput 
-                      name="phone" 
-                      required 
-                      value={formData.phone} 
-                      onChange={(val) => setFormData({ ...formData, phone: val })}
-                    />
-                  </div>
-                </div>
 
                   {/* Guardian Info */}
                   <div className="space-y-4">
@@ -606,6 +363,7 @@ export default function Profile() {
                         required 
                         value={formData.guardianName} 
                         onChange={handleChange}
+                        disabled={timeRemaining !== null && timeRemaining > 0}
                         className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
                         placeholder={t("পিতা/মাতা/স্বামীর নাম", "Father/Mother/Husband's Name")}
                       />
@@ -617,6 +375,7 @@ export default function Profile() {
                         required 
                         value={formData.guardianPhone} 
                         onChange={(val) => setFormData({ ...formData, guardianPhone: val })}
+                        disabled={timeRemaining !== null && timeRemaining > 0}
                       />
                     </div>
                   </div>
@@ -624,56 +383,9 @@ export default function Profile() {
 
                 {/* NID Info */}
                 <div className="space-y-4 pt-4">
-                  <div className="flex justify-between items-center border-b pb-2">
-                    <h3 className="text-lg font-bold text-slate-900 flex items-center">
-                      <FileText className="w-5 h-5 mr-2 text-red-600" /> {t('পরিচয়পত্র (NID)', 'Identity Card (NID)')}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      {formData.nidStatus === 'Verified' && (
-                        <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-lg text-[10px] font-bold">
-                          <BadgeCheck className="w-3 h-3" />
-                          {t('ভেরিফাইড', 'Verified')}
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => nidInputRef.current?.click()}
-                        disabled={isExtracting}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
-                      >
-                        {isExtracting ? (
-                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <Scan className="w-3 h-3" />
-                        )}
-                        {t('স্ক্যান NID', 'Scan NID')}
-                      </button>
-                      <input 
-                        ref={nidInputRef}
-                        type="file" 
-                        className="hidden" 
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setNidFront(file);
-                            // Trigger verification immediately after selection
-                            setTimeout(() => handleNidVerification(file), 100);
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {timeRemaining !== null && timeRemaining > 0 && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5" />
-                      <p className="text-xs text-amber-800">
-                        {t('ম্যানুয়াল পরিবর্তনের জন্য আরও', 'Manual edit available for')} <strong>{timeRemaining} {t('মিনিট', 'minutes')}</strong> {t('সময় আছে।', 'left.')}
-                      </p>
-                    </div>
-                  )}
-
+                  <h3 className="text-lg font-bold text-slate-900 border-b pb-2 flex items-center">
+                    <FileText className="w-5 h-5 mr-2 text-red-600" /> {t('পরিচয়পত্র (NID)', 'Identity Card (NID)')}
+                  </h3>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">{t('NID নম্বর', 'NID Number')} <span className="text-red-500">*</span></label>
                     <input 
@@ -682,7 +394,7 @@ export default function Profile() {
                       required 
                       value={formData.nidNumber} 
                       onChange={handleChange}
-                      disabled={!canEdit}
+                      disabled={timeRemaining !== null && timeRemaining > 0}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
                       placeholder={t("আপনার NID নম্বর", "Your NID number")}
                     />
@@ -692,7 +404,7 @@ export default function Profile() {
                 <div className="pt-6">
                   <button 
                     type="submit" 
-                    disabled={loading}
+                    disabled={loading || (timeRemaining !== null && timeRemaining > 0)}
                     className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
                   >
                     {loading ? t('সংরক্ষণ করা হচ্ছে...', 'Saving...') : (

@@ -15,16 +15,10 @@
         "guardianName": { "type": "string" },
         "guardianPhone": { "type": "string" },
         "nidNumber": { "type": "string" },
-        "nidStatus": { "type": "string", "enum": ["Unverified", "Pending", "Verified", "Rejected"] },
-        "nidBanglaName": { "type": "string" },
-        "fatherNameBangla": { "type": "string" },
-        "motherNameBangla": { "type": "string" },
-        "dateOfBirth": { "type": "string" },
+        "nidImageUrl": { "type": "string" },
         "profileCompleted": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
-        "lastUpdated": { "type": "string", "format": "date-time" },
-        "lastExtractionTime": { "type": "string", "format": "date-time" },
-        "manualEditCount": { "type": "integer" }
+        "lastUpdated": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "email", "role", "profileCompleted", "createdAt"]
     },

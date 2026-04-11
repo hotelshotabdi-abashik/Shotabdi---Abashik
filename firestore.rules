@@ -19,13 +19,8 @@ service cloud.firestore {
     //   - guardianName: string (optional, max 100)
     //   - guardianPhone: string (optional, max 20)
     //   - nidNumber: string (optional, max 30)
-    //   - nidStatus: string (optional, ['Unverified', 'Pending', 'Verified', 'Rejected'])
-    //   - nidBanglaName: string (optional, max 200)
-    //   - fatherNameBangla: string (optional, max 200)
-    //   - motherNameBangla: string (optional, max 200)
-    //   - dateOfBirth: string (optional, max 20)
+    //   - nidImageUrl: string (optional, url format)
     //   - profileCompleted: bool (required)
-//   - lastExtractionTime: timestamp (optional)
     //   - createdAt: timestamp (required, immutable)
     //   - lastUpdated: timestamp (optional)
     //   - adminSecret: string (optional, for admins)
@@ -117,14 +112,9 @@ service cloud.firestore {
                (!('guardianName' in data) || (data.guardianName is string && data.guardianName.size() <= 100)) &&
                (!('guardianPhone' in data) || (data.guardianPhone is string && data.guardianPhone.size() <= 20)) &&
                (!('nidNumber' in data) || (data.nidNumber is string && data.nidNumber.size() <= 30)) &&
-               (!('nidStatus' in data) || (data.nidStatus in ['Unverified', 'Pending', 'Verified', 'Rejected'])) &&
-               (!('nidBanglaName' in data) || (data.nidBanglaName is string && data.nidBanglaName.size() <= 200)) &&
-               (!('fatherNameBangla' in data) || (data.fatherNameBangla is string && data.fatherNameBangla.size() <= 200)) &&
-               (!('motherNameBangla' in data) || (data.motherNameBangla is string && data.motherNameBangla.size() <= 200)) &&
-               (!('dateOfBirth' in data) || (data.dateOfBirth is string && data.dateOfBirth.size() <= 20)) &&
+               (!('nidImageUrl' in data) || (data.nidImageUrl is string && (data.nidImageUrl == "" || isValidUrl(data.nidImageUrl)))) &&
                (!('adminSecret' in data) || (data.adminSecret is string && data.adminSecret.size() <= 50)) &&
-               (!('lastUpdated' in data) || (data.lastUpdated is timestamp)) &&
-               (!('lastExtractionTime' in data) || (data.lastExtractionTime is timestamp));
+               (!('lastUpdated' in data) || (data.lastUpdated is timestamp));
       }
 
       allow read: if isOwner(userId) || isAdmin();
@@ -149,15 +139,7 @@ service cloud.firestore {
                        (fieldUnchanged('role') || isAdmin()) &&
                        fieldUnchanged('uid') &&
                        fieldUnchanged('email') &&
-                       fieldUnchanged('createdAt') &&
-                       (
-                         // Manual changes allowed only within 30 minutes of extraction
-                         // OR if it's the first manual edit before any extraction
-                         (request.resource.data.lastExtractionTime != resource.data.lastExtractionTime) ||
-                         (request.time < resource.data.lastExtractionTime + duration.value(30, 'm')) ||
-                         (resource.data.nidStatus != 'Verified' && (!('manualEditCount' in resource.data) || resource.data.manualEditCount < 1)) ||
-                         isAdmin()
-                       )) || 
+                       fieldUnchanged('createdAt')) || 
                       isAdmin()
                     );
       

@@ -19,15 +19,8 @@ export interface UserProfile {
   guardianName?: string;
   guardianPhone?: string;
   nidNumber?: string;
-  nidStatus?: 'Unverified' | 'Pending' | 'Verified' | 'Rejected';
-  nidBanglaName?: string;
-  fatherNameBangla?: string;
-  motherNameBangla?: string;
-  dateOfBirth?: string;
   createdAt: any;
   lastUpdated?: any;
-  lastExtractionTime?: any;
-  manualEditCount?: number;
 }
 
 interface AuthContextType {
