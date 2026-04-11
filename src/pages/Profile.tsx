@@ -4,20 +4,23 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { updatePassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X } from 'lucide-react';
+import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X, Scan } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import PhoneInput from '../components/PhoneInput';
 import { sendEmail } from '../services/NotificationService';
+import { GoogleGenAI, Type } from "@google/genai";
 
 export default function Profile() {
   const { t } = useLanguage();
   const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const nidInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('profileDraft');
@@ -129,6 +132,65 @@ export default function Profile() {
     }
 
     setShowTermsModal(true);
+  };
+
+  const handleNidScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsExtracting(true);
+    const toastId = toast.loading(t('NID থেকে তথ্য সংগ্রহ করা হচ্ছে...', 'Extracting information from NID...'));
+
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64Data = (reader.result as string).split(',')[1];
+          
+          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+          const response = await ai.models.generateContent({
+            model: "gemini-3-flash-preview",
+            contents: [
+              {
+                parts: [
+                  { text: "Extract the Full Name (Legal Name) and NID Number from this Bangladeshi NID image. The NID number is usually a 10, 13, or 17 digit number. The name is usually in both Bangla and English, please provide the English name. Return the data in JSON format." },
+                  { inlineData: { data: base64Data, mimeType: file.type } }
+                ]
+              }
+            ],
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  legalName: { type: Type.STRING },
+                  nidNumber: { type: Type.STRING }
+                },
+                required: ["legalName", "nidNumber"]
+              }
+            }
+          });
+
+          const data = JSON.parse(response.text);
+          setFormData(prev => ({
+            ...prev,
+            legalName: data.legalName || prev.legalName,
+            nidNumber: data.nidNumber || prev.nidNumber
+          }));
+          toast.success(t('তথ্য সফলভাবে এক্সট্রাক্ট করা হয়েছে!', 'Information extracted successfully!'), { id: toastId });
+        } catch (err) {
+          console.error(err);
+          toast.error(t('তথ্য এক্সট্রাক্ট করতে সমস্যা হয়েছে। অনুগ্রহ করে ম্যানুয়ালি টাইপ করুন।', 'Failed to extract information. Please type manually.'), { id: toastId });
+        } finally {
+          setIsExtracting(false);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error(error);
+      toast.error(t('একটি সমস্যা হয়েছে।', 'An error occurred.'), { id: toastId });
+      setIsExtracting(false);
+    }
   };
 
   useEffect(() => {
@@ -383,9 +445,31 @@ export default function Profile() {
 
                 {/* NID Info */}
                 <div className="space-y-4 pt-4">
-                  <h3 className="text-lg font-bold text-slate-900 border-b pb-2 flex items-center">
-                    <FileText className="w-5 h-5 mr-2 text-red-600" /> {t('পরিচয়পত্র (NID)', 'Identity Card (NID)')}
-                  </h3>
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center">
+                      <FileText className="w-5 h-5 mr-2 text-red-600" /> {t('পরিচয়পত্র (NID)', 'Identity Card (NID)')}
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => nidInputRef.current?.click()}
+                      disabled={isExtracting || (timeRemaining !== null && timeRemaining > 0)}
+                      className="text-xs bg-red-50 text-red-700 px-3 py-1.5 rounded-lg font-bold hover:bg-red-100 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                    >
+                      {isExtracting ? (
+                        <div className="w-3 h-3 border-2 border-red-700/30 border-t-red-700 rounded-full animate-spin" />
+                      ) : (
+                        <Scan className="w-3.5 h-3.5" />
+                      )}
+                      {t('NID স্ক্যান করুন', 'Scan NID')}
+                    </button>
+                    <input 
+                      type="file" 
+                      ref={nidInputRef} 
+                      onChange={handleNidScan} 
+                      className="hidden" 
+                      accept="image/*" 
+                    />
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">{t('NID নম্বর', 'NID Number')} <span className="text-red-500">*</span></label>
                     <input 
