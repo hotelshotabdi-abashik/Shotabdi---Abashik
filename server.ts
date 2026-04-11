@@ -91,6 +91,41 @@ async function startServer() {
     }
   });
 
+  // Vision API Proxy
+  app.post('/api/vision/extract', async (req, res) => {
+    const { imageBase64 } = req.body;
+    const apiKey = process.env.VITE_GOOGLE_CLOUD_VISION_API_KEY || 'AIzaSyDSoX9cA-KrrXaGM8f3EmcpNOsWsBIkY3A';
+
+    if (!imageBase64) return res.status(400).json({ error: 'Image data is required' });
+
+    try {
+      const response = await axios.post(
+        `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
+        {
+          requests: [
+            {
+              image: {
+                content: imageBase64.replace(/^data:image\/\w+;base64,/, ''),
+              },
+              features: [
+                {
+                  type: 'TEXT_DETECTION',
+                },
+              ],
+            },
+          ],
+        }
+      );
+
+      res.json(response.data);
+    } catch (error: any) {
+      console.error('Vision API Proxy Error:', error.response?.data || error.message);
+      const status = error.response?.status || 500;
+      const message = error.response?.data?.error?.message || 'Error communicating with Vision API';
+      res.status(status).json({ error: message, details: error.response?.data });
+    }
+  });
+
   // API Routes
   app.get('/robots.txt', (req, res) => {
     res.type('text/plain');

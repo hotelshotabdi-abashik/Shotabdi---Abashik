@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from 'sonner';
 
 const VISION_API_KEY = import.meta.env.VITE_GOOGLE_CLOUD_VISION_API_KEY || 'AIzaSyDSoX9cA-KrrXaGM8f3EmcpNOsWsBIkY3A';
 
@@ -10,23 +11,9 @@ export interface NIDData {
 
 export const extractNIDInfo = async (imageBase64: string): Promise<NIDData | null> => {
   try {
-    const response = await axios.post(
-      `https://vision.googleapis.com/v1/images:annotate?key=${VISION_API_KEY}`,
-      {
-        requests: [
-          {
-            image: {
-              content: imageBase64.split(',')[1] || imageBase64,
-            },
-            features: [
-              {
-                type: 'TEXT_DETECTION',
-              },
-            ],
-          },
-        ],
-      }
-    );
+    const response = await axios.post('/api/vision/extract', {
+      imageBase64,
+    });
 
     const textAnnotations = response.data.responses[0]?.textAnnotations;
     if (!textAnnotations || textAnnotations.length === 0) {
@@ -77,17 +64,9 @@ export const extractNIDInfo = async (imageBase64: string): Promise<NIDData | nul
       nidNumber,
     };
   } catch (error: any) {
-    if (error.response) {
-      console.error('Vision API Error Response:', error.response.data);
-      // Check for specific 403 messages
-      const message = error.response.data?.error?.message || '';
-      if (message.includes('API key not valid')) {
-        console.error('The API key provided is invalid.');
-      } else if (message.includes('Cloud Vision API has not been used')) {
-        console.error('The Cloud Vision API is not enabled in your Google Cloud Console.');
-      }
-    }
-    console.error('Vision API Error:', error.message);
+    const message = error.response?.data?.error || error.message;
+    console.error('Vision API Proxy Error:', message);
+    toast.error(`Verification Error: ${message}`);
     return null;
   }
 };
