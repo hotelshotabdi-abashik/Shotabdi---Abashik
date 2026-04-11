@@ -187,31 +187,42 @@ export default function Profile() {
 
       const frontBase64 = await getBase64(fileToProcess);
       
-      const extractionPrompt = `Extract the following information from this Bangladeshi NID front image. 
-      CRITICAL: Please analyze the image carefully, focusing on the white/light text areas. 
-      Perform 5 internal checks to ensure the Bangla names are 100% accurate.
+      const extractionPrompt = `You are an expert OCR system specialized in Bangladeshi National ID (NID) cards.
+      Analyze the provided image of the FRONT side of a Bangladeshi NID card.
       
-      Fields to extract:
-      1. Full Name (English) as legalName
-      2. Full Name (Bangla) as nidBanglaName
-      3. Father's Name (Bangla) as fatherNameBangla
-      4. Mother's Name (Bangla) as motherNameBangla
-      5. NID Number as nidNumber
-      6. Date of Birth as dateOfBirth (format: DD MMM YYYY)
+      CRITICAL INSTRUCTIONS:
+      - Look for these specific labels on the card:
+        * "নাম" or "Name" (Bangla name is usually above the English name)
+        * "পিতা" or "Father"
+        * "মাতা" or "Mother"
+        * "জন্ম তারিখ" or "Date of Birth"
+        * "ID NO" or "NID No"
+      - Focus on the white/light text areas which contain the primary information.
+      - Perform 5 internal cross-checks to ensure the Bangla characters are extracted with 100% accuracy.
+      - If a field is partially obscured, try to infer it from context or leave it as an empty string.
       
-      Return the data in JSON format. If you cannot extract a field, leave it as an empty string.`;
+      Extract these fields:
+      1. Name (English) -> legalName
+      2. Name (Bangla) -> nidBanglaName
+      3. Father's Name (Bangla) -> fatherNameBangla
+      4. Mother's Name (Bangla) -> motherNameBangla
+      5. NID No -> nidNumber
+      6. Date of Birth -> dateOfBirth (Format: DD MMM YYYY, e.g., 01 JAN 1990)
+      
+      Return ONLY a JSON object.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3.1-pro-preview",
         contents: [
           {
             parts: [
               { text: extractionPrompt },
-              { inlineData: { data: frontBase64, mimeType: nidFront.type } }
+              { inlineData: { data: frontBase64, mimeType: fileToProcess.type } }
             ]
           }
         ],
         config: {
+          systemInstruction: "You are a specialized document extraction AI. Your goal is to extract text from Bangladeshi NID cards with extreme precision, especially for Bangla script.",
           responseMimeType: "application/json",
           responseSchema: {
             type: Type.OBJECT,
