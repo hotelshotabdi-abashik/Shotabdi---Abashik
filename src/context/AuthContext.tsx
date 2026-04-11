@@ -27,6 +27,7 @@ export interface UserProfile {
   createdAt: any;
   lastUpdated?: any;
   lastExtractionTime?: any;
+  manualEditCount?: number;
 }
 
 interface AuthContextType {

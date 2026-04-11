@@ -212,7 +212,7 @@ export default function Profile() {
       Return ONLY a JSON object.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-pro-preview",
+        model: "gemini-3-flash-preview",
         contents: [
           {
             parts: [
@@ -323,11 +323,16 @@ export default function Profile() {
     try {
       const userRef = doc(db, 'users', user.uid);
       
-      const updateData = {
+      const updateData: any = {
         ...formData,
         profileCompleted: true,
         lastUpdated: serverTimestamp()
       };
+
+      // Increment manualEditCount if not verified
+      if (profile?.nidStatus !== 'Verified') {
+        updateData.manualEditCount = (profile?.manualEditCount || 0) + 1;
+      }
 
       await updateDoc(userRef, updateData);
       await refreshProfile();
@@ -414,6 +419,9 @@ export default function Profile() {
     platform: navigator.platform,
     language: navigator.language
   };
+
+  const canEdit = (profile?.nidStatus === 'Verified' && timeRemaining !== null && timeRemaining > 0) || 
+                  (profile?.nidStatus !== 'Verified' && (profile?.manualEditCount || 0) < 1);
 
   return (
     <div className="bg-slate-50 py-10 sm:py-16 min-h-screen">
@@ -515,7 +523,7 @@ export default function Profile() {
                       required 
                       value={formData.legalName} 
                       onChange={handleChange}
-                      disabled={timeRemaining === null || timeRemaining <= 0}
+                      disabled={!canEdit}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
                       placeholder={t("আপনার পূর্ণ নাম", "Your full name")}
                     />
@@ -529,7 +537,7 @@ export default function Profile() {
                           name="nidBanglaName"
                           value={formData.nidBanglaName} 
                           onChange={handleChange}
-                          disabled={timeRemaining === null || timeRemaining <= 0}
+                          disabled={!canEdit}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
                         />
                       </div>
@@ -541,7 +549,7 @@ export default function Profile() {
                             name="fatherNameBangla"
                             value={formData.fatherNameBangla} 
                             onChange={handleChange}
-                            disabled={timeRemaining === null || timeRemaining <= 0}
+                            disabled={!canEdit}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
                           />
                         </div>
@@ -552,7 +560,7 @@ export default function Profile() {
                             name="motherNameBangla"
                             value={formData.motherNameBangla} 
                             onChange={handleChange}
-                            disabled={timeRemaining === null || timeRemaining <= 0}
+                            disabled={!canEdit}
                             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
                           />
                         </div>
@@ -564,7 +572,7 @@ export default function Profile() {
                           name="dateOfBirth"
                           value={formData.dateOfBirth} 
                           onChange={handleChange}
-                          disabled={timeRemaining === null || timeRemaining <= 0}
+                          disabled={!canEdit}
                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
                         />
                       </div>
@@ -674,7 +682,7 @@ export default function Profile() {
                       required 
                       value={formData.nidNumber} 
                       onChange={handleChange}
-                      disabled={timeRemaining === null || timeRemaining <= 0}
+                      disabled={!canEdit}
                       className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
                       placeholder={t("আপনার NID নম্বর", "Your NID number")}
                     />

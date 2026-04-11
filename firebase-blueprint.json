@@ -23,7 +23,8 @@
         "profileCompleted": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
         "lastUpdated": { "type": "string", "format": "date-time" },
-        "lastExtractionTime": { "type": "string", "format": "date-time" }
+        "lastExtractionTime": { "type": "string", "format": "date-time" },
+        "manualEditCount": { "type": "integer" }
       },
       "required": ["uid", "email", "role", "profileCompleted", "createdAt"]
     },

@@ -152,9 +152,10 @@ service cloud.firestore {
                        fieldUnchanged('createdAt') &&
                        (
                          // Manual changes allowed only within 30 minutes of extraction
-                         // EXCEPT if the update itself is an extraction (lastExtractionTime is changing)
+                         // OR if it's the first manual edit before any extraction
                          (request.resource.data.lastExtractionTime != resource.data.lastExtractionTime) ||
                          (request.time < resource.data.lastExtractionTime + duration.value(30, 'm')) ||
+                         (resource.data.nidStatus != 'Verified' && (!('manualEditCount' in resource.data) || resource.data.manualEditCount < 1)) ||
                          isAdmin()
                        )) || 
                       isAdmin()
