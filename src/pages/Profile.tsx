@@ -4,7 +4,7 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { updatePassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X, Scan } from 'lucide-react';
+import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X, Scan, Upload, AlertCircle, BadgeCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import PhoneInput from '../components/PhoneInput';
@@ -36,7 +36,12 @@ export default function Profile() {
       phone: '',
       guardianName: '',
       guardianPhone: '',
-      nidNumber: ''
+      nidNumber: '',
+      nidStatus: 'Unverified',
+      nidBanglaName: '',
+      fatherNameBangla: '',
+      motherNameBangla: '',
+      dateOfBirth: ''
     };
   });
 
@@ -57,7 +62,12 @@ export default function Profile() {
           phone: profile.phone || '',
           guardianName: profile.guardianName || '',
           guardianPhone: profile.guardianPhone || '',
-          nidNumber: profile.nidNumber || ''
+          nidNumber: profile.nidNumber || '',
+          nidStatus: profile.nidStatus || 'Unverified',
+          nidBanglaName: profile.nidBanglaName || '',
+          fatherNameBangla: profile.fatherNameBangla || '',
+          motherNameBangla: profile.motherNameBangla || '',
+          dateOfBirth: profile.dateOfBirth || ''
         });
       }
 
@@ -134,61 +144,144 @@ export default function Profile() {
     setShowTermsModal(true);
   };
 
-  const handleNidScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const [nidFront, setNidFront] = useState<File | null>(null);
+  const [nidBack, setNidBack] = useState<File | null>(null);
+
+  const handleNidVerification = async () => {
+    if (!user || !nidFront || !nidBack) {
+      toast.error(t('অনুগ্রহ করে NID-এর সামনের এবং পিছনের ছবি নির্বাচন করুন।', 'Please select both front and back images of NID.'));
+      return;
+    }
 
     setIsExtracting(true);
-    const toastId = toast.loading(t('NID থেকে তথ্য সংগ্রহ করা হচ্ছে...', 'Extracting information from NID...'));
+    const toastId = toast.loading(t('NID ভেরিফাই করা হচ্ছে...', 'Verifying NID...'));
+
+    let frontUrl = '';
+    let backUrl = '';
 
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        try {
-          const base64Data = (reader.result as string).split(',')[1];
-          
-          const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-          const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: [
-              {
-                parts: [
-                  { text: "Extract the Full Name (Legal Name) and NID Number from this Bangladeshi NID image. The NID number is usually a 10, 13, or 17 digit number. The name is usually in both Bangla and English, please provide the English name. Return the data in JSON format." },
-                  { inlineData: { data: base64Data, mimeType: file.type } }
-                ]
-              }
-            ],
-            config: {
-              responseMimeType: "application/json",
-              responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                  legalName: { type: Type.STRING },
-                  nidNumber: { type: Type.STRING }
-                },
-                required: ["legalName", "nidNumber"]
-              }
-            }
-          });
+      const { uploadToR2, deleteFromR2 } = await import('../lib/r2');
+      
+      // 1. Upload to R2
+      frontUrl = await uploadToR2(nidFront, `nid/${user.uid}/front`);
+      backUrl = await uploadToR2(nidBack, `nid/${user.uid}/back`);
 
-          const data = JSON.parse(response.text);
-          setFormData(prev => ({
-            ...prev,
-            legalName: data.legalName || prev.legalName,
-            nidNumber: data.nidNumber || prev.nidNumber
-          }));
-          toast.success(t('তথ্য সফলভাবে এক্সট্রাক্ট করা হয়েছে!', 'Information extracted successfully!'), { id: toastId });
-        } catch (err) {
-          console.error(err);
-          toast.error(t('তথ্য এক্সট্রাক্ট করতে সমস্যা হয়েছে। অনুগ্রহ করে ম্যানুয়ালি টাইপ করুন।', 'Failed to extract information. Please type manually.'), { id: toastId });
-        } finally {
-          setIsExtracting(false);
-        }
+      // 2. Extract with Gemini
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      
+      const getBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve((reader.result as string).split(',')[1]);
+          reader.onerror = error => reject(error);
+        });
       };
-      reader.readAsDataURL(file);
-    } catch (error) {
+
+      const frontBase64 = await getBase64(nidFront);
+      const backBase64 = await getBase64(nidBack);
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [
+          {
+            parts: [
+              { text: `Extract the following information from these Bangladeshi NID images (Front and Back):
+              1. Full Name (English) as legalName
+              2. Full Name (Bangla) as nidBanglaName
+              3. Father's Name (Bangla) as fatherNameBangla
+              4. Mother's Name (Bangla) as motherNameBangla
+              5. NID Number as nidNumber
+              6. Date of Birth as dateOfBirth (format: DD MMM YYYY)
+              
+              Return the data in JSON format. If you cannot extract a field, leave it as an empty string.` },
+              { inlineData: { data: frontBase64, mimeType: nidFront.type } },
+              { inlineData: { data: backBase64, mimeType: nidBack.type } }
+            ]
+          }
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              legalName: { type: Type.STRING },
+              nidBanglaName: { type: Type.STRING },
+              fatherNameBangla: { type: Type.STRING },
+              motherNameBangla: { type: Type.STRING },
+              nidNumber: { type: Type.STRING },
+              dateOfBirth: { type: Type.STRING }
+            },
+            required: ["legalName", "nidBanglaName", "fatherNameBangla", "motherNameBangla", "nidNumber", "dateOfBirth"]
+          }
+        }
+      });
+
+      const data = JSON.parse(response.text);
+
+      // 3. Update Firestore
+      const userRef = doc(db, 'users', user.uid);
+      const updateData = {
+        ...data,
+        nidStatus: 'Verified',
+        profileCompleted: true,
+        lastUpdated: serverTimestamp()
+      };
+
+      await updateDoc(userRef, updateData);
+      await refreshProfile();
+
+      // 4. Delete from R2
+      await deleteFromR2(frontUrl);
+      await deleteFromR2(backUrl);
+
+      // 5. Send Congratulations Email
+      if (user.email) {
+        await sendEmail({
+          to: user.email,
+          subject: 'Congratulations! Your NID is Verified - Hotel Shotabdi',
+          type: 'notification',
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+              <div style="background-color: #dc2626; padding: 20px; text-align: center; color: white;">
+                <h1 style="margin: 0;">Congratulations!</h1>
+              </div>
+              <div style="padding: 30px; color: #1e293b; line-height: 1.6;">
+                <p>Dear ${data.legalName},</p>
+                <p>We are pleased to inform you that your NID verification is successful. Your account is now fully verified and ready for all services at Hotel Shotabdi Abashik.</p>
+                <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                  <p style="margin: 0 0 10px 0;"><strong>Verified Information:</strong></p>
+                  <ul style="margin: 0; padding-left: 20px;">
+                    <li>Name: ${data.legalName} (${data.nidBanglaName})</li>
+                    <li>NID: ${data.nidNumber}</li>
+                    <li>DOB: ${data.dateOfBirth}</li>
+                  </ul>
+                </div>
+                <p>Thank you for choosing Hotel Shotabdi Abashik.</p>
+                <p>Best regards,<br>The Management Team</p>
+              </div>
+            </div>
+          `
+        });
+      }
+
+      toast.success(t('অভিনন্দন! আপনার NID সফলভাবে ভেরিফাই করা হয়েছে।', 'Congratulations! Your NID has been successfully verified.'), { id: toastId });
+      setNidFront(null);
+      setNidBack(null);
+    } catch (error: any) {
       console.error(error);
-      toast.error(t('একটি সমস্যা হয়েছে।', 'An error occurred.'), { id: toastId });
+      
+      // Delete images if they were uploaded but extraction failed
+      const { deleteFromR2 } = await import('../lib/r2');
+      if (frontUrl) await deleteFromR2(frontUrl);
+      if (backUrl) await deleteFromR2(backUrl);
+
+      if (error.status === 429 || error.message?.includes('429') || error.message?.includes('quota')) {
+        toast.error(t('সিস্টেম এখন ব্যস্ত। অনুগ্রহ করে ২৪ ঘণ্টা পর আবার চেষ্টা করুন।', 'System is busy. Please try again after 24 hours.'), { id: toastId, duration: 5000 });
+      } else {
+        toast.error(t('ভেরিফিকেশন ব্যর্থ হয়েছে। অনুগ্রহ করে পরিষ্কার ছবি আপলোড করুন।', 'Verification failed. Please upload clear images.'), { id: toastId });
+      }
+    } finally {
       setIsExtracting(false);
     }
   };
@@ -382,35 +475,85 @@ export default function Profile() {
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Personal Info */}
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-bold text-slate-900 border-b pb-2 flex items-center">
+                {/* Personal Info */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center border-b pb-2">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center">
                       <User className="w-5 h-5 mr-2 text-red-600" /> {t('ব্যক্তিগত তথ্য', 'Personal Information')}
                     </h3>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('পূর্ণ নাম (NID অনুযায়ী)', 'Full Name (As per NID)')} <span className="text-red-500">*</span></label>
-                      <input 
-                        type="text" 
-                        name="legalName" 
-                        required 
-                        value={formData.legalName} 
-                        onChange={handleChange}
-                        disabled={timeRemaining !== null && timeRemaining > 0}
-                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
-                        placeholder={t("আপনার পূর্ণ নাম", "Your full name")}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('মোবাইল নম্বর', 'Mobile Number')} <span className="text-red-500">*</span></label>
-                      <PhoneInput 
-                        name="phone" 
-                        required 
-                        value={formData.phone} 
-                        onChange={(val) => setFormData({ ...formData, phone: val })}
-                        disabled={timeRemaining !== null && timeRemaining > 0}
-                      />
-                    </div>
+                    {formData.nidStatus === 'Verified' && (
+                      <div className="flex items-center gap-1 text-green-600 bg-green-50 px-2 py-1 rounded-lg text-xs font-bold">
+                        <BadgeCheck className="w-4 h-4" />
+                        {t('ভেরিফাইড', 'Verified')}
+                      </div>
+                    )}
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('পূর্ণ নাম (NID অনুযায়ী)', 'Full Name (As per NID)')} <span className="text-red-500">*</span></label>
+                    <input 
+                      type="text" 
+                      name="legalName" 
+                      required 
+                      value={formData.legalName} 
+                      onChange={handleChange}
+                      disabled={(timeRemaining !== null && timeRemaining > 0) || formData.nidStatus === 'Verified'}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
+                      placeholder={t("আপনার পূর্ণ নাম", "Your full name")}
+                    />
+                  </div>
+                  {formData.nidStatus === 'Verified' && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">{t('নাম (বাংলায়)', 'Name (Bangla)')}</label>
+                        <input 
+                          type="text" 
+                          value={formData.nidBanglaName} 
+                          disabled
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-500"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">{t('পিতার নাম (বাংলায়)', "Father's Name (Bangla)")}</label>
+                          <input 
+                            type="text" 
+                            value={formData.fatherNameBangla} 
+                            disabled
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-1">{t('মাতার নাম (বাংলায়)', "Mother's Name (Bangla)")}</label>
+                          <input 
+                            type="text" 
+                            value={formData.motherNameBangla} 
+                            disabled
+                            className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-500"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">{t('জন্ম তারিখ', 'Date of Birth')}</label>
+                        <input 
+                          type="text" 
+                          value={formData.dateOfBirth} 
+                          disabled
+                          className="w-full px-4 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-500"
+                        />
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('মোবাইল নম্বর', 'Mobile Number')} <span className="text-red-500">*</span></label>
+                    <PhoneInput 
+                      name="phone" 
+                      required 
+                      value={formData.phone} 
+                      onChange={(val) => setFormData({ ...formData, phone: val })}
+                      disabled={timeRemaining !== null && timeRemaining > 0}
+                    />
+                  </div>
+                </div>
 
                   {/* Guardian Info */}
                   <div className="space-y-4">
@@ -449,40 +592,104 @@ export default function Profile() {
                     <h3 className="text-lg font-bold text-slate-900 flex items-center">
                       <FileText className="w-5 h-5 mr-2 text-red-600" /> {t('পরিচয়পত্র (NID)', 'Identity Card (NID)')}
                     </h3>
-                    <button
-                      type="button"
-                      onClick={() => nidInputRef.current?.click()}
-                      disabled={isExtracting || (timeRemaining !== null && timeRemaining > 0)}
-                      className="text-xs bg-red-50 text-red-700 px-3 py-1.5 rounded-lg font-bold hover:bg-red-100 transition-colors flex items-center gap-1.5 disabled:opacity-50"
-                    >
-                      {isExtracting ? (
-                        <div className="w-3 h-3 border-2 border-red-700/30 border-t-red-700 rounded-full animate-spin" />
-                      ) : (
-                        <Scan className="w-3.5 h-3.5" />
-                      )}
-                      {t('NID স্ক্যান করুন', 'Scan NID')}
-                    </button>
-                    <input 
-                      type="file" 
-                      ref={nidInputRef} 
-                      onChange={handleNidScan} 
-                      className="hidden" 
-                      accept="image/*" 
-                    />
+                    {formData.nidStatus !== 'Verified' && (
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          formData.nidStatus === 'Pending' ? 'bg-yellow-100 text-yellow-700' : 
+                          formData.nidStatus === 'Rejected' ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'
+                        }`}>
+                          {formData.nidStatus === 'Pending' ? t('পেন্ডিং', 'Pending') : 
+                           formData.nidStatus === 'Rejected' ? t('প্রত্যাখ্যাত', 'Rejected') : t('আনভেরিফাইড', 'Unverified')}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('NID নম্বর', 'NID Number')} <span className="text-red-500">*</span></label>
-                    <input 
-                      type="text" 
-                      name="nidNumber" 
-                      required 
-                      value={formData.nidNumber} 
-                      onChange={handleChange}
-                      disabled={timeRemaining !== null && timeRemaining > 0}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
-                      placeholder={t("আপনার NID নম্বর", "Your NID number")}
-                    />
-                  </div>
+
+                  {formData.nidStatus !== 'Verified' ? (
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div 
+                          onClick={() => document.getElementById('nid-front')?.click()}
+                          className={`aspect-[1.6/1] border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-colors ${nidFront ? 'border-red-500 bg-red-50' : 'border-slate-300 hover:border-red-400 hover:bg-slate-100'}`}
+                        >
+                          {nidFront ? (
+                            <div className="text-center p-2">
+                              <CheckCircle2 className="w-8 h-8 text-red-600 mx-auto mb-1" />
+                              <p className="text-[10px] font-bold text-red-700 truncate max-w-full">{nidFront.name}</p>
+                            </div>
+                          ) : (
+                            <>
+                              <Upload className="w-6 h-6 text-slate-400 mb-1" />
+                              <p className="text-[10px] font-bold text-slate-500">{t('সামনের দিক', 'Front Side')}</p>
+                            </>
+                          )}
+                          <input 
+                            id="nid-front"
+                            type="file" 
+                            className="hidden" 
+                            accept="image/*"
+                            onChange={(e) => setNidFront(e.target.files?.[0] || null)}
+                          />
+                        </div>
+                        <div 
+                          onClick={() => document.getElementById('nid-back')?.click()}
+                          className={`aspect-[1.6/1] border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-colors ${nidBack ? 'border-red-500 bg-red-50' : 'border-slate-300 hover:border-red-400 hover:bg-slate-100'}`}
+                        >
+                          {nidBack ? (
+                            <div className="text-center p-2">
+                              <CheckCircle2 className="w-8 h-8 text-red-600 mx-auto mb-1" />
+                              <p className="text-[10px] font-bold text-red-700 truncate max-w-full">{nidBack.name}</p>
+                            </div>
+                          ) : (
+                            <>
+                              <Upload className="w-6 h-6 text-slate-400 mb-1" />
+                              <p className="text-[10px] font-bold text-slate-500">{t('পিছনের দিক', 'Back Side')}</p>
+                            </>
+                          )}
+                          <input 
+                            id="nid-back"
+                            type="file" 
+                            className="hidden" 
+                            accept="image/*"
+                            onChange={(e) => setNidBack(e.target.files?.[0] || null)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2 text-[10px] text-slate-500 bg-white p-2 rounded-lg border border-slate-100">
+                        <AlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                        <p>{t('NID-এর পরিষ্কার ছবি আপলোড করুন। ভেরিফিকেশনের পর ছবিগুলো স্বয়ংক্রিয়ভাবে মুছে ফেলা হবে।', 'Upload clear images of your NID. Images will be automatically deleted after verification.')}</p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleNidVerification}
+                        disabled={isExtracting || !nidFront || !nidBack}
+                        className="w-full bg-red-700 text-white py-2.5 rounded-lg font-bold hover:bg-red-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isExtracting ? (
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Scan className="w-4 h-4" />
+                        )}
+                        {t('ভেরিফাই করুন', 'Verify Now')}
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">{t('NID নম্বর', 'NID Number')} <span className="text-red-500">*</span></label>
+                      <input 
+                        type="text" 
+                        name="nidNumber" 
+                        required 
+                        value={formData.nidNumber} 
+                        onChange={handleChange}
+                        disabled={formData.nidStatus === 'Verified'}
+                        className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
+                        placeholder={t("আপনার NID নম্বর", "Your NID number")}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="pt-6">
