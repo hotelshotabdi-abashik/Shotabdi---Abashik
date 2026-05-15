@@ -374,7 +374,7 @@ export default function Home() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative bg-black min-h-[100dvh] flex items-center justify-center overflow-hidden select-none pt-14 sm:pt-20 pb-6 sm:pb-10">
+      <section className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden select-none pt-14 sm:pt-20 pb-6 sm:pb-10">
         {editMode && (
           <button
             onClick={() => setIsHeroEditModalOpen(true)}
@@ -413,14 +413,9 @@ export default function Home() {
                       loading="eager"
                       fetchPriority="high"
                       decoding="async"
-                      onLoad={() => setLoadedImages(prev => ({ ...prev, [slot.key]: true }))}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: loadedImages[slot.key] ? 1 : 0 }}
-                      transition={{ duration: 0.8 }}
                     />
                   ) : (
-                    <div className="w-full h-full bg-black flex items-center justify-center">
-                      <span className="text-slate-700">Image Removed</span>
+                    <div className="w-full h-full flex items-center justify-center">
                     </div>
                   )}
                 </div>
@@ -671,7 +666,7 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
               {rooms.map((room) => (
                 <div key={room.id} className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col hover:shadow-xl transition-shadow relative group">
-                  <div className="relative aspect-video sm:h-64 bg-slate-100 overflow-hidden">
+                  <div className="relative aspect-video sm:h-64 overflow-hidden">
                     <img src={getOptimizedUrl(room.imageUrl || room.images?.[0] || 'https://picsum.photos/seed/room/800/600')} alt={room.name} title={room.description || room.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
                   </div>
                   <div className="p-5 sm:p-8 flex-grow flex flex-col">
