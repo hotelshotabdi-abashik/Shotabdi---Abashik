@@ -413,10 +413,14 @@ export default function Home() {
                       loading="eager"
                       fetchPriority="high"
                       decoding="async"
+                      onLoad={() => setLoadedImages(prev => ({ ...prev, [slot.key]: true }))}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: loadedImages[slot.key] ? 1 : 0 }}
+                      transition={{ duration: 0.8 }}
                     />
                   ) : (
-                    <div className="w-full h-full bg-slate-800 flex items-center justify-center">
-                      <span className="text-slate-500">Image Removed</span>
+                    <div className="w-full h-full bg-black flex items-center justify-center">
+                      <span className="text-slate-700">Image Removed</span>
                     </div>
                   )}
                 </div>

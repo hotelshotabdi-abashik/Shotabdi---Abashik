@@ -16,10 +16,10 @@ export const uploadToR2 = async (file: File, folder: string = 'shotabdi-abashik'
   if (file.type.startsWith('image/')) {
     try {
       const options = {
-        maxSizeMB: 1,
+        maxSizeMB: 0.8, // Slightly more aggressive for faster loading
         maxWidthOrHeight: 1920,
         useWebWorker: true,
-        fileType: 'image/webp' as any // Force WebP conversion
+        fileType: 'image/webp' as any
       };
       
       const compressedFile = await imageCompression(file, options);
@@ -30,6 +30,13 @@ export const uploadToR2 = async (file: File, folder: string = 'shotabdi-abashik'
       finalFileName = fileToUpload.name;
     } catch (error) {
       console.error("Image compression failed, uploading original:", error);
+    }
+  } else if (file.type.startsWith('video/')) {
+    // For videos, we ensure it's treated as mp4 if possible or at least has the right mime type
+    // In-browser transcoding is limited, but we can ensure the extension is correct for the request
+    if (!file.name.toLowerCase().endsWith('.mp4')) {
+      finalFileName = file.name.replace(/\.[^/.]+$/, "") + ".mp4";
+      contentType = 'video/mp4';
     }
   }
 

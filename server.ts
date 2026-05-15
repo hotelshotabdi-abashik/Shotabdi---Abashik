@@ -94,7 +94,7 @@ async function startServer() {
   // API Routes
   app.get('/robots.txt', (req, res) => {
     res.type('text/plain');
-    res.send('User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api\n\nSitemap: https://www.shotabdi-abashik.bd/sitemap.xml');
+    res.send('User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api\n\nSitemap: https://shotabdi-abashik.bd/sitemap.xml');
   });
 
   app.get('/sitemap.xml', async (req, res) => {
@@ -148,7 +148,7 @@ async function startServer() {
         }
       }
 
-      const baseUrl = 'https://www.shotabdi-abashik.bd';
+      const baseUrl = 'https://shotabdi-abashik.bd';
       let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
       xml += `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n`;
 
@@ -330,7 +330,7 @@ async function injectMetaTags(url: string, html: string, userAgent: string): Pro
   if (!adminDb) return html;
 
   const isBot = /facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|TelegramBot|Discordbot|Googlebot|bingbot/i.test(userAgent);
-  const baseUrl = 'https://www.shotabdi-abashik.bd';
+  const baseUrl = 'https://shotabdi-abashik.bd';
 
   try {
     let title = 'Hotel Shotabdi Abashik | Premium Hotel in Sylhet';

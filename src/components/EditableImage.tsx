@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useContent } from '../context/ContentContext';
 import { Edit2, Upload, X, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { uploadToR2, deleteFromR2 } from '../lib/r2';
 
 interface EditableImageProps {
   contentKey: string;
@@ -33,26 +34,13 @@ export const EditableImage: React.FC<EditableImageProps> = ({ contentKey, defaul
   };
 
   const handleDelete = async () => {
-    const WORKER_URL = import.meta.env.VITE_CLOUDFLARE_WORKER_URL || 'https://shotabdi-abashik.hotelshotabdiabashik.workers.dev';
-    const AUTH_KEY = import.meta.env.VITE_CLOUDFLARE_WORKER_SECRET || '123456@';
-
-    if (currentSrc && currentSrc.startsWith(WORKER_URL)) {
-      try {
-        toast.loading('Deleting image...', { id: 'delete' });
-        const prevFileName = currentSrc.replace(`${WORKER_URL}/`, '');
-        if (prevFileName) {
-          await fetch(`${WORKER_URL}/${prevFileName}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${AUTH_KEY}`,
-            }
-          });
-        }
-        toast.success('Image deleted from storage', { id: 'delete' });
-      } catch (deleteError) {
-        console.error('Failed to delete image:', deleteError);
-        toast.error('Failed to delete image from storage', { id: 'delete' });
-      }
+    try {
+      toast.loading('Deleting image...', { id: 'delete' });
+      await deleteFromR2(currentSrc);
+      toast.success('Image deleted from storage', { id: 'delete' });
+    } catch (deleteError) {
+      console.error('Failed to delete image:', deleteError);
+      toast.error('Failed to delete image from storage', { id: 'delete' });
     }
     
     await updateContent(contentKey, 'deleted');
@@ -63,56 +51,24 @@ export const EditableImage: React.FC<EditableImageProps> = ({ contentKey, defaul
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 1024 * 1024 * 5) { // 5MB limit
-        toast.error('Image must be less than 5MB');
-        return;
-      }
-
       try {
-        toast.loading('Uploading image...', { id: 'upload' });
-        const cleanFileName = file.name.replace(/\s+/g, '-');
-        const fileName = folder ? `${folder}/${Date.now()}_${cleanFileName}` : `${Date.now()}_${cleanFileName}`;
-        const WORKER_URL = import.meta.env.VITE_CLOUDFLARE_WORKER_URL || 'https://shotabdi-abashik.hotelshotabdiabashik.workers.dev';
-        const AUTH_KEY = import.meta.env.VITE_CLOUDFLARE_WORKER_SECRET || '123456@';
+        toast.loading('Uploading media...', { id: 'upload' });
+        const url = await uploadToR2(file, folder);
         
-        const response = await fetch(`${WORKER_URL}/${fileName}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${AUTH_KEY}`,
-            'Content-Type': file.type || 'application/octet-stream',
-          },
-          body: file,
-        });
-
-        if (!response.ok) {
-          throw new Error(`Upload failed with status ${response.status}`);
-        }
-        
-        const url = `${WORKER_URL}/${fileName}`;
-        
-        // Delete previous image if it's hosted on our worker
-        if (currentSrc && currentSrc.startsWith(WORKER_URL)) {
+        // Delete previous media if it's ours
+        if (currentSrc) {
           try {
-            const prevFileName = currentSrc.replace(`${WORKER_URL}/`, '');
-            if (prevFileName) {
-              await fetch(`${WORKER_URL}/${prevFileName}`, {
-                method: 'DELETE',
-                headers: {
-                  'Authorization': `Bearer ${AUTH_KEY}`,
-                }
-              });
-            }
+            await deleteFromR2(currentSrc);
           } catch (deleteError) {
-            console.error('Failed to delete previous image:', deleteError);
-            // Don't fail the upload if delete fails
+            console.error('Failed to delete previous media:', deleteError);
           }
         }
         
         setValue(url);
-        toast.success('Image uploaded successfully', { id: 'upload' });
+        toast.success(`${file.type.startsWith('video') ? 'Video' : 'Image'} uploaded successfully`, { id: 'upload' });
       } catch (error) {
         console.error('Upload error:', error);
-        toast.error('Failed to upload image', { id: 'upload' });
+        toast.error('Failed to upload', { id: 'upload' });
       }
     }
   };
@@ -170,7 +126,7 @@ export const EditableImage: React.FC<EditableImageProps> = ({ contentKey, defaul
               type="file"
               ref={fileInputRef}
               onChange={handleFileChange}
-              accept="image/*"
+              accept="image/*,video/*"
               className="hidden"
             />
           </div>

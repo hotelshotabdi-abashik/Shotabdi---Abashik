@@ -174,7 +174,7 @@ function MainContent({ isStandalonePage }: { isStandalonePage: boolean }) {
   
   return (
     <main className={`flex-grow main-content-wrapper ${isHome || isStandalonePage ? 'pt-0' : 'pt-14'}`}>
-      <Suspense fallback={<div className="min-h-screen bg-slate-50"></div>}>
+      <Suspense fallback={<div className={`min-h-screen ${isHome ? 'bg-black' : 'bg-slate-50'}`}></div>}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/home" element={<Navigate to="/" />} />
