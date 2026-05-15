@@ -210,9 +210,15 @@ async function startServer() {
       galleryImages.forEach((img: any, index: number) => {
         const id = typeof img === 'string' ? index.toString() : (img.id || index.toString());
         const url = typeof img === 'string' ? img : img.url;
+        const title = typeof img === 'string' ? 'Gallery Image' : (img.title || 'Gallery Image');
+        
         xml += `  <url>\n    <loc>${baseUrl}/gallery/${id}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n`;
         if (url) {
-          xml += `    <image:image>\n      <image:loc>${escapeXml(url)}</image:loc>\n    </image:image>\n`;
+          if (url.toLowerCase().endsWith('.mp4')) {
+            xml += `    <video:video>\n      <video:thumbnail_loc>${escapeXml(url.replace('.mp4', '.jpg'))}</video:thumbnail_loc>\n      <video:title>${escapeXml(title)}</video:title>\n      <video:content_loc>${escapeXml(url)}</video:content_loc>\n    </video:video>\n`;
+          } else {
+            xml += `    <image:image>\n      <image:loc>${escapeXml(url)}</image:loc>\n      <image:title>${escapeXml(title)}</image:title>\n    </image:image>\n`;
+          }
         }
         xml += `  </url>\n`;
       });
