@@ -19,18 +19,9 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
   const { user, profile, refreshProfile } = useAuth();
   const [step, setStep] = useState(1);
   const [nidImage, setNidImage] = useState<string | null>(null);
-  const [selfieImage, setSelfieImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [livenessStep, setLivenessStep] = useState(0);
-  const [livenessProgress, setLivenessProgress] = useState(0);
-
-  const livenessChallenges = [
-    { title: t('সোজা হয়ে দাঁড়ান', 'Face Straight'), desc: t('ক্যামেরার দিকে তাকান', 'Look into the camera'), icon: 'User' },
-    { title: t('একটু হাসুন', 'Smile Please'), desc: t('আপনার মুখমন্ডল শনাক্ত করা হচ্ছে', 'Testing facial detection'), icon: 'Smile' },
-    { title: t('চোখ ইশারা করুন', 'Blink Your Eyes'), desc: t('আপনি মানুষ কি না তা নিশ্চিত করুন', 'Confirming liveness'), icon: 'Eye' },
-  ];
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -42,50 +33,10 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setCameraActive(true);
-        if (step === 2) {
-          startLivenessSequence();
-        }
       }
     } catch (err) {
       console.error("Camera error:", err);
       toast.error(t('ক্যামেরা চালু করতে সমস্যা হয়েছে।', 'Failed to start camera.'));
-    }
-  };
-
-  const startLivenessSequence = () => {
-    setLivenessStep(0);
-    setLivenessProgress(0);
-    
-    // Simulate complex movement detection with a guided progress
-    const interval = setInterval(() => {
-      setLivenessProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          autoCaptureSelfie();
-          return 100;
-        }
-        
-        const next = prev + 1;
-        if (next === 33) setLivenessStep(1);
-        if (next === 66) setLivenessStep(2);
-        
-        return next;
-      });
-    }, 50); // ~5 seconds total for the sequence
-  };
-
-  const autoCaptureSelfie = () => {
-    if (videoRef.current && canvasRef.current) {
-      const context = canvasRef.current.getContext('2d');
-      if (context) {
-        canvasRef.current.width = videoRef.current.videoWidth;
-        canvasRef.current.height = videoRef.current.videoHeight;
-        context.drawImage(videoRef.current, 0, 0);
-        const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.8);
-        setSelfieImage(dataUrl);
-        stopCamera();
-        toast.success(t('মুখমন্ডল সফলভাবে শনাক্ত করা হয়েছে', 'Face detected successfully'));
-      }
     }
   };
 
@@ -97,7 +48,7 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
     }
   };
 
-  const capturePhoto = (type: 'nid' | 'selfie') => {
+  const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
       const context = canvasRef.current.getContext('2d');
       if (context) {
@@ -105,48 +56,46 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
         canvasRef.current.height = videoRef.current.videoHeight;
         context.drawImage(videoRef.current, 0, 0);
         const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.8);
-        if (type === 'nid') setNidImage(dataUrl);
-        else setSelfieImage(dataUrl);
+        setNidImage(dataUrl);
         stopCamera();
       }
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'nid' | 'selfie') => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
         const dataUrl = reader.result as string;
-        if (type === 'nid') setNidImage(dataUrl);
-        else setSelfieImage(dataUrl);
+        setNidImage(dataUrl);
       };
       reader.readAsDataURL(file);
     }
   };
 
   const verify = async () => {
-    if (!nidImage || !selfieImage) return;
+    if (!nidImage) return;
 
+    setStep(2);
     setLoading(true);
     setError(null);
     try {
       const response = await axios.post('/api/verify-identity', {
         nidImage,
-        selfieImage
       });
 
       const data = response.data;
       setResult(data);
 
-      if (data.isFaceMatch && data.confidence > 0.7) {
+      if (data.isSuccess || data.name || data.idNumber) {
         // Update user profile in Firestore
         if (user) {
           const userRef = doc(db, 'users', user.uid);
           await updateDoc(userRef, {
             identityVerified: true,
-            nidNumber: data.idNumber,
-            legalName: data.name,
+            nidNumber: data.idNumber || '',
+            legalName: data.name || '',
             verificationData: {
               ...data,
               verifiedAt: new Date().toISOString()
@@ -154,11 +103,11 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
           });
           await refreshProfile();
           toast.success(t('আপনার পরিচয় সফলভাবে যাচাই করা হয়েছে!', 'Identity verified successfully!'));
-          setStep(4);
+          setStep(3);
           if (onVerified) onVerified(data);
         }
       } else {
-        setError(data.reason || t('পরিচয় যাচাইকরণ মেলেনি। আবার চেষ্টা করুন।', 'Verification failed. Please try again.'));
+        setError(t('পরিচয় যাচাইকরণ মেলেনি। পরিষ্কার ছবি দিয়ে আবার চেষ্টা করুন।', 'Verification failed. Please try with a clearer image.'));
       }
     } catch (err) {
       console.error(err);
@@ -180,7 +129,7 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
         <div className="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-red-500" />
-            <h3 className="text-lg font-bold">Identity Verification</h3>
+            <h3 className="text-lg font-bold">NID Verification</h3>
           </div>
           <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-full transition-colors">
             <X className="w-5 h-5" />
@@ -188,20 +137,6 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
         </div>
 
         <div className="p-6">
-          <div className="flex justify-between mb-8 relative">
-            <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-100 -translate-y-1/2 z-0"></div>
-            {[1, 2, 3].map((s) => (
-              <div 
-                key={s} 
-                className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs transition-colors ${
-                  step >= s ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-400'
-                }`}
-              >
-                {step > s ? <CheckCircle2 className="w-5 h-5" /> : s}
-              </div>
-            ))}
-          </div>
-
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div 
@@ -212,8 +147,8 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
                 className="space-y-4"
               >
                 <div className="text-center">
-                  <h4 className="text-xl font-bold text-slate-900 mb-2">Step 1: Scan NID</h4>
-                  <p className="text-slate-500 text-sm">Please upload or capture a clear photo of your National ID Card.</p>
+                  <h4 className="text-xl font-bold text-slate-900 mb-2">{t('এনআইডি স্ক্যান করুন', 'Scan NID')}</h4>
+                  <p className="text-slate-500 text-sm">{t('আপনার পরিচয়পত্রের একটি পরিষ্কার ছবি দিন', 'Upload or capture a clear photo of your ID')}</p>
                 </div>
 
                 <div className="aspect-video bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center overflow-hidden relative">
@@ -226,7 +161,7 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
                       <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center text-red-600 mx-auto mb-4">
                         <Upload className="w-8 h-8" />
                       </div>
-                      <p className="text-slate-400 text-sm font-medium">No photo selected</p>
+                      <p className="text-slate-400 text-sm font-medium">{t('কোন ছবি নেই', 'No photo selected')}</p>
                     </div>
                   )}
                 </div>
@@ -234,10 +169,10 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
                 <div className="grid grid-cols-2 gap-3">
                   {cameraActive ? (
                     <button 
-                      onClick={() => capturePhoto('nid')}
+                      onClick={capturePhoto}
                       className="col-span-2 bg-red-600 text-white py-3 rounded-xl font-bold active:scale-95 transition-all"
                     >
-                      Capture Photo
+                      {t('ছবি তুলুন', 'Capture Photo')}
                     </button>
                   ) : (
                     <>
@@ -245,11 +180,11 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
                         onClick={startCamera}
                         className="flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl font-bold active:scale-95 transition-all text-sm"
                       >
-                        <Camera className="w-4 h-4" /> Camera
+                        <Camera className="w-4 h-4" /> {t('ক্যামেরা', 'Camera')}
                       </button>
                       <label className="flex items-center justify-center gap-2 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold cursor-pointer active:scale-95 transition-all text-sm">
-                        <Upload className="w-4 h-4" /> Upload
-                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e, 'nid')} />
+                        <Upload className="w-4 h-4" /> {t('আপলোড', 'Upload')}
+                        <input type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
                       </label>
                     </>
                   )}
@@ -257,10 +192,10 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
 
                 <button 
                   disabled={!nidImage}
-                  onClick={() => setStep(2)}
+                  onClick={verify}
                   className="w-full bg-red-700 disabled:bg-slate-300 text-white py-4 rounded-xl font-bold mt-6 shadow-xl active:scale-95 transition-all"
                 >
-                  Continue to Selfie
+                  {t('যাচাই শুরু করুন', 'Start Verification')}
                 </button>
               </motion.div>
             )}
@@ -268,112 +203,6 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
             {step === 2 && (
               <motion.div 
                 key="step2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
-              >
-                <div className="text-center">
-                  <h4 className="text-xl font-bold text-slate-900 mb-2">{t('সেলফি তুলুন', 'Take a Selfie')}</h4>
-                  <p className="text-slate-500 text-sm">{t('আপনার মুখমন্ডল ক্যামেরার বৃত্তের ভেতর রাখুন', 'Keep your face inside the circle')}</p>
-                </div>
-
-                <div className="relative mx-auto w-64 h-64">
-                   {/* Progress Ring */}
-                   <svg className="absolute inset-0 w-full h-full transform -rotate-90 z-20 pointer-events-none">
-                    <circle
-                      cx="128"
-                      cy="128"
-                      r="120"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      fill="transparent"
-                      className="text-slate-100"
-                    />
-                    <circle
-                      cx="128"
-                      cy="128"
-                      r="120"
-                      stroke="currentColor"
-                      strokeWidth="8"
-                      fill="transparent"
-                      strokeDasharray={120 * 2 * Math.PI}
-                      strokeDashoffset={120 * 2 * Math.PI * (1 - livenessProgress / 100)}
-                      className="text-red-600 transition-all duration-100"
-                    />
-                  </svg>
-
-                  <div className="absolute inset-0 rounded-full border-4 border-white shadow-inner overflow-hidden z-10 bg-slate-100">
-                    {cameraActive ? (
-                      <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover scale-x-[-1]" />
-                    ) : selfieImage ? (
-                      <img src={selfieImage} alt="Selfie" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <Camera className="w-12 h-12 text-slate-300" />
-                      </div>
-                    )}
-
-                    {cameraActive && (
-                      <div className="absolute bottom-4 left-0 right-0 text-center z-30">
-                        <motion.div 
-                          key={livenessStep}
-                          initial={{ y: 20, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          className="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full mx-auto w-fit border border-white/20"
-                        >
-                          {livenessChallenges[livenessStep].title}
-                        </motion.div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {cameraActive ? (
-                    <div className="text-center p-4 bg-slate-50 rounded-2xl border border-slate-100 italic text-slate-500 text-sm">
-                      {livenessChallenges[livenessStep].desc}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-3">
-                      {!selfieImage ? (
-                        <button 
-                          onClick={startCamera}
-                          className="flex items-center justify-center gap-2 bg-red-600 text-white py-4 rounded-2xl font-bold active:scale-95 transition-all shadow-xl"
-                        >
-                          <Camera className="w-5 h-5" /> {t('ক্যামেরা চালু করুন', 'Start Verification')}
-                        </button>
-                      ) : (
-                        <>
-                          <button 
-                            onClick={startCamera}
-                            className="bg-slate-100 text-slate-700 py-3 rounded-xl font-bold text-sm"
-                          >
-                            {t('আবার তুলুন', 'Retake')}
-                          </button>
-                          <button 
-                            onClick={() => {
-                              setStep(3);
-                              verify();
-                            }}
-                            className="w-full bg-red-700 text-white py-4 rounded-xl font-bold shadow-xl active:scale-95 transition-all"
-                          >
-                            {t('যাচাই করুন', 'Verify Identity')}
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  )}
-                  {!cameraActive && !selfieImage && (
-                    <button onClick={() => setStep(1)} className="w-full text-slate-500 font-bold text-sm py-2">Back</button>
-                  )}
-                </div>
-              </motion.div>
-            )}
-
-            {step === 3 && (
-              <motion.div 
-                key="step3"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center py-8 space-y-6"
@@ -388,8 +217,8 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <h4 className="text-xl font-bold text-slate-900">Verifying Identity...</h4>
-                      <p className="text-slate-500 text-sm animate-pulse">Our AI is matching your documents and face. Please wait.</p>
+                      <h4 className="text-xl font-bold text-slate-900">{t('যাচাই করা হচ্ছে...', 'Verifying ID...')}</h4>
+                      <p className="text-slate-500 text-sm animate-pulse">{t('আমাদের এআই আপনার তথ্য যাচাই করছে। অনুগ্রহ করে অপেক্ষা করুন।', 'AI is extracting information using OCR.space. Please wait.')}</p>
                     </div>
                   </>
                 ) : error ? (
@@ -398,18 +227,18 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
                       <AlertCircle className="w-12 h-12" />
                     </div>
                     <div className="space-y-2">
-                      <h4 className="text-xl font-bold text-red-600">Verification Failed</h4>
+                      <h4 className="text-xl font-bold text-red-600">{t('ব্যর্থ হয়েছে', 'Verification Failed')}</h4>
                       <p className="text-slate-600 text-sm">{error}</p>
                     </div>
-                    <button onClick={() => setStep(1)} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold">Try Again</button>
+                    <button onClick={() => setStep(1)} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold">{t('আবার চেষ্টা করুন', 'Try Again')}</button>
                   </>
                 ) : null}
               </motion.div>
             )}
 
-            {step === 4 && (
+            {step === 3 && (
               <motion.div 
-                key="step4"
+                key="step3"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center py-8 space-y-6"
@@ -418,8 +247,8 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
                   <CheckCircle2 className="w-12 h-12" />
                 </div>
                 <div className="space-y-2">
-                  <h4 className="text-2xl font-bold text-slate-900">Success!</h4>
-                  <p className="text-slate-500 font-medium">Your identity has been verified.</p>
+                  <h4 className="text-2xl font-bold text-slate-900">{t('সফল!', 'Success!')}</h4>
+                  <p className="text-slate-500 font-medium">{t('আপনার পরিচয় যাচাই করা হয়েছে।', 'Your NID has been verified.')}</p>
                   {result && (
                     <div className="bg-slate-50 p-4 rounded-2xl text-left mt-4 border border-slate-100">
                       <p className="text-xs text-slate-400 font-bold uppercase mb-2">Details Found:</p>
