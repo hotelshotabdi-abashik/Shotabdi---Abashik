@@ -4,12 +4,13 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { updatePassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X, BadgeCheck, Fingerprint } from 'lucide-react';
+import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X, BadgeCheck, Fingerprint, Trash2, AlertTriangle, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import PhoneInput from '../components/PhoneInput';
 import { sendEmail } from '../services/NotificationService';
 import { IdentityVerification } from '../components/IdentityVerification';
+import { deleteFromR2 } from '../lib/r2';
 
 export default function Profile() {
   const { t } = useLanguage();
@@ -132,6 +133,39 @@ export default function Profile() {
     }
 
     setShowTermsModal(true);
+  };
+
+  const handleDeleteNid = async () => {
+    if (!user || !profile?.nidImageUrl) return;
+    
+    if (!window.confirm(t('আপনি কি নিশ্চিত যে আপনি আপনার এনআইডি তথ্য মুছে ফেলতে চান?', 'Are you sure you want to delete your NID information?'))) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. Delete from R2
+      await deleteFromR2(profile.nidImageUrl);
+      
+      // 2. Clear from Firestore
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        nidImageUrl: null,
+        nidNumber: '',
+        verificationStatus: 'none',
+        identityVerified: false,
+        verificationData: null
+      });
+      
+      await refreshProfile();
+      setFormData({ ...formData, nidNumber: '' });
+      toast.success(t('এনআইডি তথ্য মুছে ফেলা হয়েছে।', 'NID information deleted.'));
+    } catch (error) {
+      console.error(error);
+      toast.error(t('মুছে ফেলতে সমস্যা হয়েছে।', 'Failed to delete.'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -390,35 +424,104 @@ export default function Profile() {
               <span className="flex items-center">
                 <FileText className="w-5 h-5 mr-2 text-red-600" /> {t('পরিচয়পত্র (NID)', 'Identity Card (NID)')}
               </span>
-              {profile?.identityVerified ? (
-                <span className="flex items-center gap-1.5 text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">
-                  <BadgeCheck className="w-4 h-4" />
-                  {t('যাচাইকৃত', 'Verified')}
-                </span>
-              ) : (
+              <div className="flex items-center gap-2">
+                {profile?.verificationStatus === 'verified' ? (
+                  <span className="flex items-center gap-1.5 text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">
+                    <BadgeCheck className="w-4 h-4" />
+                    {t('যাচাইকৃত', 'Verified')}
+                  </span>
+                ) : profile?.verificationStatus === 'pending' ? (
+                  <span className="flex items-center gap-1.5 text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                    {t('রিভিউ হচ্ছে', 'Under Review')}
+                  </span>
+                ) : profile?.verificationStatus === 'rejected' ? (
+                  <span className="flex items-center gap-1.5 text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold">
+                    <AlertTriangle className="w-4 h-4" />
+                    {t('প্রত্যাখ্যাত', 'Rejected')}
+                  </span>
+                ) : (
+                  <button 
+                    type="button"
+                    onClick={() => setIsVerificationModalOpen(true)}
+                    className="flex items-center gap-1.5 text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold hover:bg-red-200 transition-colors"
+                  >
+                    <Fingerprint className="w-4 h-4" />
+                    {t('এখনি জমা দিন', 'Submit Now')}
+                  </button>
+                )}
+              </div>
+            </h3>
+            
+            {profile?.verificationStatus === 'rejected' && profile?.rejectionReason && (
+              <div className="bg-red-50 border border-red-100 p-3 rounded-xl flex gap-3 items-start mb-4">
+                <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+                <p className="text-xs text-red-700">
+                  <span className="font-bold">{t('কারণ:', 'Reason:')}</span> {profile.rejectionReason}
+                  <br />
+                  <span className="mt-1 block">{t('অনুগ্রহ করে সঠিক তথ্য দিয়ে পুনরায় জমা দিন।', 'Please correct the information and resubmit.')}</span>
+                </p>
+              </div>
+            )}
+
+            {profile?.nidImageUrl ? (
+              <div className="space-y-4">
+                <div className="relative group aspect-video max-w-sm mx-auto bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
+                  <img src={profile.nidImageUrl} alt="NID" className="w-full h-full object-contain" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                    <button 
+                      type="button"
+                      onClick={() => window.open(profile.nidImageUrl, '_blank')}
+                      className="bg-white text-slate-900 p-2 rounded-full hover:scale-110 transition-transform"
+                      title={t('বড় করে দেখুন', 'View Full Size')}
+                    >
+                      <ImageIcon className="w-5 h-5" />
+                    </button>
+                    {(profile?.verificationStatus === 'none' || profile?.verificationStatus === 'rejected' || profile?.verificationStatus === 'pending') && (
+                      <button 
+                        type="button"
+                        onClick={handleDeleteNid}
+                        className="bg-red-600 text-white p-2 rounded-full hover:scale-110 transition-transform"
+                        title={t('মুছে ফেলুন', 'Delete')}
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                {profile?.nidNumber && (
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <p className="text-xs text-slate-400 font-bold uppercase mb-1">{t('NID নম্বর', 'NID Number')}</p>
+                    <p className="font-mono text-slate-900 tracking-wider bg-white px-3 py-1 rounded inline-block border border-slate-100">{profile.nidNumber}</p>
+                  </div>
+                )}
+                
+                {(profile?.verificationStatus === 'none' || profile?.verificationStatus === 'rejected') && (
+                  <button 
+                    type="button"
+                    onClick={() => setIsVerificationModalOpen(true)}
+                    className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Camera className="w-5 h-5" />
+                    {t('এনআইডি পরিবর্তন করুন', 'Change NID')}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center">
+                <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <p className="text-slate-500 text-sm font-medium mb-4">{t('কোন এনআইডি তথ্য পাওয়া যায়নি', 'No NID information found')}</p>
                 <button 
                   type="button"
                   onClick={() => setIsVerificationModalOpen(true)}
-                  className="flex items-center gap-1.5 text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold hover:bg-red-200 transition-colors"
+                  className="bg-red-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg hover:bg-red-800 transition-all flex items-center justify-center gap-2 mx-auto"
                 >
-                  <Fingerprint className="w-4 h-4" />
-                  {t('এখনি যাচাই করুন', 'Verify Now')}
+                  <Shield className="w-4 h-4" />
+                  {t('এনআইডি জমা দিন', 'Submit NID')}
                 </button>
-              )}
-            </h3>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">{t('NID নম্বর', 'NID Number')} <span className="text-red-500">*</span></label>
-              <input 
-                type="text" 
-                name="nidNumber" 
-                required 
-                value={formData.nidNumber} 
-                onChange={handleChange}
-                disabled={profile?.identityVerified || (timeRemaining !== null && timeRemaining > 0)}
-                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
-                placeholder={t("আপনার NID নম্বর", "Your NID number")}
-              />
-            </div>
+              </div>
+            )}
           </div>
 
                 <div className="pt-6">

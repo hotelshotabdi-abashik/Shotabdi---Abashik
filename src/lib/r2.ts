@@ -67,12 +67,22 @@ export const deleteFromR2 = async (url: string): Promise<void> => {
   
   try {
     let pathToDelete = '';
-    if (url.includes('pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev')) {
+    const PUBLIC_URL = 'https://shotabdi-abashik.bd';
+    
+    if (url.includes(PUBLIC_URL)) {
+      pathToDelete = url.split(`${PUBLIC_URL}/`)[1];
+    } else if (url.includes('pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev')) {
       pathToDelete = url.split('pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/')[1];
     } else if (url.includes('workers.dev')) {
       pathToDelete = url.split('.dev/')[1];
     } else {
-      pathToDelete = url.split('/').pop() || '';
+      // Fallback: try to get everything after the second slash or domain
+      const parts = url.split('/');
+      if (parts.length > 3) {
+        pathToDelete = parts.slice(3).join('/');
+      } else {
+        pathToDelete = parts.pop() || '';
+      }
     }
     
     if (!pathToDelete) return;

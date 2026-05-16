@@ -103,14 +103,16 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
         await updateDoc(userRef, {
           nidImageUrl,
           nidNumber,
-          identityVerified: true,
+          verificationStatus: 'pending',
+          identityVerified: false,
           verificationData: {
-            verifiedAt: new Date().toISOString(),
+            verifiedAt: null,
+            submittedAt: new Date().toISOString(),
             method: 'r2_upload'
           }
         });
         await refreshProfile();
-        toast.success(t('আপনার তথ্য জমা দেওয়া হয়েছে!', 'Information submitted successfully!'));
+        toast.success(t('আপনার তথ্য যাচাইয়ের জন্য পাঠানো হয়েছে!', 'Information submitted for verification!'));
         setStep(2);
         if (onVerified) onVerified({ nidImageUrl, nidNumber });
       }

@@ -6,7 +6,7 @@ service cloud.firestore {
     // Assumed Data Model
     // ===============================================================
     //
-    // Collection: users
+     // Collection: users
     // Document ID: {userId} (matches request.auth.uid)
     // Fields:
     //   - uid: string (required, immutable)
@@ -20,6 +20,8 @@ service cloud.firestore {
     //   - guardianPhone: string (optional, max 20)
     //   - nidNumber: string (optional, max 30)
     //   - nidImageUrl: string (optional, url format)
+    //   - verificationStatus: string (optional, ['none', 'pending', 'verified', 'rejected'])
+    //   - rejectionReason: string (optional, max 500)
     //   - profileCompleted: bool (required)
     //   - createdAt: timestamp (required, immutable)
     //   - lastUpdated: timestamp (optional)
@@ -113,6 +115,8 @@ service cloud.firestore {
                (!('guardianPhone' in data) || (data.guardianPhone is string && data.guardianPhone.size() <= 20)) &&
                (!('nidNumber' in data) || (data.nidNumber is string && data.nidNumber.size() <= 30)) &&
                (!('nidImageUrl' in data) || (data.nidImageUrl is string && (data.nidImageUrl == "" || isValidUrl(data.nidImageUrl)))) &&
+               (!('verificationStatus' in data) || data.verificationStatus in ['none', 'pending', 'verified', 'rejected']) &&
+               (!('rejectionReason' in data) || (data.rejectionReason == null || (data.rejectionReason is string && data.rejectionReason.size() <= 500))) &&
                (!('identityVerified' in data) || data.identityVerified is bool) &&
                (!('verificationData' in data) || data.verificationData is map) &&
                (!('adminSecret' in data) || (data.adminSecret is string && data.adminSecret.size() <= 50)) &&
@@ -175,7 +179,8 @@ service cloud.firestore {
                       isOwner(request.resource.data.userId) && 
                       isValidBooking(request.resource.data) &&
                       request.resource.data.status == 'pending' &&
-                      isRecent(request.resource.data.createdAt);
+                      isRecent(request.resource.data.createdAt) &&
+                      get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('verificationStatus', 'none') != 'rejected';
       
       allow update: if isAuthenticated() && (
                       (isOwner(resource.data.userId) && 

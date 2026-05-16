@@ -154,6 +154,11 @@ export default function Rooms() {
       navigate('/profile');
       return;
     }
+    if (profile?.verificationStatus === 'rejected') {
+      toast.error(t('আপনার পরিচয়পত্র প্রত্যাখ্যাত হয়েছে। বুকিং করতে পুনরায় সঠিক এনআইডি জমা দিন।', 'Your NID has been rejected. Please resubmit correct information to book.'));
+      navigate('/profile');
+      return;
+    }
 
     // Check for existing bookings today
     try {

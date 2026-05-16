@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, query, orderBy, limit, addDoc, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone, Send, Facebook, Mail, MapPin, ShieldCheck, Lock, AlertTriangle, BadgeCheck } from 'lucide-react';
-import { motion } from 'motion/react';
+import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone, Send, Facebook, Mail, MapPin, ShieldCheck, Lock, AlertTriangle, BadgeCheck, Fingerprint, Image as ImageIcon, RotateCcw } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { uploadToR2, deleteFromR2 } from '../lib/r2';
 import { useLanguage } from '../context/LanguageContext';
@@ -53,7 +53,7 @@ export default function Admin() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { content, updateContent } = useContent();
-  const [activeTab, setActiveTab] = useState<'rooms' | 'users' | 'bookings' | 'content' | 'ratings' | 'offers' | 'social' | 'settings' | 'emails' | 'recommendations'>('bookings');
+  const [activeTab, setActiveTab] = useState<'rooms' | 'users' | 'bookings' | 'content' | 'ratings' | 'offers' | 'social' | 'settings' | 'emails' | 'recommendations' | 'verifications'>('bookings');
   
   // Social Links State
   const [socialLinks, setSocialLinks] = useState<any[]>([]);
@@ -85,6 +85,11 @@ export default function Admin() {
   
   // Bookings State
   const [bookings, setBookings] = useState<Booking[]>([]);
+
+  // Verification State
+  const [verificationUsers, setVerificationUsers] = useState<any[]>([]);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showRejectionInput, setShowRejectionInput] = useState(false);
 
   // Admin Authentication State
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
@@ -126,7 +131,70 @@ export default function Admin() {
     else if (activeTab === 'social') fetchSocialLinks();
     else if (activeTab === 'settings') fetchSettings();
     else if (activeTab === 'emails') fetchEmailLogs();
+    else if (activeTab === 'verifications') fetchVerificationUsers();
+    
+    // Always fetch pending verification count on mount for sidebar badge
+    if (verificationUsers.length === 0 && activeTab !== 'verifications') {
+       fetchVerificationUsers();
+    }
   }, [activeTab]);
+
+  const fetchVerificationUsers = async () => {
+    setLoading(true);
+    try {
+      const q = query(
+        collection(db, 'users'), 
+        where('verificationStatus', '==', 'pending')
+      );
+      const snapshot = await getDocs(q);
+      setVerificationUsers(snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() })));
+    } catch (error: any) {
+      handleFirestoreError(error, OperationType.LIST, 'users');
+      console.error("Error fetching verifications:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyIdentity = async (uid: string, status: 'verified' | 'rejected', reason?: string) => {
+    try {
+      setLoading(true);
+      const userRef = doc(db, 'users', uid);
+      const updateData: any = {
+        verificationStatus: status,
+        identityVerified: status === 'verified',
+      };
+      
+      if (status === 'rejected' && reason) {
+        updateData.rejectionReason = reason;
+      } else if (status === 'verified') {
+        updateData.rejectionReason = null;
+      }
+
+      await updateDoc(userRef, updateData);
+      
+      toast.success(status === 'verified' ? "User verified successfully!" : "User identification rejected.");
+      setVerificationUsers(prev => prev.filter(u => u.uid !== uid));
+      setShowRejectionInput(false);
+      setRejectionReason('');
+      
+      // Update selected user modal if open
+      if (selectedBookingUser && selectedBookingUser.uid === uid) {
+        setSelectedBookingUser({ ...selectedBookingUser, ...updateData });
+      }
+
+      // If active tab is users, refresh
+      if (activeTab === 'users') fetchUsers();
+      if (activeTab === 'bookings') fetchBookings();
+      
+    } catch (error: any) {
+      handleFirestoreError(error, OperationType.WRITE, `users/${uid}`);
+      console.error("Error verifying identity:", error);
+      toast.error("Failed to update verification status.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchSocialLinks = async () => {
     setLoading(true);
@@ -781,6 +849,17 @@ export default function Admin() {
               <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('বুকিং পরিচালনা', 'Manage Bookings')}
             </button>
             <button 
+              onClick={() => setActiveTab('verifications')}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start relative ${activeTab === 'verifications' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+            >
+              <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('ইউজার ভেরিফিকেশন', 'User Verifications')}
+              {verificationUsers.length > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-white min-w-[20px] text-center">
+                  {verificationUsers.length}
+                </span>
+              )}
+            </button>
+            <button 
               onClick={() => setActiveTab('rooms')}
               className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'rooms' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
             >
@@ -839,6 +918,89 @@ export default function Admin() {
 
         {/* Tab Content */}
         <div className="mt-8">
+        {activeTab === 'verifications' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-slate-800">{t('পেন্ডিং ভেরিফিকেশন', 'Pending Verifications')}</h2>
+              <button 
+                onClick={fetchVerificationUsers}
+                className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"
+                title="Refresh"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {verificationUsers.map((u) => (
+                <div key={u.uid} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+                  <div className="p-4 border-b border-slate-50 bg-slate-50/50">
+                    <h3 className="font-bold text-slate-900">{u.legalName || u.displayName || 'No Name'}</h3>
+                    <p className="text-xs text-slate-500">{u.email}</p>
+                  </div>
+                  
+                  <div className="p-4 flex-grow space-y-4">
+                    {u.nidImageUrl ? (
+                      <div 
+                        className="aspect-video bg-slate-100 rounded-xl overflow-hidden border border-slate-200 cursor-pointer group relative"
+                        onClick={() => window.open(u.nidImageUrl, '_blank')}
+                      >
+                        <img src={u.nidImageUrl} alt="NID" className="w-full h-full object-contain" />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <ImageIcon className="w-8 h-8 text-white" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="aspect-video bg-slate-50 rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400">
+                        <AlertTriangle className="w-8 h-8 mb-2" />
+                        <p className="text-xs">No image uploaded</p>
+                      </div>
+                    )}
+                    
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <p className="text-slate-400 font-bold uppercase">{t('NID নম্বর', 'NID Number')}</p>
+                        <p className="font-medium">{u.nidNumber || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400 font-bold uppercase">{t('ফোন', 'Phone')}</p>
+                        <p className="font-medium">{u.phone || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-slate-50 mt-auto flex gap-2">
+                    <button 
+                      onClick={() => handleVerifyIdentity(u.uid, 'verified')}
+                      disabled={loading}
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center"
+                    >
+                      <Check className="w-4 h-4 mr-1.5" /> {t('অ্যাপ্রুভ', 'Approve')}
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setSelectedBookingUser(u);
+                        setShowRejectionInput(true);
+                      }}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center"
+                    >
+                      <X className="w-4 h-4 mr-1.5" /> {t('রিজেক্ট', 'Reject')}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {verificationUsers.length === 0 && !loading && (
+              <div className="bg-white rounded-2xl p-12 text-center border border-slate-100">
+                <ShieldCheck className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-slate-800 mb-2">{t('কোন পেন্ডিং ভেরিফিকেশন নেই', 'No Pending Verifications')}</h3>
+                <p className="text-slate-500">{t('সবগুলো ইউজার বর্তমানে যাচাইকৃত।', 'All users are currently verified.')}</p>
+              </div>
+            )}
+          </div>
+        )}
+
         {activeTab === 'rooms' && (
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -1126,10 +1288,26 @@ export default function Admin() {
                           </span>
                         </td>
                         <td className="p-4">
-                          {u.identityVerified ? (
-                            <BadgeCheck className="w-5 h-5 text-green-600" />
+                          {u.verificationStatus === 'verified' ? (
+                            <div className="flex items-center gap-1.5 text-green-600 font-bold text-xs uppercase">
+                              <BadgeCheck className="w-4 h-4" />
+                              {t('যাচাইকৃত', 'Verified')}
+                            </div>
+                          ) : u.verificationStatus === 'pending' ? (
+                            <div className="flex items-center gap-1.5 text-blue-600 font-bold text-xs uppercase">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                              {t('পেন্ডিং', 'Pending')}
+                            </div>
+                          ) : u.verificationStatus === 'rejected' ? (
+                            <div className="flex items-center gap-1.5 text-red-600 font-bold text-xs uppercase">
+                              <AlertTriangle className="w-4 h-4" />
+                              {t('বাতিল', 'Rejected')}
+                            </div>
                           ) : (
-                            <X className="w-5 h-5 text-slate-300" />
+                            <div className="flex items-center gap-1.5 text-slate-400 font-bold text-xs uppercase">
+                              <Fingerprint className="w-4 h-4" />
+                              {t('নেই', 'None')}
+                            </div>
                           )}
                         </td>
                         <td className="p-4 text-right">
@@ -2220,8 +2398,103 @@ export default function Admin() {
                 </div>
               )}
 
+              {/* Status Badge */}
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-400 uppercase">Verification Status</span>
+                <div className="flex items-center gap-2">
+                  {selectedBookingUser.verificationStatus === 'verified' ? (
+                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase flex items-center gap-1">
+                      <BadgeCheck className="w-3 h-3" /> Verified
+                    </span>
+                  ) : selectedBookingUser.verificationStatus === 'pending' ? (
+                    <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" /> Pending Review
+                    </span>
+                  ) : selectedBookingUser.verificationStatus === 'rejected' ? (
+                    <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" /> Rejected
+                    </span>
+                  ) : (
+                    <span className="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase">
+                      No NID
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons for verification */}
+              {(selectedBookingUser.verificationStatus === 'pending' || selectedBookingUser.verificationStatus === 'rejected' || selectedBookingUser.verificationStatus === 'none' || !selectedBookingUser.verificationStatus) && !showRejectionInput && (
+                <div className="grid grid-cols-2 gap-3 mt-6">
+                  <button 
+                    onClick={() => handleVerifyIdentity(selectedBookingUser.uid || selectedBookingUser.id, 'verified')}
+                    className="bg-green-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-green-700 transition-colors shadow-sm"
+                  >
+                    Approve Identity
+                  </button>
+                  <button 
+                    onClick={() => setShowRejectionInput(true)}
+                    className="bg-red-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-red-700 transition-colors shadow-sm"
+                  >
+                    Reject Identity
+                  </button>
+                </div>
+              )}
+
+              {selectedBookingUser.verificationStatus === 'verified' && !showRejectionInput && (
+                <div className="mt-6">
+                  <button 
+                    onClick={() => setShowRejectionInput(true)}
+                    className="w-full bg-red-50 text-red-600 py-3 rounded-xl font-bold text-sm hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <X className="w-4 h-4" /> Reject Previously Verified User
+                  </button>
+                </div>
+              )}
+
+              <AnimatePresence>
+                {showRejectionInput && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-4 space-y-3"
+                  >
+                    <label className="block text-xs font-bold text-red-600 uppercase">Reason for Rejection</label>
+                    <textarea 
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      placeholder="e.g., Image is blurry, NID number doesn't match..."
+                      className="w-full p-3 border border-red-200 rounded-xl text-sm focus:ring-1 focus:ring-red-500 transition-all outline-none"
+                      rows={3}
+                    />
+                    <div className="flex gap-2">
+                       <button 
+                        onClick={() => handleVerifyIdentity(selectedBookingUser.uid || selectedBookingUser.id, 'rejected', rejectionReason)}
+                        disabled={!rejectionReason.trim()}
+                        className="flex-1 bg-red-700 text-white py-2 rounded-xl font-bold text-xs disabled:opacity-50"
+                      >
+                        Confirm Rejection
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setShowRejectionInput(false);
+                          setRejectionReason('');
+                        }}
+                        className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-bold text-xs"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <button 
-                onClick={() => setSelectedBookingUser(null)} 
+                onClick={() => {
+                  setSelectedBookingUser(null);
+                  setShowRejectionInput(false);
+                  setRejectionReason('');
+                }} 
                 className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold mt-4 hover:bg-slate-800 transition-colors"
               >
                 Close

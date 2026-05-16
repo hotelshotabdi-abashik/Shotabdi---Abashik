@@ -20,6 +20,8 @@ export interface UserProfile {
   guardianPhone?: string;
   nidNumber?: string;
   nidImageUrl?: string;
+  verificationStatus?: 'none' | 'pending' | 'verified' | 'rejected';
+  rejectionReason?: string;
   identityVerified?: boolean;
   verificationData?: any;
   createdAt: any;
