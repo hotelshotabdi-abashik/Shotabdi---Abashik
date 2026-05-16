@@ -2,6 +2,8 @@ import React from 'react';
 import { X } from 'lucide-react';
 import { useContent } from '../context/ContentContext';
 
+import { fixR2Url } from '../lib/r2';
+
 interface ImageViewModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -42,7 +44,7 @@ export const ImageViewModal: React.FC<ImageViewModalProps> = ({ isOpen, onClose,
         {/* Image Section */}
         <div className="w-full md:w-2/3 bg-black flex items-center justify-center relative flex-1 md:flex-none md:min-h-[60vh]">
           <img 
-            src={selectedImage.url} 
+            src={fixR2Url(selectedImage.url)} 
             alt={selectedImage.title || 'Gallery Image'} 
             className="max-w-full max-h-full object-contain"
             referrerPolicy="no-referrer"

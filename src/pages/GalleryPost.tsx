@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
 
+import { fixR2Url } from '../lib/r2';
+
 export default function GalleryPost() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -135,7 +137,7 @@ export default function GalleryPost() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 1.05 }}
                   transition={{ duration: 0.4 }}
-                  src={currentImage.url}
+                  src={fixR2Url(currentImage.url)}
                   alt={currentImage.title || 'Gallery image'}
                   title={currentImage.title || 'Gallery image'}
                   className="max-w-full max-h-[80vh] object-contain"
@@ -229,7 +231,7 @@ export default function GalleryPost() {
                     to={`/gallery/${img.id || i}`}
                     className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${img.id === id || i.toString() === id ? 'border-red-600 scale-95' : 'border-transparent hover:border-red-300'}`}
                   >
-                    <img src={img.url} alt={img.title || `Gallery image`} title={img.title || `Gallery image`} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
+                    <img src={fixR2Url(img.url)} alt={img.title || `Gallery image`} title={img.title || `Gallery image`} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
                   </Link>
                 ))}
               </div>

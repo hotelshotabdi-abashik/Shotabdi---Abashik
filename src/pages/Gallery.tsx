@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
 import { EditableText } from '../components/EditableText';
-import { uploadToR2, deleteFromR2 } from '../lib/r2';
+import { uploadToR2, deleteFromR2, fixR2Url } from '../lib/r2';
 import { Trash2, Upload, Loader2, X, Image as ImageIcon, Edit2, Search, Star, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { Helmet } from 'react-helmet-async';
@@ -244,7 +244,7 @@ export default function Gallery() {
               to={`/gallery/${img.id || index}`}
               className="relative overflow-hidden shadow-md hover:shadow-xl transition-all group cursor-pointer bg-white rounded-2xl block"
             >
-              <img src={img.url} alt={img.title || `Gallery ${index + 1}`} title={img.title || `Gallery image ${index + 1}`} className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
+              <img src={fixR2Url(img.url)} alt={img.title || `Gallery ${index + 1}`} title={img.title || `Gallery image ${index + 1}`} className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
               
               {img.isRecommended && (
                 <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded-full flex items-center shadow-md z-10">

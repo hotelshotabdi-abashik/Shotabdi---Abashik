@@ -10,7 +10,7 @@ import { useLanguage } from '../context/LanguageContext';
 import PhoneInput from '../components/PhoneInput';
 import { sendEmail } from '../services/NotificationService';
 import { IdentityVerification } from '../components/IdentityVerification';
-import { deleteFromR2 } from '../lib/r2';
+import { deleteFromR2, fixR2Url } from '../lib/r2';
 
 export default function Profile() {
   const { t } = useLanguage();
@@ -467,11 +467,11 @@ export default function Profile() {
             {profile?.nidImageUrl ? (
               <div className="space-y-4">
                 <div className="relative group aspect-video max-w-sm mx-auto bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
-                  <img src={profile.nidImageUrl} alt="NID" className="w-full h-full object-contain" />
+                  <img src={fixR2Url(profile.nidImageUrl)} alt="NID" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
                     <button 
                       type="button"
-                      onClick={() => window.open(profile.nidImageUrl, '_blank')}
+                      onClick={() => window.open(fixR2Url(profile.nidImageUrl), '_blank')}
                       className="bg-white text-slate-900 p-2 rounded-full hover:scale-110 transition-transform"
                       title={t('বড় করে দেখুন', 'View Full Size')}
                     >

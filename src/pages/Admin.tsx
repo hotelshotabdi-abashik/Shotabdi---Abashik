@@ -4,7 +4,7 @@ import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone, Send, Facebook, Mail, MapPin, ShieldCheck, Lock, AlertTriangle, BadgeCheck, Fingerprint, Image as ImageIcon, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
-import { uploadToR2, deleteFromR2 } from '../lib/r2';
+import { uploadToR2, deleteFromR2, fixR2Url } from '../lib/r2';
 import { useLanguage } from '../context/LanguageContext';
 import { useContent } from '../context/ContentContext';
 import { useAuth } from '../context/AuthContext';
@@ -943,9 +943,9 @@ export default function Admin() {
                     {u.nidImageUrl ? (
                       <div 
                         className="aspect-video bg-slate-100 rounded-xl overflow-hidden border border-slate-200 cursor-pointer group relative"
-                        onClick={() => window.open(u.nidImageUrl, '_blank')}
+                        onClick={() => window.open(fixR2Url(u.nidImageUrl), '_blank')}
                       >
-                        <img src={u.nidImageUrl} alt="NID" className="w-full h-full object-contain" />
+                        <img src={fixR2Url(u.nidImageUrl)} alt="NID" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <ImageIcon className="w-8 h-8 text-white" />
                         </div>
@@ -2387,11 +2387,12 @@ export default function Admin() {
               {selectedBookingUser.nidImageUrl && (
                 <div className="border-t border-slate-100 pt-4">
                   <p className="text-xs font-bold text-slate-400 uppercase mb-2">NID Image</p>
-                  <div className="bg-slate-50 rounded-xl overflow-hidden border border-slate-100 cursor-pointer" onClick={() => window.open(selectedBookingUser.nidImageUrl, '_blank')}>
+                  <div className="bg-slate-50 rounded-xl overflow-hidden border border-slate-100 cursor-pointer" onClick={() => window.open(fixR2Url(selectedBookingUser.nidImageUrl), '_blank')}>
                     <img 
-                      src={selectedBookingUser.nidImageUrl} 
+                      src={fixR2Url(selectedBookingUser.nidImageUrl)} 
                       alt="NID" 
                       className="w-full h-auto max-h-48 object-contain"
+                      referrerPolicy="no-referrer"
                     />
                   </div>
                   <p className="text-[10px] text-slate-400 mt-1 text-center">Click image to view full size</p>

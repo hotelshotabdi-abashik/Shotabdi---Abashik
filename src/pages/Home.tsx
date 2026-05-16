@@ -614,7 +614,7 @@ export default function Home() {
                   className="relative overflow-hidden shadow-md group cursor-pointer w-full rounded-lg block"
                 >
                   <img 
-                    src={img.url} 
+                    src={getOptimizedUrl(img.url)} 
                     alt={img.title || `Gallery ${index + 1}`} 
                     title={img.title || `Gallery image ${index + 1} of ${websiteName}`}
                     className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110" 

@@ -55,8 +55,7 @@ export const uploadToR2 = async (file: File, folder: string = 'shotabdi-abashik'
     throw new Error(`Upload failed with status ${response.status}`);
   }
   
-  const PUBLIC_URL = 'https://shotabdi-abashik.bd';
-  return `${PUBLIC_URL}/${fileName}`;
+  return `${WORKER_URL}/${fileName}`;
 };
 
 export const deleteFromR2 = async (url: string): Promise<void> => {
@@ -67,10 +66,9 @@ export const deleteFromR2 = async (url: string): Promise<void> => {
   
   try {
     let pathToDelete = '';
-    const PUBLIC_URL = 'https://shotabdi-abashik.bd';
     
-    if (url.includes(PUBLIC_URL)) {
-      pathToDelete = url.split(`${PUBLIC_URL}/`)[1];
+    if (url.includes(WORKER_URL)) {
+      pathToDelete = url.split(`${WORKER_URL}/`)[1];
     } else if (url.includes('pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev')) {
       pathToDelete = url.split('pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/')[1];
     } else if (url.includes('workers.dev')) {
@@ -96,4 +94,16 @@ export const deleteFromR2 = async (url: string): Promise<void> => {
   } catch (error) {
     console.error("Error deleting from R2:", error);
   }
+};
+
+export const fixR2Url = (url: string | null | undefined): string => {
+  if (!url) return '';
+  const WORKER_URL = import.meta.env.VITE_CLOUDFLARE_WORKER_URL || 'https://shotabdi-abashik.hotelshotabdiabashik.workers.dev';
+  const OLD_DOMAIN = 'shotabdi-abashik.bd';
+  
+  if (url.includes(OLD_DOMAIN)) {
+    return url.replace(new RegExp(`https?://${OLD_DOMAIN}`, 'g'), WORKER_URL);
+  }
+  
+  return url;
 };
