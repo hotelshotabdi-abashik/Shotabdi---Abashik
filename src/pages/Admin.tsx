@@ -106,6 +106,7 @@ export default function Admin() {
   const [roleModal, setRoleModal] = useState<{ isOpen: boolean, uid: string, newRole: string, userEmail: string }>({ isOpen: false, uid: '', newRole: '', userEmail: '' });
   const [rolePassword, setRolePassword] = useState('');
   const [newAdminSecret, setNewAdminSecret] = useState('');
+  const [selectedBookingUser, setSelectedBookingUser] = useState<any>(null);
 
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ 
     isOpen: boolean, 
@@ -767,11 +768,11 @@ export default function Admin() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 md:mb-8">{t('অ্যাডমিন প্যানেল', 'Admin Dashboard')}</h1>
-        
-        {/* Tabs */}
-        <div className="sticky top-0 z-30 bg-slate-50 pt-2 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-          <div className="flex space-x-2 overflow-x-auto pb-4 scrollbar-hide snap-x select-none">
+        <div className="sticky top-0 sm:top-14 z-40 bg-slate-50 pt-4 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">{t('অ্যাডমিন প্যানেল', 'Admin Dashboard')}</h1>
+          
+          {/* Tabs */}
+          <div className="flex space-x-2 overflow-x-auto pb-4 scrollbar-hide snap-x select-none border-b border-slate-200">
             <button 
               onClick={() => setActiveTab('rooms')}
               className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'rooms' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
@@ -836,6 +837,7 @@ export default function Admin() {
         </div>
 
         {/* Tab Content */}
+        <div className="mt-8">
         {activeTab === 'rooms' && (
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -1174,7 +1176,24 @@ export default function Admin() {
                     </span>
                   </div>
                   <div className="text-sm space-y-1">
-                    <p className="font-bold text-slate-800">{b.userName || 'Unknown'}</p>
+                    <button 
+                      onClick={async () => {
+                        const userDoc = await getDoc(doc(db, 'users', b.userId));
+                        if (userDoc.exists()) {
+                          setSelectedBookingUser({ ...userDoc.data(), bookingId: b.id });
+                        } else {
+                          setSelectedBookingUser({ 
+                            displayName: b.userName, 
+                            email: b.userEmail, 
+                            phone: b.userPhone,
+                            bookingId: b.id 
+                          });
+                        }
+                      }}
+                      className="font-bold text-slate-800 hover:text-red-700 text-left"
+                    >
+                      {b.userName || 'Unknown'}
+                    </button>
                     <p className="text-slate-600">{b.userEmail}</p>
                     {b.userPhone && (
                       <div className="flex items-center">
@@ -1235,7 +1254,24 @@ export default function Admin() {
                           <div className="text-xs text-slate-500 font-mono mt-1">ID: {b.id}</div>
                         </td>
                         <td className="p-4">
-                          <div className="font-bold text-slate-900">{b.userName || 'Unknown'}</div>
+                          <button 
+                            onClick={async () => {
+                              const userDoc = await getDoc(doc(db, 'users', b.userId));
+                              if (userDoc.exists()) {
+                                setSelectedBookingUser({ ...userDoc.data(), bookingId: b.id });
+                              } else {
+                                setSelectedBookingUser({ 
+                                  displayName: b.userName, 
+                                  email: b.userEmail, 
+                                  phone: b.userPhone,
+                                  bookingId: b.id 
+                                });
+                              }
+                            }}
+                            className="font-bold text-slate-900 hover:text-red-700 text-left transition-colors"
+                          >
+                            {b.userName || 'Unknown'}
+                          </button>
                           <div className="text-sm text-slate-600">{b.userEmail}</div>
                           {b.userPhone && (
                             <div className="flex items-center mt-1">
@@ -2095,7 +2131,7 @@ export default function Admin() {
               </button>
               <button
                 onClick={handleConfirmDelete}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
               >
                 {t('মুছে ফেলুন', 'Delete')}
               </button>
@@ -2103,6 +2139,55 @@ export default function Admin() {
           </div>
         </div>
       )}
+
+
+      {selectedBookingUser && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 font-sans">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
+          >
+            <div className="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
+              <h3 className="text-lg font-bold">User Information</h3>
+              <button 
+                onClick={() => setSelectedBookingUser(null)}
+                className="p-1 hover:bg-white/10 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4 text-slate-800">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center text-red-700">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-bold">{selectedBookingUser.displayName || 'Guest'}</h4>
+                  <p className="text-sm text-slate-500">{selectedBookingUser.email || 'N/A'}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 pt-4">
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase">Phone</p>
+                  <p className="font-medium">{selectedBookingUser.phone || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase">Address</p>
+                  <p className="font-medium">{selectedBookingUser.address || 'N/A'}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedBookingUser(null)} 
+                className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold mt-4 hover:bg-slate-800 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </div>
     </div>
   );
 }
