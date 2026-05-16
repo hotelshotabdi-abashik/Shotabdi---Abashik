@@ -23,6 +23,14 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [livenessStep, setLivenessStep] = useState(0);
+  const [livenessProgress, setLivenessProgress] = useState(0);
+
+  const livenessChallenges = [
+    { title: t('সোজা হয়ে দাঁড়ান', 'Face Straight'), desc: t('ক্যামেরার দিকে তাকান', 'Look into the camera'), icon: 'User' },
+    { title: t('একটু হাসুন', 'Smile Please'), desc: t('আপনার মুখমন্ডল শনাক্ত করা হচ্ছে', 'Testing facial detection'), icon: 'Smile' },
+    { title: t('চোখ ইশারা করুন', 'Blink Your Eyes'), desc: t('আপনি মানুষ কি না তা নিশ্চিত করুন', 'Confirming liveness'), icon: 'Eye' },
+  ];
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -34,10 +42,50 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setCameraActive(true);
+        if (step === 2) {
+          startLivenessSequence();
+        }
       }
     } catch (err) {
       console.error("Camera error:", err);
       toast.error(t('ক্যামেরা চালু করতে সমস্যা হয়েছে।', 'Failed to start camera.'));
+    }
+  };
+
+  const startLivenessSequence = () => {
+    setLivenessStep(0);
+    setLivenessProgress(0);
+    
+    // Simulate complex movement detection with a guided progress
+    const interval = setInterval(() => {
+      setLivenessProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          autoCaptureSelfie();
+          return 100;
+        }
+        
+        const next = prev + 1;
+        if (next === 33) setLivenessStep(1);
+        if (next === 66) setLivenessStep(2);
+        
+        return next;
+      });
+    }, 50); // ~5 seconds total for the sequence
+  };
+
+  const autoCaptureSelfie = () => {
+    if (videoRef.current && canvasRef.current) {
+      const context = canvasRef.current.getContext('2d');
+      if (context) {
+        canvasRef.current.width = videoRef.current.videoWidth;
+        canvasRef.current.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0);
+        const dataUrl = canvasRef.current.toDataURL('image/jpeg', 0.8);
+        setSelfieImage(dataUrl);
+        stopCamera();
+        toast.success(t('মুখমন্ডল সফলভাবে শনাক্ত করা হয়েছে', 'Face detected successfully'));
+      }
     }
   };
 
@@ -223,53 +271,102 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
-                className="space-y-4"
+                className="space-y-6"
               >
                 <div className="text-center">
-                  <h4 className="text-xl font-bold text-slate-900 mb-2">Step 2: Take a Selfie</h4>
-                  <p className="text-slate-500 text-sm">We need to match your face with the photo on your ID.</p>
+                  <h4 className="text-xl font-bold text-slate-900 mb-2">{t('সেলফি তুলুন', 'Take a Selfie')}</h4>
+                  <p className="text-slate-500 text-sm">{t('আপনার মুখমন্ডল ক্যামেরার বৃত্তের ভেতর রাখুন', 'Keep your face inside the circle')}</p>
                 </div>
 
-                <div className="aspect-square bg-slate-50 rounded-full border-4 border-slate-100 flex flex-col items-center justify-center overflow-hidden relative mx-auto w-48">
+                <div className="relative mx-auto w-64 h-64">
+                   {/* Progress Ring */}
+                   <svg className="absolute inset-0 w-full h-full transform -rotate-90 z-20 pointer-events-none">
+                    <circle
+                      cx="128"
+                      cy="128"
+                      r="120"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="transparent"
+                      className="text-slate-100"
+                    />
+                    <circle
+                      cx="128"
+                      cy="128"
+                      r="120"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      fill="transparent"
+                      strokeDasharray={120 * 2 * Math.PI}
+                      strokeDashoffset={120 * 2 * Math.PI * (1 - livenessProgress / 100)}
+                      className="text-red-600 transition-all duration-100"
+                    />
+                  </svg>
+
+                  <div className="absolute inset-0 rounded-full border-4 border-white shadow-inner overflow-hidden z-10 bg-slate-100">
+                    {cameraActive ? (
+                      <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover scale-x-[-1]" />
+                    ) : selfieImage ? (
+                      <img src={selfieImage} alt="Selfie" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <Camera className="w-12 h-12 text-slate-300" />
+                      </div>
+                    )}
+
+                    {cameraActive && (
+                      <div className="absolute bottom-4 left-0 right-0 text-center z-30">
+                        <motion.div 
+                          key={livenessStep}
+                          initial={{ y: 20, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          className="bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-3 py-1 rounded-full mx-auto w-fit border border-white/20"
+                        >
+                          {livenessChallenges[livenessStep].title}
+                        </motion.div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
                   {cameraActive ? (
-                    <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover scale-x-[-1]" />
-                  ) : selfieImage ? (
-                    <img src={selfieImage} alt="Selfie" className="w-full h-full object-cover" />
+                    <div className="text-center p-4 bg-slate-50 rounded-2xl border border-slate-100 italic text-slate-500 text-sm">
+                      {livenessChallenges[livenessStep].desc}
+                    </div>
                   ) : (
-                    <div className="text-center p-6">
-                      <Camera className="w-10 h-10 text-slate-300 mx-auto" />
+                    <div className="flex flex-col gap-3">
+                      {!selfieImage ? (
+                        <button 
+                          onClick={startCamera}
+                          className="flex items-center justify-center gap-2 bg-red-600 text-white py-4 rounded-2xl font-bold active:scale-95 transition-all shadow-xl"
+                        >
+                          <Camera className="w-5 h-5" /> {t('ক্যামেরা চালু করুন', 'Start Verification')}
+                        </button>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={startCamera}
+                            className="bg-slate-100 text-slate-700 py-3 rounded-xl font-bold text-sm"
+                          >
+                            {t('আবার তুলুন', 'Retake')}
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setStep(3);
+                              verify();
+                            }}
+                            className="w-full bg-red-700 text-white py-4 rounded-xl font-bold shadow-xl active:scale-95 transition-all"
+                          >
+                            {t('যাচাই করুন', 'Verify Identity')}
+                          </button>
+                        </>
+                      )}
                     </div>
                   )}
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  {cameraActive ? (
-                    <button 
-                      onClick={() => capturePhoto('selfie')}
-                      className="bg-red-600 text-white py-3 rounded-xl font-bold active:scale-95 transition-all"
-                    >
-                      Take Selfie
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={startCamera}
-                      className="flex items-center justify-center gap-2 bg-slate-900 text-white py-3 rounded-xl font-bold active:scale-95 transition-all"
-                    >
-                      <Camera className="w-5 h-5" /> Open Camera
-                    </button>
+                  {!cameraActive && !selfieImage && (
+                    <button onClick={() => setStep(1)} className="w-full text-slate-500 font-bold text-sm py-2">Back</button>
                   )}
-                  {selfieImage && !cameraActive && (
-                    <button 
-                      onClick={() => {
-                        setStep(3);
-                        verify();
-                      }}
-                      className="w-full bg-red-700 text-white py-4 rounded-xl font-bold mt-4 shadow-xl active:scale-95 transition-all"
-                    >
-                      Confirm and Verify
-                    </button>
-                  )}
-                  <button onClick={() => setStep(1)} className="text-slate-500 font-bold text-sm">Back</button>
                 </div>
               </motion.div>
             )}
