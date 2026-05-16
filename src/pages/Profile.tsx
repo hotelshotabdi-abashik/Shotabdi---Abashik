@@ -4,11 +4,12 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { updatePassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X } from 'lucide-react';
+import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X, BadgeCheck, Fingerprint } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import PhoneInput from '../components/PhoneInput';
 import { sendEmail } from '../services/NotificationService';
+import { IdentityVerification } from '../components/IdentityVerification';
 
 export default function Profile() {
   const { t } = useLanguage();
@@ -18,6 +19,8 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
   
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('profileDraft');
@@ -381,25 +384,42 @@ export default function Profile() {
                   </div>
                 </div>
 
-                {/* NID Info */}
-                <div className="space-y-4 pt-4">
-                  <h3 className="text-lg font-bold text-slate-900 border-b pb-2 flex items-center">
-                    <FileText className="w-5 h-5 mr-2 text-red-600" /> {t('পরিচয়পত্র (NID)', 'Identity Card (NID)')}
-                  </h3>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('NID নম্বর', 'NID Number')} <span className="text-red-500">*</span></label>
-                    <input 
-                      type="text" 
-                      name="nidNumber" 
-                      required 
-                      value={formData.nidNumber} 
-                      onChange={handleChange}
-                      disabled={timeRemaining !== null && timeRemaining > 0}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
-                      placeholder={t("আপনার NID নম্বর", "Your NID number")}
-                    />
-                  </div>
-                </div>
+          {/* NID Info */}
+          <div className="space-y-4 pt-4">
+            <h3 className="text-lg font-bold text-slate-900 border-b pb-2 flex items-center justify-between">
+              <span className="flex items-center">
+                <FileText className="w-5 h-5 mr-2 text-red-600" /> {t('পরিচয়পত্র (NID)', 'Identity Card (NID)')}
+              </span>
+              {profile?.identityVerified ? (
+                <span className="flex items-center gap-1.5 text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-bold">
+                  <BadgeCheck className="w-4 h-4" />
+                  {t('যাচাইকৃত', 'Verified')}
+                </span>
+              ) : (
+                <button 
+                  type="button"
+                  onClick={() => setIsVerificationModalOpen(true)}
+                  className="flex items-center gap-1.5 text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-bold hover:bg-red-200 transition-colors"
+                >
+                  <Fingerprint className="w-4 h-4" />
+                  {t('এখনি যাচাই করুন', 'Verify Now')}
+                </button>
+              )}
+            </h3>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">{t('NID নম্বর', 'NID Number')} <span className="text-red-500">*</span></label>
+              <input 
+                type="text" 
+                name="nidNumber" 
+                required 
+                value={formData.nidNumber} 
+                onChange={handleChange}
+                disabled={profile?.identityVerified || (timeRemaining !== null && timeRemaining > 0)}
+                className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors disabled:bg-slate-100 disabled:text-slate-500"
+                placeholder={t("আপনার NID নম্বর", "Your NID number")}
+              />
+            </div>
+          </div>
 
                 <div className="pt-6">
                   <button 
@@ -632,6 +652,11 @@ export default function Profile() {
           </div>
         </div>
       )}
+      <IdentityVerification 
+        isOpen={isVerificationModalOpen} 
+        onClose={() => setIsVerificationModalOpen(false)} 
+        onVerified={() => setIsVerificationModalOpen(false)}
+      />
     </div>
   );
 }

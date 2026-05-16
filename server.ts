@@ -10,6 +10,7 @@ import { initializeApp as initClient } from 'firebase/app';
 import { getFirestore as getClientFirestore, collection, getDocs } from 'firebase/firestore';
 import fs from 'fs';
 import axios from 'axios';
+import { GoogleGenerativeAI } from '@google/genai';
 
 dotenv.config();
 
@@ -68,7 +69,67 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
+
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+
+  app.post('/api/verify-identity', async (req, res) => {
+    const { nidImage, selfieImage } = req.body;
+    
+    if (!nidImage || !selfieImage) {
+      return res.status(400).json({ error: 'Both NID and Selfie images are required' });
+    }
+
+    try {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      const nidPart = {
+        inlineData: {
+          data: nidImage.split(',')[1],
+          mimeType: nidImage.split(';')[0].split(':')[1]
+        }
+      };
+      
+      const selfiePart = {
+        inlineData: {
+          data: selfieImage.split(',')[1],
+          mimeType: selfieImage.split(';')[0].split(':')[1]
+        }
+      };
+
+      const prompt = `
+        You are an identity verification assistant. 
+        Image 1 is a photo of a person's National Identity Card (NID) or Passport.
+        Image 2 is a selfie of the person.
+        
+        Tasks:
+        1. Extract the full name (look for 'Name' or 'নাম') and ID number from the ID card.
+        2. Compare the face on the ID card with the face in the selfie. 
+        3. Are they the same person?
+        
+        Return a STRICT JSON response only, with no markdown formatting:
+        {
+          "name": "string",
+          "idNumber": "string",
+          "isFaceMatch": boolean,
+          "confidence": number,
+          "reason": "string"
+        }
+      `;
+
+      const result = await model.generateContent([prompt, nidPart, selfiePart]);
+      const response = await result.response;
+      const text = response.text();
+      
+      const jsonStr = text.replace(/```json|```/g, '').trim();
+      const verificationResult = JSON.parse(jsonStr);
+      
+      res.json(verificationResult);
+    } catch (error) {
+      console.error('Verification error:', error);
+      res.status(500).json({ error: 'Identity verification failed' });
+    }
+  });
 
   // Image Proxy for social crawlers
   app.get('/api/proxy-image', async (req, res) => {

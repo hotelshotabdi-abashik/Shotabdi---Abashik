@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, serverTimestamp, query, orderBy, limit, addDoc, where } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
-import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone, Send, Facebook, Mail, MapPin, ShieldCheck, Lock, AlertTriangle } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, X, Users, Home, Calendar, Globe, Phone, Star, Megaphone, Send, Facebook, Mail, MapPin, ShieldCheck, Lock, AlertTriangle, BadgeCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import { uploadToR2, deleteFromR2 } from '../lib/r2';
@@ -31,6 +31,7 @@ interface User {
   displayName?: string;
   phone?: string;
   adminSecret?: string;
+  identityVerified?: boolean;
 }
 
 interface Booking {
@@ -1109,6 +1110,7 @@ export default function Admin() {
                       <th className="p-4 font-bold border-b">{t('ইমেইল', 'Email')}</th>
                       <th className="p-4 font-bold border-b">{t('ফোন', 'Phone')}</th>
                       <th className="p-4 font-bold border-b">{t('রোল', 'Role')}</th>
+                      <th className="p-4 font-bold border-b">{t('যাচাই', 'Verify')}</th>
                       <th className="p-4 font-bold border-b text-right">{t('অ্যাকশন', 'Action')}</th>
                     </tr>
                   </thead>
@@ -1122,6 +1124,13 @@ export default function Admin() {
                           <span className={`px-2 py-1 rounded text-xs font-bold uppercase tracking-wider ${u.role === 'admin' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-700'}`}>
                             {u.role}
                           </span>
+                        </td>
+                        <td className="p-4">
+                          {u.identityVerified ? (
+                            <BadgeCheck className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <X className="w-5 h-5 text-slate-300" />
+                          )}
                         </td>
                         <td className="p-4 text-right">
                           <div className="flex justify-end items-center space-x-2">
@@ -2169,12 +2178,30 @@ export default function Admin() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 pt-4">
                 <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase">Legal Name</p>
+                  <p className="font-medium">{selectedBookingUser.legalName || 'N/A'}</p>
+                </div>
+                <div>
                   <p className="text-xs font-bold text-slate-400 uppercase">Phone</p>
                   <p className="font-medium">{selectedBookingUser.phone || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-slate-400 uppercase">Address</p>
-                  <p className="font-medium">{selectedBookingUser.address || 'N/A'}</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase">Guardian Name</p>
+                  <p className="font-medium">{selectedBookingUser.guardianName || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase">Guardian Phone</p>
+                  <p className="font-medium">{selectedBookingUser.guardianPhone || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase">NID Number</p>
+                  <p className="font-medium">{selectedBookingUser.nidNumber || 'N/A'}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase">Verification</p>
+                  <p className={`font-bold ${selectedBookingUser.identityVerified ? 'text-green-600' : 'text-amber-600'}`}>
+                    {selectedBookingUser.identityVerified ? 'Verified' : 'Not Verified'}
+                  </p>
                 </div>
               </div>
               <button 

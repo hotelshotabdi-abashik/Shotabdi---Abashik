@@ -733,7 +733,7 @@ export default function Home() {
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {restaurants.slice(0, 4).map((res: any, index: number) => (
               <div key={index} className="bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 group hover:shadow-xl transition-all duration-300">
                 <div className="relative h-48 overflow-hidden">
@@ -778,7 +778,7 @@ export default function Home() {
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {tourSpots.slice(0, 4).map((spot: any, index: number) => (
               <div key={index} className="bg-white rounded-2xl overflow-hidden border border-slate-100 group hover:shadow-xl transition-all duration-300">
                 <div className="relative h-48 overflow-hidden">
