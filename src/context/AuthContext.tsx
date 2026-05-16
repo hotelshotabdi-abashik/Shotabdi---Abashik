@@ -19,6 +19,7 @@ export interface UserProfile {
   guardianName?: string;
   guardianPhone?: string;
   nidNumber?: string;
+  nidImageUrl?: string;
   identityVerified?: boolean;
   verificationData?: any;
   createdAt: any;

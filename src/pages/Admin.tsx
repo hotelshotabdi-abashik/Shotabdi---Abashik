@@ -53,7 +53,7 @@ export default function Admin() {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { content, updateContent } = useContent();
-  const [activeTab, setActiveTab] = useState<'rooms' | 'users' | 'bookings' | 'content' | 'ratings' | 'offers' | 'social' | 'settings' | 'emails' | 'recommendations'>('rooms');
+  const [activeTab, setActiveTab] = useState<'rooms' | 'users' | 'bookings' | 'content' | 'ratings' | 'offers' | 'social' | 'settings' | 'emails' | 'recommendations'>('bookings');
   
   // Social Links State
   const [socialLinks, setSocialLinks] = useState<any[]>([]);
@@ -775,6 +775,12 @@ export default function Admin() {
           {/* Tabs */}
           <div className="flex space-x-2 overflow-x-auto pb-4 scrollbar-hide snap-x select-none border-b border-slate-200">
             <button 
+              onClick={() => setActiveTab('bookings')}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'bookings' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+            >
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('বুকিং পরিচালনা', 'Manage Bookings')}
+            </button>
+            <button 
               onClick={() => setActiveTab('rooms')}
               className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'rooms' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
             >
@@ -785,12 +791,6 @@ export default function Admin() {
               className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'users' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
             >
               <Users className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('ইউজার পরিচালনা', 'Manage Users')}
-            </button>
-            <button 
-              onClick={() => setActiveTab('bookings')}
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'bookings' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
-            >
-              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('বুকিং পরিচালনা', 'Manage Bookings')}
             </button>
             <button 
               onClick={() => setActiveTab('content')}
@@ -2151,11 +2151,11 @@ export default function Admin() {
 
 
       {selectedBookingUser && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 font-sans">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 font-sans overflow-y-auto">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }} 
             animate={{ opacity: 1, scale: 1 }} 
-            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden my-auto"
           >
             <div className="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
               <h3 className="text-lg font-bold">User Information</h3>
@@ -2176,6 +2176,7 @@ export default function Admin() {
                   <p className="text-sm text-slate-500">{selectedBookingUser.email || 'N/A'}</p>
                 </div>
               </div>
+              
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 pt-4">
                 <div>
                   <p className="text-xs font-bold text-slate-400 uppercase">Legal Name</p>
@@ -2204,6 +2205,21 @@ export default function Admin() {
                   </p>
                 </div>
               </div>
+
+              {selectedBookingUser.nidImageUrl && (
+                <div className="border-t border-slate-100 pt-4">
+                  <p className="text-xs font-bold text-slate-400 uppercase mb-2">NID Image</p>
+                  <div className="bg-slate-50 rounded-xl overflow-hidden border border-slate-100 cursor-pointer" onClick={() => window.open(selectedBookingUser.nidImageUrl, '_blank')}>
+                    <img 
+                      src={selectedBookingUser.nidImageUrl} 
+                      alt="NID" 
+                      className="w-full h-auto max-h-48 object-contain"
+                    />
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-1 text-center">Click image to view full size</p>
+                </div>
+              )}
+
               <button 
                 onClick={() => setSelectedBookingUser(null)} 
                 className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold mt-4 hover:bg-slate-800 transition-colors"

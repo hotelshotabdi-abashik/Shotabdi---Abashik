@@ -113,6 +113,8 @@ service cloud.firestore {
                (!('guardianPhone' in data) || (data.guardianPhone is string && data.guardianPhone.size() <= 20)) &&
                (!('nidNumber' in data) || (data.nidNumber is string && data.nidNumber.size() <= 30)) &&
                (!('nidImageUrl' in data) || (data.nidImageUrl is string && (data.nidImageUrl == "" || isValidUrl(data.nidImageUrl)))) &&
+               (!('identityVerified' in data) || data.identityVerified is bool) &&
+               (!('verificationData' in data) || data.verificationData is map) &&
                (!('adminSecret' in data) || (data.adminSecret is string && data.adminSecret.size() <= 50)) &&
                (!('lastUpdated' in data) || (data.lastUpdated is timestamp));
       }
@@ -122,21 +124,13 @@ service cloud.firestore {
       allow create: if isAuthenticated() && 
                       isOwner(userId) && 
                       isValidUser(request.resource.data) &&
-                      (
-                        (request.resource.data.role == 'user') || 
-                        (request.resource.data.role == 'admin' && request.auth.token.email in [
-                          "hotelshotabdiabashik@gmail.com", 
-                          "selectedlegendbusiness@gmail.com", 
-                          "fuadf342@gmail.com",
-                          "d2kabdulkahar@gmail.com"
-                        ])
-                      ) &&
+                      request.resource.data.role == 'user' &&
                       isRecent(request.resource.data.createdAt);
       
       allow update: if isAuthenticated() && (
                       (isOwner(userId) && 
                        isValidUser(request.resource.data) && 
-                       (fieldUnchanged('role') || isAdmin()) &&
+                       fieldUnchanged('role') &&
                        fieldUnchanged('uid') &&
                        fieldUnchanged('email') &&
                        fieldUnchanged('createdAt')) || 
