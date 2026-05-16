@@ -177,19 +177,19 @@ export default function Restaurant() {
       </Helmet>
 
       {/* Modern Sticky Header */}
-      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+      <div className="sticky top-0 sm:top-14 z-40 bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center py-4 gap-4">
-            <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="flex justify-between items-center py-3 sm:py-4 gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto overflow-hidden">
               <Link to="/" className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 sm:p-2.5 rounded-full transition-all flex-shrink-0">
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               </Link>
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
-                {t(`সিলেটের জনপ্রিয় ${restaurants.length}টি রেস্টুরেন্ট`, `Top ${restaurants.length} Restaurants`)}
+              <h2 className="text-base sm:text-2xl font-bold text-slate-900 truncate">
+                {t(`সিলেটের ${restaurants.length}টি রেস্টুরেন্ট`, `Top ${restaurants.length} Restaurants`)}
               </h2>
             </div>
             
-            <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="flex items-center gap-3 w-full md:w-auto hidden sm:flex">
               <div className="relative w-full md:w-64 lg:w-72">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search className="h-4 w-4 text-slate-400" />
@@ -261,7 +261,7 @@ export default function Restaurant() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
             {filteredRestaurants.map((restaurant, index) => (
               <div key={index} className="bg-white rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow flex flex-col h-full relative group overflow-hidden">
                 {editMode && (

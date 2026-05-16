@@ -470,14 +470,14 @@ export default function Rooms() {
       </Helmet>
 
       {/* Modern Sticky Header */}
-      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+      <div className="sticky top-0 sm:top-14 z-40 bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center py-4 gap-4">
-            <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="flex justify-between items-center py-3 sm:py-4 gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto overflow-hidden">
               <Link to="/" className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 sm:p-2.5 rounded-full transition-all flex-shrink-0">
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               </Link>
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">
+              <h2 className="text-base sm:text-2xl font-bold text-slate-900 truncate">
                 <EditableText contentKey="rooms_title" defaultText="Our Rooms" />
               </h2>
             </div>
@@ -508,22 +508,22 @@ export default function Rooms() {
           <div className="w-24 h-1 bg-red-600 mx-auto rounded-full mt-6"></div>
           
           {/* Global Discount Banner */}
-          <div className="mt-10 relative bg-gradient-to-r from-red-700 via-red-600 to-red-800 text-white p-6 rounded-2xl shadow-2xl overflow-hidden group max-w-3xl mx-auto border border-red-500">
+          <div className="mt-4 sm:mt-10 relative bg-gradient-to-r from-red-700 via-red-600 to-red-800 text-white p-2 sm:p-6 rounded-lg sm:rounded-2xl shadow-xl overflow-hidden group max-w-2xl mx-auto border border-red-500">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10 mix-blend-overlay"></div>
             <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 opacity-20 blur-xl group-hover:opacity-40 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
-            <div className="relative flex flex-col sm:flex-row items-center justify-center sm:justify-between z-10 gap-6">
-              <div className="flex items-center gap-4">
-                <div className="bg-white text-red-700 font-black text-4xl px-5 py-3 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.3)] transform -rotate-3 hover:rotate-0 transition-transform duration-300 flex items-center">
+            <div className="relative flex items-center justify-between z-10 gap-2 sm:gap-6">
+              <div className="flex items-center gap-1.5 sm:gap-4">
+                <div className="bg-white text-red-700 font-black text-sm sm:text-4xl px-1.5 py-0.5 sm:px-5 sm:py-3 rounded-md sm:rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.3)] transform -rotate-3 hover:rotate-0 transition-transform duration-300 flex items-center">
                   <EditableText 
                     contentKey="global_discount_rate" 
                     defaultText="0" 
-                  />% OFF
+                  />%
                 </div>
                 <div className="text-left">
-                  <h3 className="text-2xl font-bold tracking-tight text-white drop-shadow-md">
+                  <h3 className="text-[10px] sm:text-2xl font-bold tracking-tight text-white drop-shadow-md leading-none">
                     <EditableText contentKey="global_discount_title" defaultText="Special Offer!" />
                   </h3>
-                  <p className="text-red-100 font-medium mt-1">
+                  <p className="text-[8px] sm:text-base text-red-100 font-medium leading-tight mt-0.5">
                     <EditableText contentKey="global_discount_desc" defaultText="Get a massive discount on all room bookings today." multiline />
                   </p>
                 </div>
@@ -675,52 +675,44 @@ export default function Rooms() {
                     )}
                   </Link>
                   <div className="p-3 sm:p-8 flex-grow flex flex-col">
-                    <div className="flex flex-col sm:flex-row justify-between items-start mb-2 sm:mb-4">
-                      <div className="min-w-0 flex-1 pr-1 sm:pr-2">
+                    <div className="flex flex-col sm:flex-row justify-between items-start mb-1 sm:mb-4 pr-1 sm:pr-0">
+                      <div className="min-w-0 pr-1 sm:pr-2">
                         <Link to={`/rooms/${room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`}>
-                          <h2 className="text-sm sm:text-2xl font-bold text-slate-900 truncate hover:text-red-600 transition-colors">{room.name}</h2>
+                          <h2 className="text-[11px] sm:text-2xl font-bold text-slate-900 truncate hover:text-red-600 transition-colors leading-tight">{room.name}</h2>
                         </Link>
                       </div>
-                      <div className="text-left sm:text-right flex-shrink-0 mt-1 sm:mt-0">
+                      <div className="text-left sm:text-right flex-shrink-0 mt-0.5 sm:mt-0">
                         {getStrikethroughPrice(room) ? (
                           <>
-                            <div className="text-[8px] sm:text-sm text-slate-400 line-through">৳{getStrikethroughPrice(room)}</div>
-                            <div className="text-sm sm:text-2xl font-bold text-red-600">৳{room.price}</div>
+                            <div className="text-[7px] sm:text-sm text-slate-400 line-through">৳{getStrikethroughPrice(room)}</div>
+                            <div className="text-[11px] sm:text-2xl font-bold text-red-600">৳{room.price}</div>
                           </>
                         ) : (
-                          <div className="text-sm sm:text-2xl font-bold text-slate-900">৳{room.price}</div>
+                          <div className="text-[11px] sm:text-2xl font-bold text-slate-900">৳{room.price}</div>
                         )}
-                        <div className="text-[8px] sm:text-xs text-slate-500">{t('রাত', 'Night')}</div>
                       </div>
                     </div>
-                    <p className="text-[10px] sm:text-base text-slate-600 mb-3 sm:mb-6 flex-grow line-clamp-2 sm:line-clamp-none leading-tight">{room.description}</p>
+                    <p className="text-[10px] sm:text-base text-slate-600 mb-3 sm:mb-6 flex-grow line-clamp-2 sm:line-clamp-none leading-relaxed">{room.description}</p>
                     
                     <div className="mb-3 sm:mb-8">
-                      <h4 className="text-[9px] sm:text-sm font-bold text-slate-900 mb-1.5 sm:mb-3 uppercase tracking-wider">{t('সুবিধাসমূহ', 'Amenities')}</h4>
-                      <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
+                      <h4 className="text-[10px] sm:text-sm font-bold text-slate-900 mb-2 sm:mb-3 uppercase tracking-wider">{t('সুবিধাসমূহ', 'Amenities')}</h4>
+                      <ul className="grid grid-cols-1 gap-1 sm:gap-2">
                         {room.amenities?.map((amenity, index) => (
-                          <li key={index} className="flex items-start text-[9px] sm:text-sm text-slate-600">
-                            <CheckCircle2 className="w-2.5 h-2.5 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-red-500 flex-shrink-0 mt-0.5" />
-                            <span className="leading-tight break-words">{amenity}</span>
+                          <li key={index} className="flex items-start text-[10px] sm:text-sm text-slate-600">
+                            <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 sm:mr-2 text-red-500 flex-shrink-0 mt-0.5" />
+                            <span className="leading-tight">{amenity}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                     
-                    <div className="flex gap-2 sm:gap-4">
+                    <div className="flex gap-1 mt-auto">
                       <Link 
                         to={`/rooms/${room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`}
-                        className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 sm:py-3 px-2 sm:px-4 rounded-lg sm:rounded-xl transition-colors flex items-center justify-center text-xs sm:text-base"
+                        className="flex-1 bg-red-700 hover:bg-red-800 text-white font-bold py-1.5 sm:py-3 px-1 sm:px-4 rounded-md sm:rounded-xl transition-colors flex items-center justify-center text-[10px] sm:text-base shadow-sm active:scale-95"
                       >
-                        {t('বিস্তারিত', 'Details')}
-                      </Link>
-                      <button 
-                        onClick={() => handleBook(room)}
-                        className="flex-1 bg-red-700 hover:bg-red-800 text-white font-bold py-2 sm:py-3 px-2 sm:px-4 rounded-lg sm:rounded-xl transition-colors flex items-center justify-center text-xs sm:text-base"
-                      >
-                        <BedDouble className="w-3 h-3 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
                         {t('বুক করুন', 'Book Now')}
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 </>

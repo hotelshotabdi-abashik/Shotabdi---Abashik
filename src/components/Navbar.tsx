@@ -204,7 +204,7 @@ export default function Navbar() {
 
   return (
     <>
-    <nav className={`fixed w-full top-0 z-[9999] transition-all duration-500 ${isSolid ? 'bg-white/95 backdrop-blur-md shadow-sm text-black' : 'bg-transparent shadow-none text-white'}`}>
+    <nav className={`fixed w-full top-0 z-[9999] transition-all duration-300 ${isSolid ? 'bg-white/95 backdrop-blur-md shadow-sm text-black' : 'bg-transparent shadow-none text-white'}`}>
       <div className="w-full px-2 sm:px-4 lg:px-6">
         <div className="flex justify-between h-14 py-1 items-center">
           <div className="flex items-center flex-1 mr-2 sm:mr-4 min-w-0">

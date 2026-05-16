@@ -770,67 +770,69 @@ export default function Admin() {
         <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-6 md:mb-8">{t('অ্যাডমিন প্যানেল', 'Admin Dashboard')}</h1>
         
         {/* Tabs */}
-        <div className="flex space-x-2 mb-6 md:mb-8 overflow-x-auto pb-2 scrollbar-hide">
-          <button 
-            onClick={() => setActiveTab('rooms')}
-            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'rooms' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-          >
-            <Home className="w-5 h-5 mr-2" /> {t('রুম পরিচালনা', 'Manage Rooms')}
-          </button>
-          <button 
-            onClick={() => setActiveTab('users')}
-            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'users' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-          >
-            <Users className="w-5 h-5 mr-2" /> {t('ইউজার পরিচালনা', 'Manage Users')}
-          </button>
-          <button 
-            onClick={() => setActiveTab('bookings')}
-            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'bookings' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-          >
-            <Calendar className="w-5 h-5 mr-2" /> {t('বুকিং পরিচালনা', 'Manage Bookings')}
-          </button>
-          <button 
-            onClick={() => setActiveTab('content')}
-            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'content' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-          >
-            <Globe className="w-5 h-5 mr-2" /> {t('ওয়েবসাইট কন্টেন্ট', 'Website Content')}
-          </button>
-          <button 
-            onClick={() => setActiveTab('ratings')}
-            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'ratings' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-          >
-            <Star className="w-5 h-5 mr-2" /> {t('রেটিং পরিচালনা', 'Manage Ratings')}
-          </button>
-          <button 
-            onClick={() => setActiveTab('offers')}
-            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'offers' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-          >
-            <Megaphone className="w-5 h-5 mr-2" /> {t('অফার পাঠান', 'Send Offers')}
-          </button>
-          <button 
-            onClick={() => setActiveTab('social')}
-            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'social' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-          >
-            <Facebook className="w-5 h-5 mr-2" /> {t('সোশ্যাল লিংক', 'Social Links')}
-          </button>
-          <button 
-            onClick={() => setActiveTab('recommendations')}
-            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'recommendations' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-          >
-            <MapPin className="w-5 h-5 mr-2" /> {t('সুপারিশ', 'Recommendations')}
-          </button>
-          <button 
-            onClick={() => setActiveTab('settings')}
-            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'settings' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-          >
-            <Globe className="w-5 h-5 mr-2" /> {t('সেটিংস', 'Settings')}
-          </button>
-          <button 
-            onClick={() => setActiveTab('emails')}
-            className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${activeTab === 'emails' ? 'bg-red-700 text-white' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-          >
-            <Mail className="w-5 h-5 mr-2" /> {t('ইমেইল লগ', 'Email Logs')}
-          </button>
+        <div className="sticky top-0 z-30 bg-slate-50 pt-2 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+          <div className="flex space-x-2 overflow-x-auto pb-4 scrollbar-hide snap-x select-none">
+            <button 
+              onClick={() => setActiveTab('rooms')}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'rooms' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+            >
+              <Home className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('রুম পরিচালনা', 'Manage Rooms')}
+            </button>
+            <button 
+              onClick={() => setActiveTab('users')}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'users' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+            >
+              <Users className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('ইউজার পরিচালনা', 'Manage Users')}
+            </button>
+            <button 
+              onClick={() => setActiveTab('bookings')}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'bookings' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+            >
+              <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('বুকিং পরিচালনা', 'Manage Bookings')}
+            </button>
+            <button 
+              onClick={() => setActiveTab('content')}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'content' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+            >
+              <Globe className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('ওয়েবসাইট কন্টেন্ট', 'Website Content')}
+            </button>
+            <button 
+              onClick={() => setActiveTab('ratings')}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'ratings' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+            >
+              <Star className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('রেটিং পরিচালনা', 'Manage Ratings')}
+            </button>
+            <button 
+              onClick={() => setActiveTab('offers')}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'offers' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+            >
+              <Megaphone className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('অফার পাঠান', 'Send Offers')}
+            </button>
+            <button 
+              onClick={() => setActiveTab('social')}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'social' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+            >
+              <Facebook className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('সোশ্যাল লিংক', 'Social Links')}
+            </button>
+            <button 
+              onClick={() => setActiveTab('recommendations')}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'recommendations' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+            >
+              <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('সুপারিশ', 'Recommendations')}
+            </button>
+            <button 
+              onClick={() => setActiveTab('settings')}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'settings' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+            >
+              <Globe className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('সেটিংস', 'Settings')}
+            </button>
+            <button 
+              onClick={() => setActiveTab('emails')}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'emails' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+            >
+              <Mail className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('ইমেইল লগ', 'Email Logs')}
+            </button>
+          </div>
         </div>
 
         {/* Tab Content */}

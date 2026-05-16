@@ -568,7 +568,7 @@ export default function Home() {
                     duration: 3,
                     ease: "easeInOut"
                   }}
-                  className="bg-white text-red-700 font-black text-4xl px-5 py-3 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center flex-shrink-0"
+                  className="bg-white text-red-700 font-black text-2xl sm:text-4xl px-3 py-2 sm:px-5 sm:py-3 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.3)] flex items-center flex-shrink-0"
                 >
                   <EditableText 
                     contentKey="global_discount_rate" 
@@ -648,53 +648,53 @@ export default function Home() {
       </section>
 
       {/* Featured Rooms Section */}
-      <section className="py-20 bg-slate-50">
+      <section className="py-12 sm:py-20 bg-slate-50 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-end mb-12">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 sm:mb-12 gap-4">
             <div>
-              <h2 className="text-3xl font-bold text-slate-900 mb-4">
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4">
                 <EditableText contentKey="home_rooms_title" defaultText={t('আমাদের সেরা রুমসমূহ', 'Our Best Rooms')} />
               </h2>
               <div className="w-24 h-1 bg-red-600 rounded-full"></div>
             </div>
-            <Link to="/rooms" className="hidden sm:inline-flex items-center text-red-600 font-bold hover:text-red-700 transition-colors">
+            <Link to="/rooms" className="inline-flex items-center text-red-600 font-bold hover:text-red-700 transition-colors">
               <EditableText contentKey="home_rooms_view_all" defaultText={t('সব রুম দেখুন', 'View All Rooms')} /> <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </div>
           
           {rooms.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
               {rooms.map((room) => (
-                <div key={room.id} className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col hover:shadow-xl transition-shadow relative group">
-                  <div className="relative aspect-video sm:h-64 overflow-hidden">
-                    <img src={getOptimizedUrl(room.imageUrl || room.images?.[0] || 'https://picsum.photos/seed/room/800/600')} alt={room.name} title={room.description || room.name} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
+                <div key={room.id} className="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-100 flex flex-col hover:shadow-xl transition-shadow relative group h-full">
+                  <div className="relative aspect-video sm:h-64 overflow-hidden bg-slate-100">
+                    <img src={getOptimizedUrl(room.imageUrl || room.images?.[0] || 'https://picsum.photos/seed/room/800/600')} alt={room.name} title={room.description || room.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
                   </div>
-                  <div className="p-5 sm:p-8 flex-grow flex flex-col">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h2 className="text-lg sm:text-2xl font-bold text-slate-900 leading-tight">{room.name}</h2>
+                  <div className="p-5 sm:p-8 flex-grow flex flex-col min-h-0">
+                    <div className="flex justify-between items-start mb-4 gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h2 className="text-lg sm:text-2xl font-bold text-slate-900 leading-tight truncate-2-lines">{room.name}</h2>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex-shrink-0">
                         {getStrikethroughPrice(room) ? (
                           <>
                             <div className="text-[10px] sm:text-sm text-slate-400 line-through">৳{getStrikethroughPrice(room)}</div>
-                            <div className="text-lg sm:text-2xl font-bold text-red-600">৳{room.price}</div>
+                            <div className="text-lg sm:text-xl font-bold text-red-600">৳{room.price}</div>
                           </>
                         ) : (
-                          <div className="text-lg sm:text-2xl font-bold text-slate-900">৳{room.price}</div>
+                          <div className="text-lg sm:text-xl font-bold text-slate-900">৳{room.price}</div>
                         )}
-                        <div className="text-[10px] sm:text-xs text-slate-500">{t('রাত', 'Night')}</div>
+                        <div className="text-[10px] sm:text-xs text-slate-500 whitespace-nowrap">{t('রাত', 'Night')}</div>
                       </div>
                     </div>
-                    <p className="text-sm sm:text-base text-slate-600 mb-6 flex-grow line-clamp-2 sm:line-clamp-none">{room.description}</p>
+                    <p className="text-sm text-slate-600 mb-6 line-clamp-3 sm:line-clamp-4">{room.description}</p>
                     
-                    <div className="mb-6 sm:mb-8">
+                    <div className="mb-6 sm:mb-8 flex-grow">
                       <h4 className="text-[10px] sm:text-sm font-bold text-slate-900 mb-3 uppercase tracking-wider">{t('সুবিধাসমূহ', 'Amenities')}</h4>
-                      <ul className="grid grid-cols-2 gap-2">
-                        {room.amenities?.map((amenity: string, index: number) => (
-                          <li key={index} className="flex items-start text-[10px] sm:text-sm text-slate-600">
-                            <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 text-red-500 flex-shrink-0 mt-0.5" />
-                            <span className="leading-tight break-words">{amenity}</span>
+                      <ul className="grid grid-cols-2 gap-x-2 gap-y-1.5 sm:gap-x-4">
+                        {room.amenities?.slice(0, 4).map((amenity: string, index: number) => (
+                          <li key={index} className="flex items-start text-[10px] sm:text-xs text-slate-600 min-w-0">
+                            <CheckCircle2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1.5 text-red-500 flex-shrink-0 mt-0.5" />
+                            <span className="leading-tight truncate">{amenity}</span>
                           </li>
                         ))}
                       </ul>
@@ -702,9 +702,9 @@ export default function Home() {
                     
                     <Link 
                       to={`/rooms/${room.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}`}
-                      className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center"
+                      className="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-4 rounded-xl transition-colors flex items-center justify-center text-sm sm:text-base active:scale-[0.98] transform"
                     >
-                      {t('বিস্তারিত দেখুন', 'View Details')}
+                      {t('বুক করুন', 'Book Now')}
                     </Link>
                   </div>
                 </div>
@@ -715,12 +715,6 @@ export default function Home() {
               <p>{t('কোন রুম পাওয়া যায়নি।', 'No rooms available.')}</p>
             </div>
           ) : null}
-          
-          <div className="mt-8 text-center sm:hidden">
-            <Link to="/rooms" className="inline-flex items-center text-red-600 font-bold hover:text-red-700 transition-colors">
-              <EditableText contentKey="home_rooms_view_all" defaultText={t('সব রুম দেখুন', 'View All Rooms')} /> <ArrowRight className="ml-2 w-5 h-5" />
-            </Link>
-          </div>
         </div>
       </section>
 
