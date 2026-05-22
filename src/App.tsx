@@ -185,7 +185,8 @@ function AppContent() {
   const isStandalonePage = location.pathname.startsWith('/gallery') || 
                            location.pathname.startsWith('/rooms') || 
                            location.pathname.startsWith('/restaurant') || 
-                           location.pathname.startsWith('/tour-desk');
+                           location.pathname.startsWith('/tour-desk') ||
+                           location.pathname.startsWith('/reviews');
 
   return (
     <>

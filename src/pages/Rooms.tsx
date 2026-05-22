@@ -475,7 +475,7 @@ export default function Rooms() {
       </Helmet>
 
       {/* Modern Sticky Header */}
-      <div className="sticky top-0 sm:top-14 z-40 bg-white shadow-sm">
+      <div className="sticky top-0 z-50 bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-3 sm:py-4 gap-4">
             <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto overflow-hidden">

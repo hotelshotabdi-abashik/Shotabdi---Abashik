@@ -838,7 +838,7 @@ export default function Admin() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="sticky top-0 sm:top-14 z-40 bg-slate-50 pt-4 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="sticky top-14 z-30 bg-slate-50 pt-4 pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-4">{t('অ্যাডমিন প্যানেল', 'Admin Dashboard')}</h1>
           
           {/* Tabs */}

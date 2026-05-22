@@ -159,7 +159,7 @@ export const Reviews: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 pb-16">
       {/* Modern Sticky Header */}
-      <div className="sticky top-0 sm:top-14 z-40 bg-white border-b border-slate-200 shadow-sm">
+      <div className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-2 sm:py-4 gap-4">
             <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto overflow-hidden">
