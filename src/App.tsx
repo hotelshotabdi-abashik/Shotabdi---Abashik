@@ -186,7 +186,9 @@ function AppContent() {
                            location.pathname.startsWith('/rooms') || 
                            location.pathname.startsWith('/restaurant') || 
                            location.pathname.startsWith('/tour-desk') ||
-                           location.pathname.startsWith('/reviews');
+                           location.pathname.startsWith('/reviews') ||
+                           location.pathname.startsWith('/about') ||
+                           location.pathname.startsWith('/help-desk');
 
   return (
     <>

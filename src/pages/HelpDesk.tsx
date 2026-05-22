@@ -7,7 +7,7 @@ export default function HelpDesk() {
   return (
     <div className="bg-slate-50 min-h-screen pb-16">
       {/* Modern Sticky Header */}
-      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm transition-all duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center py-4 gap-4">
             <div className="flex items-center gap-4 w-full md:w-auto">
