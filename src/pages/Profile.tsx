@@ -52,15 +52,14 @@ export default function Profile() {
 
   useEffect(() => {
     if (profile) {
-      if (profile.profileCompleted) {
-        setFormData({
-          legalName: profile.legalName || '',
-          phone: profile.phone || '',
-          guardianName: profile.guardianName || '',
-          guardianPhone: profile.guardianPhone || '',
-          nidNumber: profile.nidNumber || ''
-        });
-      }
+      // Sync profile data dynamically into form fields, while retaining any edited/draft values
+      setFormData(prev => ({
+        legalName: prev.legalName || profile.legalName || '',
+        phone: prev.phone || profile.phone || '',
+        guardianName: prev.guardianName || profile.guardianName || '',
+        guardianPhone: prev.guardianPhone || profile.guardianPhone || '',
+        nidNumber: prev.nidNumber || profile.nidNumber || ''
+      }));
 
       if (profile.lastUpdated) {
         const lastUpdatedTime = typeof profile.lastUpdated === 'number' 
@@ -127,9 +126,16 @@ export default function Profile() {
     }
 
     const { legalName, phone, guardianName, guardianPhone, nidNumber } = formData;
-    if (!legalName.trim() || !phone.trim() || !guardianName.trim() || !guardianPhone.trim() || !nidNumber.trim()) {
+    const finalNidNumber = nidNumber || profile?.nidNumber || '';
+
+    if (!legalName.trim() || !phone.trim() || !guardianName.trim() || !guardianPhone.trim() || !finalNidNumber.trim()) {
       toast.error(t("সবগুলো তথ্য পূরণ করা বাধ্যতামূলক।", "All fields are required."));
       return;
+    }
+
+    // Keep formData synced with correct NID number value
+    if (!nidNumber && finalNidNumber) {
+      setFormData(prev => ({ ...prev, nidNumber: finalNidNumber }));
     }
 
     setShowTermsModal(true);
@@ -184,8 +190,10 @@ export default function Profile() {
     setLoading(true);
     try {
       const userRef = doc(db, 'users', user.uid);
+      const finalNidNumber = formData.nidNumber || profile?.nidNumber || '';
       await updateDoc(userRef, {
         ...formData,
+        nidNumber: finalNidNumber,
         profileCompleted: true,
         lastUpdated: serverTimestamp()
       });
