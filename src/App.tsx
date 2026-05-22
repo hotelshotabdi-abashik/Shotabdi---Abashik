@@ -8,7 +8,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavig
 import { Toaster } from 'sonner';
 import { HelmetProvider, Helmet } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { LanguageProvider } from './context/LanguageContext';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { ContentProvider, useContent } from './context/ContentContext';
 import { getOptimizedUrl } from './lib/imageUtils';
 import Navbar from './components/Navbar';
@@ -65,48 +65,97 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 
 const SEO = () => {
   const { content } = useContent();
+  const { t, language } = useLanguage();
   const logoUrl = getOptimizedUrl(content.site_logo || "https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png");
-  const websiteName = "HOTEL SHOTABDI ABASHIK";
-  const description = "Hotel Shotabdi Abashik is the most advanced luxury residential hotel in Sylhet, offering premium rooms, fine dining, and expert tour desk services. Best hotel in Sylhet for booking, located near Kumargaon Bus Stand.";
-  const keywords = "Rose view, sylhet best hotel, best hotel in sylhet, sylhet booking best hotel, best booking website in sylhet, kumargaon, polina rahman, surma tower, sylhet hotels, best hotel, fuad ahmed, tea garden sylhet, Hotel Shotabdi Abashik, luxury hotel Sylhet, affordable hotel Sylhet, Kumargaon hotel, Sylhet tourism, best residential hotel Sylhet";
+  
+  // English version: "Hotel Shotabdi Residential"
+  // Bangla version: "hote shotabdi abashik" (translated from "হোটেল শতাব্দী আবাসিক")
+  const websiteName = t("হোটেল শতাব্দী আবাসিক", "Hotel Shotabdi Residential");
+  
+  const description = t(
+    "হোটেল শতাব্দী আবাসিক হলো সিলেটের সবচেয়ে উন্নত ও লাক্সারি আবাসিক হোটেল। অনলাইনে রুম বুকিং, identity (NID) ভেরিফিকেশন, চমৎকার রেস্টুরেন্ট এবং ওয়াইড ট্যুর ডেস্ক সার্ভিস সমৃদ্ধ এই বুকিং ওয়েবসাইটটি সিলেটের সমস্ত হোটেলের মধ্যে সেরা। কুমারগাঁও বাস স্ট্যান্ডের কাছে অবস্থিত।",
+    "Hotel Shotabdi Residential is the most advanced, premium hotel and booking website in Sylhet that ever existed. It features state-of-the-art online room & seat bookings, secure NID identity verification, fine dining, 24/7 client portal support, and a comprehensive tour desk. Best luxury hotel website in Sylhet, located prominently near Kumargaon Bus Stand."
+  );
+  
+  const keywords = "shotabdi abshik, hotel shotabdi, hote shotabdi abashik, best hotel website in sylhet, rose view hotel, grand palace sylhet, hotel noor jahan, premium residential hotel Sylhet, Kumargaon hotel, Rose view, surma tower, sylhet booking best hotel, fuad ahmed, tea garden sylhet, hotel star pacific, abdul kahar kodor, luxury hotel Sylhet, booking sylhet hotel, Grand Palace, Rose View, Noorjahan Sylhet";
 
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "Hotel",
-    "name": websiteName,
-    "description": description,
-    "keywords": keywords,
-    "url": "https://www.shotabdi-abashik.bd",
-    "logo": logoUrl,
-    "image": logoUrl,
-    "telephone": "+8801717425702",
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": "Kumargaon Bus Terminal, Sunamganj Road",
-      "addressLocality": "Sylhet",
-      "addressRegion": "Sylhet",
-      "postalCode": "3100",
-      "addressCountry": "BD"
-    },
-    "founder": {
-      "@type": "Person",
-      "name": "Abdul Kahar Kodor"
-    },
-    "author": {
-      "@type": "Person",
-      "name": "Fuad Ahmed",
-      "alternateName": "Fuad Editing Zone",
-      "jobTitle": ["Graphic Designer", "VFX Video Editor", "Web Developer"]
-    }
+    "@graph": [
+      {
+        "@context": "https://schema.org",
+        "@type": "Hotel",
+        "name": websiteName,
+        "alternateName": [
+          "হোটেল শতাব্দী আবাসিক",
+          "Hotel Shotabdi Residential",
+          "Hotel Shotabdi Abashik",
+          "shotabdi abshik",
+          "hotel shotabdi",
+          "hote shotabdi abashik",
+          "best hotel website in sylhet",
+          "rose view hotel",
+          "grand palace sylhet",
+          "hotel noor jahan"
+        ],
+        "description": description,
+        "keywords": keywords,
+        "url": "https://www.shotabdi-abashik.bd",
+        "logo": logoUrl,
+        "image": logoUrl,
+        "telephone": "+8801717425702",
+        "priceRange": "$$",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Kumargaon Bus Terminal, Sunamganj Road",
+          "addressLocality": "Sylhet",
+          "addressRegion": "Sylhet",
+          "postalCode": "3100",
+          "addressCountry": "BD"
+        },
+        "starRating": {
+          "@type": "Rating",
+          "ratingValue": "4.5",
+          "bestRating": "5"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": "24.9015",
+          "longitude": "91.8317"
+        },
+        "founder": {
+          "@type": "Person",
+          "name": "Abdul Kahar Kodor"
+        }
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Hotel Shotabdi Residential",
+        "alternateName": ["হোটেল শতাব্দী আবাসিক", "Hotel Shotabdi Abashik"],
+        "url": "https://www.shotabdi-abashik.bd",
+        "description": description,
+        "author": {
+          "@type": "Person",
+          "name": "Fuad Ahmed",
+          "alternateName": "Fuad Editing Zone",
+          "jobTitle": ["Graphic Designer", "VFX Video Editor", "Web Developer"]
+        }
+      }
+    ]
   };
 
   return (
     <Helmet>
+      <html lang={language} />
       <title>{websiteName} | Best Luxury Residential Hotel in Sylhet</title>
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
       <link rel="icon" type="image/png" href={logoUrl} />
       <link rel="apple-touch-icon" href={logoUrl} />
+      
+      {/* Search Engine Site Name Verification */}
+      <meta property="og:site_name" content={websiteName} />
       
       {/* Open Graph / Facebook */}
       <meta property="og:type" content="website" />

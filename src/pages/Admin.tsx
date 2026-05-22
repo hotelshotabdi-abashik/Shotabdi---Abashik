@@ -32,6 +32,7 @@ interface User {
   phone?: string;
   adminSecret?: string;
   identityVerified?: boolean;
+  verificationStatus?: string;
 }
 
 interface Booking {

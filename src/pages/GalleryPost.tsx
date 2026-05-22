@@ -8,6 +8,7 @@ import { Helmet } from 'react-helmet-async';
 import { toast } from 'sonner';
 
 import { fixR2Url } from '../lib/r2';
+import { getSEOImageAlt, getSEOImageTitle } from '../lib/imageUtils';
 
 export default function GalleryPost() {
   const { id } = useParams<{ id: string }>();
@@ -138,8 +139,8 @@ export default function GalleryPost() {
                   exit={{ opacity: 0, scale: 1.05 }}
                   transition={{ duration: 0.4 }}
                   src={fixR2Url(currentImage.url)}
-                  alt={currentImage.title || 'Gallery image'}
-                  title={currentImage.title || 'Gallery image'}
+                  alt={getSEOImageAlt(currentImage.title || 'Gallery image')}
+                  title={getSEOImageTitle(currentImage.title || 'Gallery image')}
                   className="max-w-full max-h-[80vh] object-contain"
                   referrerPolicy="no-referrer"
                 />
@@ -231,7 +232,7 @@ export default function GalleryPost() {
                     to={`/gallery/${img.id || i}`}
                     className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${img.id === id || i.toString() === id ? 'border-red-600 scale-95' : 'border-transparent hover:border-red-300'}`}
                   >
-                    <img src={fixR2Url(img.url)} alt={img.title || `Gallery image`} title={img.title || `Gallery image`} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
+                    <img src={fixR2Url(img.url)} alt={getSEOImageAlt(img.title || `Gallery image`)} title={getSEOImageTitle(img.title || `Gallery image`)} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="eager" fetchPriority="high" decoding="async" />
                   </Link>
                 ))}
               </div>

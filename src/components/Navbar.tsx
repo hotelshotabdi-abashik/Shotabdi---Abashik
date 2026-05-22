@@ -39,7 +39,7 @@ export default function Navbar() {
     return () => unsubscribe();
   }, []);
 
-  const websiteName = settings?.websiteName || t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik');
+  const websiteName = settings?.websiteName || t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Residential');
   const logoUrl = getOptimizedUrl(settings?.logoUrl || "https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png");
 
   const navLinks = [
@@ -213,7 +213,7 @@ export default function Navbar() {
                 contentKey="site_logo" 
                 defaultSrc={logoUrl} 
                 className="h-6 sm:h-8 w-auto flex-shrink-0 object-contain" 
-                alt={`${websiteName} Logo`}
+                alt={websiteName}
                 folder="shotabdi-abashik/logo"
               />
               <span className={`font-bold text-[10px] sm:text-xs md:text-sm lg:text-base leading-tight truncate uppercase ${isSolid ? 'text-black' : 'text-white'}`}>
@@ -513,7 +513,7 @@ export default function Navbar() {
                   contentKey="site_logo" 
                   defaultSrc={logoUrl} 
                   className="h-6 w-auto flex-shrink-0 object-contain" 
-                  alt={`${websiteName} Logo`}
+                  alt={websiteName}
                   folder="shotabdi-abashik/logo"
                 />
                 <span className="font-bold text-xs text-slate-900 leading-tight truncate">

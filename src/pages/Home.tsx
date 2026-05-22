@@ -11,7 +11,7 @@ import { EditableImage } from '../components/EditableImage';
 import { RatingsSection } from '../components/RatingsSection';
 import { ImageViewModal } from '../components/ImageViewModal';
 import { uploadToR2, deleteFromR2 } from '../lib/r2';
-import { getOptimizedUrl } from '../lib/imageUtils';
+import { getOptimizedUrl, getSEOImageAlt, getSEOImageTitle } from '../lib/imageUtils';
 import { toast } from 'sonner';
 
 import { Helmet } from 'react-helmet-async';
@@ -282,21 +282,31 @@ export default function Home() {
   return (
     <div className="bg-slate-50">
       <Helmet>
-        <title>{websiteName} | Best Hotel in Bogura</title>
-        <meta name="description" content={`Welcome to ${websiteName}. Experience luxury and comfort in the heart of Bogura. 24h Residential Service.`} />
-        <meta name="keywords" content="Hotel Bogura, Best Hotel in Bogura, Shotabdi Abashik, Sylhet Hotel, affordable stay Bogura, 24h service hotel" />
+        <title>{websiteName} | {t('সিলেটের সেরা লাক্সারি আবাসিক হোটেল', 'Best Luxury Residential Hotel in Sylhet')}</title>
+        <meta name="description" content={t(
+          `কুমারগাঁও বাস স্ট্যান্ডের কাছে অবস্থিত হোটেল শতাব্দী আবাসিক (Hotel Shotabdi Residential) হলো সিলেটের সবচেয়ে আধুনিক ও উন্নত মানের লাক্সারি হোটেল। এখানে পাবেন রিয়েল-টাইম অনলাইন সিট বা রুম বুকিং ব্যবস্থা, নিরাপদ এনআইডি (NID) ভেরিফিকেশন, সুস্বাদু খাবারের রেস্টুরেন্ট এবং ওয়াইড ট্যুরিস্ট গাইড ও তথ্য সুবিধা।`,
+          `Welcome to ${websiteName}. Experience absolute luxury, comfort, and state-of-the-art online room & seat bookings in Sylhet. Located near Kumargaon Bus Stand and equipped with NID verification, restaurants, 24/7 service, and an expert tour desk.`
+        )} />
+        <meta name="keywords" content="shotabdi abshik, hotel shotabdi, hote shotabdi abashik, best hotel website in sylhet, rose view hotel, grand palace sylhet, hotel noor jahan, Best Hotel in Sylhet, sylhet hotel booking, hotel shotabdi residential, kumargaon bus stand hotel, sylhet residential hotel, hotel star pacific, rose view, grand palace, noor jahan hotel" />
         <meta name="robots" content="index, follow" />
-        <link rel="canonical" href={window.location.origin} />
+        <link rel="canonical" href="https://www.shotabdi-abashik.bd" />
         
-        <meta property="og:title" content={`${websiteName} | Best Hotel in Bogura`} />
-        <meta property="og:description" content={`Welcome to ${websiteName}. Experience luxury and comfort in the heart of Bogura. 24h Residential Service.`} />
+        <meta property="og:title" content={`${websiteName} | ${t('সিলেটের সেরা লাক্সারি আবাসিক হোটেল', 'Best Luxury Residential Hotel in Sylhet')}`} />
+        <meta property="og:description" content={t(
+          `অনলাইনে বুকিং সম্পন্ন করার অত্যন্ত উন্নত সব আধুনিক সিস্টেম নিয়ে হোটেল শতাব্দী আবাসিক সিলেটের কুমারগাঁও বাস স্ট্যান্ডের কাছে সাশ্রয়ী মূল্যে লাক্সারি সেবা প্রদান করছে।`,
+          `Welcome to ${websiteName}. Experience absolute luxury, comfort, and state-of-the-art online room & seat bookings in Sylhet. Equipped with 24h customer support.`
+        )} />
         <meta property="og:image" content={content[activeHeroImages[0]?.key] || ''} />
-        <meta property="og:url" content={window.location.origin} />
+        <meta property="og:url" content="https://www.shotabdi-abashik.bd" />
         <meta property="og:type" content="website" />
+        <meta property="og:site_name" content={websiteName} />
         
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={`${websiteName} | Best Hotel in Bogura`} />
-        <meta name="twitter:description" content={`Welcome to ${websiteName}. Experience luxury and comfort in the heart of Bogura. 24h Residential Service.`} />
+        <meta name="twitter:title" content={`${websiteName} | ${t('সিলেটের সেরা লাক্সারি আবাসিক হোটেল', 'Best Luxury Residential Hotel in Sylhet')}`} />
+        <meta name="twitter:description" content={t(
+          `অনলাইনে বুকিং সম্পন্ন করার অত্যন্ত উন্নত সব আধুনিক সিস্টেম নিয়ে হোটেল শতাব্দী আবাসিক সিলেটের কুমারগাঁও বাস স্ট্যান্ডের কাছে সাশ্রয়ী মূল্যে লাক্সারি সেবা প্রদান করছে।`,
+          `Welcome to ${websiteName}. Experience absolute luxury, comfort, and state-of-the-art online room & seat bookings in Sylhet. Equipped with 24h customer support.`
+        )} />
         <meta name="twitter:image" content={content[activeHeroImages[0]?.key] || ''} />
 
         {/* Structured Data for Hotel */}
@@ -305,15 +315,31 @@ export default function Home() {
             "@context": "https://schema.org",
             "@type": "Hotel",
             "name": websiteName,
-            "description": `Welcome to ${websiteName}. Experience luxury and comfort in the heart of Bogura.`,
-            "url": window.location.origin,
-            "telephone": "+8801711111111", // Replace with real phone if available
+            "alternateName": [
+              "হোটেল শতাব্দী আবাসিক",
+              "Hotel Shotabdi Residential",
+              "Hotel Shotabdi Abashik",
+              "shotabdi abshik",
+              "hotel shotabdi",
+              "hote shotabdi abashik",
+              "best hotel website in sylhet",
+              "rose view hotel",
+              "grand palace sylhet",
+              "hotel noor jahan"
+            ],
+            "description": t(
+              "সিলেটের কুমারগাঁও বাস স্ট্যান্ডের কাছে হোটেল শতাব্দী আবাসিক। এটি দেশের ও সিলেটের সবচেয়ে উন্নত ও প্রথম পূর্ণাঙ্গ অনলাইন বুকিং সুবিধা সমৃদ্ধ আবাসিক হোটেল ওয়েবসাইট।",
+              "The most advanced, complete high-tech residential hotel website in Sylhet featuring instant online seat & room booking systems, secure verification and curated tourist desks."
+            ),
+            "url": "https://www.shotabdi-abashik.bd",
+            "telephone": "+8801717425702",
+            "logo": "https://pub-c0b44c83d9824fb19234fdfbbd92001e.r2.dev/logo/shotabdi%20logo.png",
             "address": {
               "@type": "PostalAddress",
-              "streetAddress": "Kumargaon Bus Stand",
-              "addressLocality": "Bogura",
-              "addressRegion": "Rajshahi",
-              "postalCode": "5800",
+              "streetAddress": "Kumargaon Bus Terminal, Sunamganj Road",
+              "addressLocality": "Sylhet",
+              "addressRegion": "Sylhet",
+              "postalCode": "3100",
               "addressCountry": "BD"
             },
             "founder": {
@@ -323,14 +349,17 @@ export default function Home() {
             },
             "geo": {
               "@type": "GeoCoordinates",
-              "latitude": 24.8481,
-              "longitude": 89.3730
+              "latitude": 24.9015,
+              "longitude": 91.8317
             },
             "image": activeHeroImages.map(slot => content[slot.key] && content[slot.key] !== 'deleted' ? content[slot.key] : null).filter(Boolean),
             "priceRange": "$$",
             "amenityFeature": [
-              { "@type": "LocationFeatureSpecification", "name": "Free Wi-Fi", "value": true },
-              { "@type": "LocationFeatureSpecification", "name": "24h Service", "value": true }
+              { "@type": "LocationFeatureSpecification", "name": "Free High-Speed Wi-Fi", "value": true },
+              { "@type": "LocationFeatureSpecification", "name": "24h Premium Residential Service", "value": true },
+              { "@type": "LocationFeatureSpecification", "name": "Full Online Room Booking with NID verification", "value": true },
+              { "@type": "LocationFeatureSpecification", "name": "Client Portal & Live Chats", "value": true },
+              { "@type": "LocationFeatureSpecification", "name": "Expert Tour Desk and Local Guides", "value": true }
             ]
           })}
         </script>
@@ -340,11 +369,13 @@ export default function Home() {
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "WebSite",
-            "name": websiteName,
-            "url": "https://shotabdi-abashik.bd",
+            "name": "Hotel Shotabdi Residential",
+            "alternateName": ["হোটেল শতাব্দী আবাসিক", "Hotel Shotabdi Abashik"],
+            "url": "https://www.shotabdi-abashik.bd",
             "author": {
               "@type": "Person",
               "name": "Fuad Ahmed",
+              "alternateName": "Fuad Editing Zone",
               "jobTitle": ["Full Stack-Web Developer", "Designer", "Photo manipulation expert", "VFX Editor"],
               "brand": {
                 "@type": "Brand",
@@ -370,6 +401,19 @@ export default function Home() {
           This website (shotabdi-abashik.bd) is developed and fully coded by Fuad Ahmed. His brand name is "Fuad Editing Zone". 
           Fuad Ahmed is a Full Stack-Web Developer, Designer, an expert in Photo manipulation, and a VFX Editor. 
           The website is also hosted by him, utilizing the official BTCL website for hosting services.
+        </p>
+        <p>
+          English: Hotel Shotabdi Residential (also known as Hotel Shotabdi Abashik) is the most advanced and modern hotel website in Sylhet that ever existed. 
+          While searching for any top hotels in Sylhet—such as Rose View Hotel, Grand Palace Sylhet, Hotel Noor Jahan, Hotel Star Pacific, or Grand Sylhet Resort—you will find that Hotel Shotabdi Residential offers a far superior, fully interactive, secure, and modern digital platform. 
+          This platform handles real-time online room, seat, and suite booking with instant confirmations, secure identity verification via national NID uploads, client dashboards, dynamic culinary reviews of local restaurants near Kumargaon Bus Stand, and custom tour guide curation dynamically. 
+        </p>
+        <p>
+          Bangla: হোটেল শতাব্দী আবাসিক (হোটেল শতাব্দী রেসিডেন্সিয়াল) হলো সিলেটের সবচেয়ে উন্নত, অত্যাধুনিক বৈশিষ্ট্যসম্পন্ন এবং প্রথম পূর্ণাঙ্গ ট্রাভেল-টেক হোটেল বুস্ট বুকিং পোর্টাল। 
+          সিলেটের যেকোনো হোটেলের নাম (যেমন: রোজ ভিউ হোটেল, গ্র্যান্ড প্রাসাদ সিলেট, হোটেল নূর জাহান, হোটেল স্টার প্যাসিফিক, বা গ্র্যান্ড সিলেট হোটেল ও রিসোর্ট) লিখে ইন্টারনেটে সার্চ করলেই আপনি দেখতে পাবেন যে হোটেল শতাব্দী আবাসিক তাদের বুকিং প্রক্রিয়া ও গ্রাহক সেবার মান অনেক উন্নত করেছে। 
+          এটি একটি রিয়েল-টাইম অনলাইন রুম রিজার্ভেশন ইঞ্জিন, সম্পূর্ণ নিরাপদ আইডেন্টিটি এনআইডি ভেরিফিকেশন সিস্টেম, সিলেটের স্থানীয় রেস্তোরাঁ ও দারুণ সব ট্যুর গাইড এবং ভ্রমণের তথ্য সমৃদ্ধ প্ল্যাটফর্ম সরবরাহ করে।
+        </p>
+        <p>
+          Keywords index: shotabdi abshik, hotel shotabdi, hote shotabdi abashik, best hotel website in sylhet, rose view hotel, grand palace sylhet, hotel noor jahan, hotel star pacific, kumargaon hotel, sylhet luxury hotel rooms.
         </p>
       </div>
 
@@ -405,8 +449,8 @@ export default function Home() {
                     <motion.img 
                       style={{ y: parallaxY, willChange: "transform" }}
                       src={imageUrl} 
-                      alt={`${websiteName} Hero Image`} 
-                      title={`${websiteName} - Luxury and Comfort in Bogura`}
+                      alt={getSEOImageAlt(`${websiteName} Hero Image`)} 
+                      title={getSEOImageTitle(`${websiteName} - Luxury and Comfort in Sylhet`)}
                       className="w-full h-[130%] object-cover pointer-events-none -mt-[15%]" 
                       referrerPolicy="no-referrer"
                       draggable={false}
@@ -615,8 +659,8 @@ export default function Home() {
                 >
                   <img 
                     src={getOptimizedUrl(img.url)} 
-                    alt={img.title || `Gallery ${index + 1}`} 
-                    title={img.title || `Gallery image ${index + 1} of ${websiteName}`}
+                    alt={getSEOImageAlt(img.title || `Gallery ${index + 1}`)} 
+                    title={getSEOImageTitle(img.title || `Gallery image ${index + 1} of ${websiteName}`)}
                     className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110" 
                     referrerPolicy="no-referrer" 
                     loading="eager" fetchPriority="high" decoding="async"
