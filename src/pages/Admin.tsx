@@ -61,7 +61,14 @@ export default function Admin() {
   const [newSocialLink, setNewSocialLink] = useState({ platform: '', url: '', icon: 'Facebook', order: 0 });
 
   // Settings State
-  const [settings, setSettings] = useState({ websiteName: '', logoUrl: '', galleryCleanupThreshold: 50 });
+  const [settings, setSettings] = useState({ 
+    websiteName: '', 
+    logoUrl: '', 
+    galleryCleanupThreshold: 50,
+    videoAdUrl: '',
+    videoAdEnabled: false,
+    videoAdTitle: ''
+  });
 
   // Recommendations State
   const [restaurants, setRestaurants] = useState<any[]>([]);
@@ -2146,37 +2153,92 @@ export default function Admin() {
         {activeTab === 'settings' && (
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 max-w-2xl">
             <h2 className="text-xl font-bold text-slate-800 mb-6">{t('সাধারণ সেটিংস', 'General Settings')}</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Website Name</label>
-                <input 
-                  type="text" 
-                  value={settings.websiteName}
-                  onChange={(e) => setSettings({...settings, websiteName: e.target.value})}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg"
-                />
+            <div className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Website Name</label>
+                  <input 
+                    type="text" 
+                    value={settings.websiteName}
+                    onChange={(e) => setSettings({...settings, websiteName: e.target.value})}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Logo URL</label>
+                  <input 
+                    type="text" 
+                    value={settings.logoUrl}
+                    onChange={(e) => setSettings({...settings, logoUrl: e.target.value})}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Gallery Cleanup Threshold (Max Images)</label>
+                  <input 
+                    type="number" 
+                    value={settings.galleryCleanupThreshold}
+                    onChange={(e) => setSettings({...settings, galleryCleanupThreshold: Number(e.target.value)})}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500 outline-none"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Logo URL</label>
-                <input 
-                  type="text" 
-                  value={settings.logoUrl}
-                  onChange={(e) => setSettings({...settings, logoUrl: e.target.value})}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg"
-                />
+
+              {/* Video Ad Section */}
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <h3 className="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                  <span>🎥</span> {t('ভিডিও বিজ্ঞাপন সেটিংস', 'Video Pop-up Ad Settings')}
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="block text-sm font-medium text-slate-700">{t('বিজ্ঞাপন চালু করুন', 'Enable Video Ad')}</span>
+                      <span className="block text-xs text-slate-500">{t('নতুন ভিজিটরদের জন্য পপআপ ভিডিও বিজ্ঞাপন দেখান', 'Show pop-up video ad to first-time website visitors')}</span>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={settings.videoAdEnabled || false} 
+                        onChange={(e) => setSettings({...settings, videoAdEnabled: e.target.checked})}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-700"></div>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('বিজ্ঞাপনের শিরোনাম', 'Ad Title (Bangla/English)')}</label>
+                    <input 
+                      type="text" 
+                      placeholder={t('আমাদের নতুন ভিডিও', 'Our Latest Video')}
+                      value={settings.videoAdTitle || ''}
+                      onChange={(e) => setSettings({...settings, videoAdTitle: e.target.value})}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500 outline-none text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('ভিডিও লিংক (H.264 format)', 'Video Direct URL (H.264 MP4)')}</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. https://worker.yoursubdomain.workers.dev/video.mp4"
+                      value={settings.videoAdUrl || ''}
+                      onChange={(e) => setSettings({...settings, videoAdUrl: e.target.value})}
+                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500 outline-none text-sm placeholder:text-slate-400"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      {t(
+                        'ক্লাউডফ্লেয়ার R2 ওয়ার্কার স্টোরেজ থেকে সরাসরি MP4/H.264 ফর্ম্যাট করা ভিডিও ব্যবহার করুন।',
+                        'Use direct MP4/H.264 video link hosted on Cloudflare R2 worker storage.'
+                      )}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Gallery Cleanup Threshold (Max Images)</label>
-                <input 
-                  type="number" 
-                  value={settings.galleryCleanupThreshold}
-                  onChange={(e) => setSettings({...settings, galleryCleanupThreshold: Number(e.target.value)})}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg"
-                />
-              </div>
+
               <button 
                 onClick={handleUpdateSettings}
-                className="w-full bg-red-700 text-white font-bold py-3 rounded-lg hover:bg-red-800 transition-colors"
+                className="w-full bg-red-700 text-white font-bold py-3 rounded-lg hover:bg-red-800 transition-colors cursor-pointer shadow-sm"
               >
                 {t('সেভ করুন', 'Save Settings')}
               </button>

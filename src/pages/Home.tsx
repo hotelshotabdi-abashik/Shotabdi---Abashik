@@ -42,6 +42,7 @@ export default function Home() {
   const [rooms, setRooms] = useState<any[]>([]);
   const [settings, setSettings] = useState<any>(null);
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const [showVideoAd, setShowVideoAd] = useState(false);
 
   const { scrollY } = useScroll();
   const rawParallaxY = useTransform(scrollY, [0, 1000], ['0%', '15%']);
@@ -60,6 +61,18 @@ export default function Home() {
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (settings && settings.videoAdEnabled && settings.videoAdUrl) {
+      const alreadyShown = sessionStorage.getItem('dismissedVideoAd');
+      if (!alreadyShown) {
+        const timer = setTimeout(() => {
+          setShowVideoAd(true);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [settings]);
 
   const websiteName = settings?.websiteName || t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik');
 
@@ -940,6 +953,75 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      <AnimatePresence>
+        {showVideoAd && settings?.videoAdUrl && (
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+            {/* Ambient Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                setShowVideoAd(false);
+                sessionStorage.setItem('dismissedVideoAd', 'true');
+              }}
+              className="absolute inset-0 bg-slate-900/80 backdrop-blur-md"
+            />
+
+            {/* Video Ad Modal Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="relative w-full max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-100 z-10"
+            >
+              {/* Top Bar / Header */}
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                  <span>📢</span> {settings.videoAdTitle || t('বিশেষ ঘোষণা', 'Special Announcement')}
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowVideoAd(false);
+                    sessionStorage.setItem('dismissedVideoAd', 'true');
+                  }}
+                  className="p-2 hover:bg-slate-300 rounded-full text-slate-500 hover:text-slate-800 transition-colors cursor-pointer flex items-center justify-center"
+                  style={{ minWidth: '44px', minHeight: '44px' }}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Video Player Box */}
+              <div className="aspect-video bg-black relative">
+                <video
+                  src={settings.videoAdUrl}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-contain"
+                />
+              </div>
+
+              {/* Action Footer */}
+              <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowVideoAd(false);
+                    sessionStorage.setItem('dismissedVideoAd', 'true');
+                  }}
+                  className="px-6 py-2 bg-red-700 hover:bg-red-800 text-white font-semibold rounded-xl text-sm transition-all shadow-md cursor-pointer hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+                  style={{ minHeight: '44px' }}
+                >
+                  {t('বন্ধ করুন', 'Close')}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <ImageViewModal 
         isOpen={isViewModalOpen} 

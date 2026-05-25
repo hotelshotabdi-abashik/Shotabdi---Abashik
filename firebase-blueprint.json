@@ -140,7 +140,10 @@
         "logoUrl": { "type": "string" },
         "websiteName": { "type": "string" },
         "galleryCleanupThreshold": { "type": "number" },
-        "lastCleanupDate": { "type": "string", "format": "date-time" }
+        "lastCleanupDate": { "type": "string", "format": "date-time" },
+        "videoAdUrl": { "type": "string" },
+        "videoAdEnabled": { "type": "boolean" },
+        "videoAdTitle": { "type": "string" }
       },
       "required": ["id"]
     }
