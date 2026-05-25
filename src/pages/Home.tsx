@@ -960,53 +960,35 @@ export default function Home() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowVideoAd(false)}
-              className="absolute inset-0 bg-slate-900/80 backdrop-blur-md"
+              className="absolute inset-0 bg-slate-950/85 backdrop-blur-md cursor-pointer"
             />
 
-            {/* Video Ad Modal Card */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ type: "spring", duration: 0.5 }}
-              className="relative w-full max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-100 z-10"
+            {/* Single Floating Close Icon Button on Top Corner (Far to the top-right) */}
+            <button
+              onClick={() => setShowVideoAd(false)}
+              className="fixed top-6 right-6 md:top-10 md:right-10 z-[100001] p-3 bg-black/60 hover:bg-black/95 text-white rounded-full border border-white/30 hover:scale-110 active:scale-95 transition-all cursor-pointer flex items-center justify-center shadow-2xl"
+              style={{ minWidth: '48px', minHeight: '48px' }}
+              title={t('বন্ধ করুন', 'Close')}
             >
-              {/* Top Bar / Header */}
-              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
-                  <span>📢</span> {settings.videoAdTitle || t('বিশেষ ঘোষণা', 'Special Announcement')}
-                </h3>
-                <button
-                  onClick={() => setShowVideoAd(false)}
-                  className="p-2 hover:bg-slate-300 rounded-full text-slate-500 hover:text-slate-800 transition-colors cursor-pointer flex items-center justify-center"
-                  style={{ minWidth: '44px', minHeight: '44px' }}
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+              <X className="w-6 h-6" />
+            </button>
 
-              {/* Video Player Box */}
-              <div className="aspect-video bg-black relative">
-                <video
-                  src={settings.videoAdUrl}
-                  controls
-                  autoPlay
-                  muted
-                  playsInline
-                  className="w-full h-full object-contain"
-                />
-              </div>
-
-              {/* Action Footer */}
-              <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
-                <button
-                  onClick={() => setShowVideoAd(false)}
-                  className="px-6 py-2 bg-red-700 hover:bg-red-800 text-white font-semibold rounded-xl text-sm transition-all shadow-md cursor-pointer hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
-                  style={{ minHeight: '44px' }}
-                >
-                  {t('বন্ধ করুন', 'Close')}
-                </button>
-              </div>
+            {/* Seamless Unclickable Video Presentation */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="relative max-w-4xl max-h-[80vh] z-10 flex items-center justify-center pointer-events-none select-none"
+            >
+              <video
+                src={settings.videoAdUrl}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="max-w-full max-h-[75vh] object-contain rounded-xl pointer-events-none select-none bg-transparent"
+              />
             </motion.div>
           </div>
         )}
