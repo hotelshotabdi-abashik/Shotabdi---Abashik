@@ -69,6 +69,8 @@ export default function Admin() {
     videoAdEnabled: false,
     videoAdTitle: ''
   });
+  const [originalVideoAdUrl, setOriginalVideoAdUrl] = useState('');
+  const [uploadingAdVideo, setUploadingAdVideo] = useState(false);
 
   // Recommendations State
   const [restaurants, setRestaurants] = useState<any[]>([]);
@@ -223,12 +225,38 @@ export default function Admin() {
       const docRef = doc(db, 'settings', 'general');
       const snapshot = await getDoc(docRef);
       if (snapshot.exists()) {
-        setSettings(snapshot.data() as any);
+        const data = snapshot.data() as any;
+        setSettings(data);
+        setOriginalVideoAdUrl(data.videoAdUrl || '');
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.GET, 'settings/general');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUploadAdVideo = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('video/')) {
+      toast.error('Please select a valid video file.');
+      return;
+    }
+
+    setUploadingAdVideo(true);
+    const toastId = toast.loading('Uploading video to Cloudflare R2 worker storage...');
+
+    try {
+      const url = await uploadToR2(file, 'shotabdi-abashik/ads');
+      setSettings(prev => ({ ...prev, videoAdUrl: url }));
+      toast.success('Video uploaded successfully to R2!', { id: toastId });
+    } catch (error: any) {
+      console.error('Video upload error:', error);
+      toast.error(`Failed to upload: ${error.message || 'unknown error'}`, { id: toastId });
+    } finally {
+      setUploadingAdVideo(false);
     }
   };
 
@@ -248,6 +276,15 @@ export default function Admin() {
   const handleUpdateSettings = async () => {
     try {
       await setDoc(doc(db, 'settings', 'general'), settings);
+      
+      // If a new video ad URL is saved and it is different from the original video ad URL,
+      // delete the old video file from R2 worker storage!
+      if (originalVideoAdUrl && originalVideoAdUrl !== settings.videoAdUrl) {
+        await deleteFromR2(originalVideoAdUrl);
+        toast.info("Old video ad replaced and deleted from R2 storage.");
+      }
+      
+      setOriginalVideoAdUrl(settings.videoAdUrl || '');
       toast.success("Settings updated successfully!");
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'settings/general');
@@ -852,13 +889,13 @@ export default function Admin() {
           <div className="flex space-x-2 overflow-x-auto pb-4 scrollbar-hide snap-x select-none border-b border-slate-200">
             <button 
               onClick={() => setActiveTab('bookings')}
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'bookings' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start flex-shrink-0 ${activeTab === 'bookings' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
             >
               <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('বুকিং পরিচালনা', 'Manage Bookings')}
             </button>
             <button 
               onClick={() => setActiveTab('verifications')}
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start relative ${activeTab === 'verifications' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start relative flex-shrink-0 ${activeTab === 'verifications' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
             >
               <ShieldCheck className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('ইউজার ভেরিফিকেশন', 'User Verifications')}
               {verificationUsers.length > 0 && (
@@ -869,55 +906,55 @@ export default function Admin() {
             </button>
             <button 
               onClick={() => setActiveTab('rooms')}
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'rooms' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start flex-shrink-0 ${activeTab === 'rooms' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
             >
               <Home className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('রুম পরিচালনা', 'Manage Rooms')}
             </button>
             <button 
               onClick={() => setActiveTab('users')}
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'users' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start flex-shrink-0 ${activeTab === 'users' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
             >
               <Users className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('ইউজার পরিচালনা', 'Manage Users')}
             </button>
             <button 
               onClick={() => setActiveTab('content')}
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'content' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start flex-shrink-0 ${activeTab === 'content' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
             >
               <Globe className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('ওয়েবসাইট কন্টেন্ট', 'Website Content')}
             </button>
             <button 
               onClick={() => setActiveTab('ratings')}
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'ratings' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start flex-shrink-0 ${activeTab === 'ratings' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
             >
               <Star className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('রেটিং পরিচালনা', 'Manage Ratings')}
             </button>
             <button 
               onClick={() => setActiveTab('offers')}
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'offers' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start flex-shrink-0 ${activeTab === 'offers' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
             >
               <Megaphone className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('অফার পাঠান', 'Send Offers')}
             </button>
             <button 
               onClick={() => setActiveTab('social')}
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'social' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start flex-shrink-0 ${activeTab === 'social' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
             >
               <Facebook className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('সোশ্যাল লিংক', 'Social Links')}
             </button>
             <button 
               onClick={() => setActiveTab('recommendations')}
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'recommendations' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start flex-shrink-0 ${activeTab === 'recommendations' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
             >
               <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('সুপারিশ', 'Recommendations')}
             </button>
             <button 
               onClick={() => setActiveTab('settings')}
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'settings' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start flex-shrink-0 ${activeTab === 'settings' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
             >
               <Globe className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('সেটিংস', 'Settings')}
             </button>
             <button 
               onClick={() => setActiveTab('emails')}
-              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start ${activeTab === 'emails' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
+              className={`flex items-center px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap min-w-fit snap-start flex-shrink-0 ${activeTab === 'emails' ? 'bg-red-700 text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'}`}
             >
               <Mail className="w-4 h-4 sm:w-5 sm:h-5 mr-2" /> {t('ইমেইল লগ', 'Email Logs')}
             </button>
@@ -928,7 +965,7 @@ export default function Admin() {
         <div className="mt-8">
         {activeTab === 'verifications' && (
           <div>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
               <h2 className="text-xl font-bold text-slate-800">{t('পেন্ডিং ভেরিফিকেশন', 'Pending Verifications')}</h2>
               <button 
                 onClick={fetchVerificationUsers}
@@ -977,11 +1014,11 @@ export default function Admin() {
                     </div>
                   </div>
 
-                  <div className="p-4 bg-slate-50 mt-auto flex gap-2">
+                  <div className="p-4 bg-slate-50 mt-auto flex flex-wrap gap-2">
                     <button 
                       onClick={() => handleVerifyIdentity(u.uid, 'verified')}
                       disabled={loading}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center"
+                      className="flex-1 min-w-[110px] bg-green-600 hover:bg-green-700 text-white py-2 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center"
                     >
                       <Check className="w-4 h-4 mr-1.5" /> {t('অ্যাপ্রুভ', 'Approve')}
                     </button>
@@ -990,7 +1027,7 @@ export default function Admin() {
                         setSelectedBookingUser(u);
                         setShowRejectionInput(true);
                       }}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center"
+                      className="flex-1 min-w-[110px] bg-red-600 hover:bg-red-700 text-white py-2 rounded-xl text-sm font-bold shadow-sm transition-colors flex items-center justify-center"
                     >
                       <X className="w-4 h-4 mr-1.5" /> {t('রিজেক্ট', 'Reject')}
                     </button>
@@ -1011,11 +1048,11 @@ export default function Admin() {
 
         {activeTab === 'rooms' && (
           <div>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
               <h2 className="text-xl font-bold text-slate-800">{t('রুম তালিকা', 'Room List')}</h2>
               <button 
                 onClick={handleAddRoom}
-                className="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg flex items-center transition-colors"
+                className="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-4 rounded-lg flex items-center transition-colors shadow-sm"
               >
                 <Plus className="w-5 h-5 mr-2" /> {t('নতুন রুম', 'Add Room')}
               </button>
@@ -1084,9 +1121,9 @@ export default function Admin() {
                         className="w-full px-3 py-2 border border-slate-300 rounded text-sm"
                         placeholder="Cut Price"
                       />
-                      <div className="flex space-x-2">
-                        <button onClick={() => handleUpdateRoom(room.id)} className="flex-1 py-2 bg-green-600 text-white rounded font-bold text-sm">Save</button>
-                        <button onClick={() => setIsEditing(null)} className="flex-1 py-2 bg-slate-200 text-slate-700 rounded font-bold text-sm">Cancel</button>
+                      <div className="flex flex-wrap gap-2 space-x-0">
+                        <button onClick={() => handleUpdateRoom(room.id)} className="flex-1 min-w-[80px] py-2 bg-green-600 text-white rounded font-bold text-sm">Save</button>
+                        <button onClick={() => setIsEditing(null)} className="flex-1 min-w-[80px] py-2 bg-slate-200 text-slate-700 rounded font-bold text-sm">Cancel</button>
                       </div>
                     </div>
                   )}
@@ -1231,7 +1268,7 @@ export default function Admin() {
 
         {activeTab === 'users' && (
           <div>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
               <h2 className="text-xl font-bold text-slate-800">{t('ইউজার তালিকা', 'User List')}</h2>
             </div>
             {/* Users Content */}
@@ -1408,9 +1445,9 @@ export default function Admin() {
                   </div>
                   <div className="pt-2">
                     {b.status === 'pending' ? (
-                      <div className="flex space-x-2">
-                        <button onClick={() => handleUpdateBookingStatus(b.id, 'accepted')} className="flex-1 py-2 bg-green-600 text-white text-xs font-bold rounded">Accept</button>
-                        <button onClick={() => handleUpdateBookingStatus(b.id, 'rejected')} className="flex-1 py-2 bg-red-600 text-white text-xs font-bold rounded">Reject</button>
+                      <div className="flex flex-wrap gap-2 space-x-0">
+                        <button onClick={() => handleUpdateBookingStatus(b.id, 'accepted')} className="flex-1 min-w-[70px] py-2 bg-green-600 text-white text-xs font-bold rounded">Accept</button>
+                        <button onClick={() => handleUpdateBookingStatus(b.id, 'rejected')} className="flex-1 min-w-[70px] py-2 bg-red-600 text-white text-xs font-bold rounded">Reject</button>
                       </div>
                     ) : (
                       <select 
@@ -1497,10 +1534,10 @@ export default function Admin() {
                         </td>
                         <td className="p-4 text-right">
                           {b.status === 'pending' ? (
-                            <div className="flex justify-end space-x-2">
+                            <div className="flex flex-wrap justify-end gap-2 space-x-0">
                               <button 
                                 onClick={() => handleUpdateBookingStatus(b.id, 'accepted')}
-                                className="px-3 py-1 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition-colors"
+                                className="px-3 py-1 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition-colors animate-pulse"
                               >
                                 Accept
                               </button>
@@ -1615,7 +1652,7 @@ export default function Admin() {
 
         {activeTab === 'ratings' && (
           <div>
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
               <h2 className="text-xl font-bold text-slate-800">{t('রেটিং তালিকা', 'Rating List')}</h2>
             </div>
             {/* Ratings Content */}
@@ -2219,17 +2256,29 @@ export default function Admin() {
 
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">{t('ভিডিও লিংক (H.264 format)', 'Video Direct URL (H.264 MP4)')}</label>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. https://worker.yoursubdomain.workers.dev/video.mp4"
-                      value={settings.videoAdUrl || ''}
-                      onChange={(e) => setSettings({...settings, videoAdUrl: e.target.value})}
-                      className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500 outline-none text-sm placeholder:text-slate-400"
-                    />
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        placeholder="e.g. https://worker.yoursubdomain.workers.dev/video.mp4"
+                        value={settings.videoAdUrl || ''}
+                        onChange={(e) => setSettings({...settings, videoAdUrl: e.target.value})}
+                        className="flex-grow px-4 py-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500 outline-none text-sm placeholder:text-slate-400"
+                      />
+                      <label className="flex items-center justify-center px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-lg text-xs cursor-pointer select-none transition-colors border border-slate-300 whitespace-nowrap">
+                        {uploadingAdVideo ? t('আপলোড হচ্ছে...', 'Uploading...') : t('আপলোড করুন', 'Upload Video')}
+                        <input 
+                          type="file" 
+                          accept="video/mp4, video/quicktime, video/x-m4v, video/*" 
+                          onChange={handleUploadAdVideo} 
+                          disabled={uploadingAdVideo}
+                          className="hidden" 
+                        />
+                      </label>
+                    </div>
                     <p className="text-xs text-slate-500 mt-1">
                       {t(
-                        'ক্লাউডফ্লেয়ার R2 ওয়ার্কার স্টোরেজ থেকে সরাসরি MP4/H.264 ফর্ম্যাট করা ভিডিও ব্যবহার করুন।',
-                        'Use direct MP4/H.264 video link hosted on Cloudflare R2 worker storage.'
+                        'ক্লাউডফ্লেয়ার R2 ওয়ার্কার স্টোরেজ থেকে সরাসরি MP4/H.264 ফর্ম্যাট করা ভিডিও ব্যবহার করুন। নতুন ভিডিও আপলোড বা এড করলে পূর্বের ভিডিওটি সরাসরি R2 স্টোরেজ থেকে ডিলিট হয়ে যাবে।',
+                        'Use direct MP4/H.264 video link hosted on Cloudflare R2 worker storage. Uploading/saving a new video deletes the old video from R2 worker storage automatically.'
                       )}
                     </p>
                   </div>

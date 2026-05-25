@@ -64,13 +64,10 @@ export default function Home() {
 
   useEffect(() => {
     if (settings && settings.videoAdEnabled && settings.videoAdUrl) {
-      const alreadyShown = sessionStorage.getItem('dismissedVideoAd');
-      if (!alreadyShown) {
-        const timer = setTimeout(() => {
-          setShowVideoAd(true);
-        }, 1200);
-        return () => clearTimeout(timer);
-      }
+      const timer = setTimeout(() => {
+        setShowVideoAd(true);
+      }, 1000);
+      return () => clearTimeout(timer);
     }
   }, [settings]);
 
@@ -962,10 +959,7 @@ export default function Home() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => {
-                setShowVideoAd(false);
-                sessionStorage.setItem('dismissedVideoAd', 'true');
-              }}
+              onClick={() => setShowVideoAd(false)}
               className="absolute inset-0 bg-slate-900/80 backdrop-blur-md"
             />
 
@@ -983,10 +977,7 @@ export default function Home() {
                   <span>📢</span> {settings.videoAdTitle || t('বিশেষ ঘোষণা', 'Special Announcement')}
                 </h3>
                 <button
-                  onClick={() => {
-                    setShowVideoAd(false);
-                    sessionStorage.setItem('dismissedVideoAd', 'true');
-                  }}
+                  onClick={() => setShowVideoAd(false)}
                   className="p-2 hover:bg-slate-300 rounded-full text-slate-500 hover:text-slate-800 transition-colors cursor-pointer flex items-center justify-center"
                   style={{ minWidth: '44px', minHeight: '44px' }}
                 >
@@ -1000,6 +991,7 @@ export default function Home() {
                   src={settings.videoAdUrl}
                   controls
                   autoPlay
+                  muted
                   playsInline
                   className="w-full h-full object-contain"
                 />
@@ -1008,10 +1000,7 @@ export default function Home() {
               {/* Action Footer */}
               <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
                 <button
-                  onClick={() => {
-                    setShowVideoAd(false);
-                    sessionStorage.setItem('dismissedVideoAd', 'true');
-                  }}
+                  onClick={() => setShowVideoAd(false)}
                   className="px-6 py-2 bg-red-700 hover:bg-red-800 text-white font-semibold rounded-xl text-sm transition-all shadow-md cursor-pointer hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
                   style={{ minHeight: '44px' }}
                 >
