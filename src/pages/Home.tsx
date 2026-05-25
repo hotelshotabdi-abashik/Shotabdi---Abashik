@@ -64,10 +64,15 @@ export default function Home() {
 
   useEffect(() => {
     if (settings && settings.videoAdEnabled && settings.videoAdUrl) {
-      const timer = setTimeout(() => {
-        setShowVideoAd(true);
-      }, 1000);
-      return () => clearTimeout(timer);
+      const hasVisitedBefore = sessionStorage.getItem('has_visited_before');
+      if (hasVisitedBefore === 'true') {
+        const timer = setTimeout(() => {
+          setShowVideoAd(true);
+        }, 1000);
+        return () => clearTimeout(timer);
+      } else {
+        sessionStorage.setItem('has_visited_before', 'true');
+      }
     }
   }, [settings]);
 
@@ -953,7 +958,7 @@ export default function Home() {
 
       <AnimatePresence>
         {showVideoAd && settings?.videoAdUrl && (
-          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-10 sm:p-14">
             {/* Ambient Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -974,11 +979,10 @@ export default function Home() {
               {/* Close Button transparent and far from the top-right corner of the video */}
               <button
                 onClick={() => setShowVideoAd(false)}
-                className="absolute -top-10 -right-10 z-[100001] p-2 bg-transparent hover:bg-white/15 text-white/80 hover:text-white rounded-full border border-white/30 hover:scale-110 active:scale-95 transition-all cursor-pointer flex items-center justify-center pointer-events-auto"
-                style={{ minWidth: '40px', minHeight: '40px' }}
+                className="absolute -top-8 -right-8 sm:-top-10 sm:-right-10 z-[100001] w-8 h-8 sm:w-10 sm:h-10 bg-transparent hover:bg-white/15 text-white/80 hover:text-white rounded-full border border-white/30 hover:scale-110 active:scale-95 transition-all cursor-pointer flex items-center justify-center pointer-events-auto"
                 title={t('বন্ধ করুন', 'Close')}
               >
-                <X className="w-6 h-6" />
+                <X className="w-4 h-4 sm:w-6 sm:h-6" />
               </button>
 
               <video
