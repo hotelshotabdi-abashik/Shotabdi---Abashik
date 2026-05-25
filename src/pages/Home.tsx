@@ -76,6 +76,17 @@ export default function Home() {
     }
   }, [settings]);
 
+  useEffect(() => {
+    if (showVideoAd) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [showVideoAd]);
+
   const websiteName = settings?.websiteName || t('হোটেল শতাব্দী আবাসিক', 'Hotel Shotabdi Abashik');
 
   const defaultRestaurants = [
