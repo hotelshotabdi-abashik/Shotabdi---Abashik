@@ -960,34 +960,34 @@ export default function Home() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowVideoAd(false)}
-              className="absolute inset-0 bg-slate-950/85 backdrop-blur-md cursor-pointer"
+              className="absolute inset-0 bg-black/40 cursor-pointer"
             />
 
-            {/* Single Floating Close Icon Button on Top Corner (Far to the top-right) */}
-            <button
-              onClick={() => setShowVideoAd(false)}
-              className="fixed top-6 right-6 md:top-10 md:right-10 z-[100001] p-3 bg-black/60 hover:bg-black/95 text-white rounded-full border border-white/30 hover:scale-110 active:scale-95 transition-all cursor-pointer flex items-center justify-center shadow-2xl"
-              style={{ minWidth: '48px', minHeight: '48px' }}
-              title={t('বন্ধ করুন', 'Close')}
-            >
-              <X className="w-6 h-6" />
-            </button>
-
-            {/* Seamless Unclickable Video Presentation */}
+            {/* Seamless Unclickable Video Presentation with Corner Close Button */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ type: "spring", duration: 0.5 }}
-              className="relative max-w-4xl max-h-[80vh] z-10 flex items-center justify-center pointer-events-none select-none"
+              className="relative w-full max-w-[480px] sm:max-w-[640px] md:max-w-[720px] z-10 flex items-center justify-center select-none"
             >
+              {/* Close Button transparent and far from the top-right corner of the video */}
+              <button
+                onClick={() => setShowVideoAd(false)}
+                className="absolute -top-10 -right-10 z-[100001] p-2 bg-transparent hover:bg-white/15 text-white/80 hover:text-white rounded-full border border-white/30 hover:scale-110 active:scale-95 transition-all cursor-pointer flex items-center justify-center pointer-events-auto"
+                style={{ minWidth: '40px', minHeight: '40px' }}
+                title={t('বন্ধ করুন', 'Close')}
+              >
+                <X className="w-6 h-6" />
+              </button>
+
               <video
                 src={settings.videoAdUrl}
                 autoPlay
                 loop
                 muted
                 playsInline
-                className="max-w-full max-h-[75vh] object-contain rounded-xl pointer-events-none select-none bg-transparent"
+                className="w-full max-h-[70vh] object-contain rounded-2xl pointer-events-none select-none bg-transparent"
               />
             </motion.div>
           </div>
