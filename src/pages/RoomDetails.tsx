@@ -76,7 +76,7 @@ export default function RoomDetails() {
   const canonicalUrl = `https://shotabdi-abashik.bd/rooms/${slugifiedName}`;
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-0 sm:pt-24 pb-8 sm:pb-16 overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 pt-12 sm:pt-24 pb-8 sm:pb-16 overflow-x-hidden">
       <Helmet>
         <title>{room.name} | Hotel Shotabdi Abashik</title>
         <meta name="description" content={room.description} />
@@ -118,7 +118,7 @@ export default function RoomDetails() {
         </script>
       </Helmet>
 
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md sm:hidden border-b border-slate-100 px-4 py-3 flex items-center gap-3">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md sm:hidden border-b border-slate-100 px-4 h-12 flex items-center gap-3">
         <Link to="/rooms" className="p-2 bg-slate-100 rounded-full text-slate-700">
           <ArrowLeft className="w-5 h-5" />
         </Link>

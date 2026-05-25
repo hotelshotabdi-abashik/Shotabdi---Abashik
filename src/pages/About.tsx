@@ -18,7 +18,7 @@ export default function About() {
   );
 
   return (
-    <div className="bg-slate-50 min-h-screen pb-16">
+    <div className="bg-slate-50 min-h-screen pb-16 pt-14 sm:pt-16">
       <Helmet>
         <title>{pageTitle}</title>
         <meta name="description" content={description} />
@@ -30,10 +30,10 @@ export default function About() {
         <meta property="twitter:image" content={logoUrl} />
       </Helmet>
 
-      {/* Modern Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center py-4 gap-4">
+      {/* Modern Fixed Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm transition-all duration-300 h-14 sm:h-16 flex items-center w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="flex justify-between items-center gap-4">
             <div className="flex items-center gap-4 w-full md:w-auto">
               <Link to="/" className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 sm:p-2.5 rounded-full transition-all flex-shrink-0">
                 <ArrowLeft className="w-5 h-5" />

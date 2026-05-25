@@ -433,7 +433,7 @@ export default function Rooms() {
   };
 
   return (
-    <div className="bg-slate-50 min-h-screen relative pb-16">
+    <div className="bg-slate-50 min-h-screen relative pb-16 pt-14 sm:pt-16">
       <Helmet>
         <title>Our Rooms | Hotel Shotabdi Abashik</title>
         <meta name="description" content="Explore our comfortable and affordable rooms in Sylhet. Choose from Single Delux, Double Delux, Family Suit, and Super Delux." />
@@ -474,10 +474,10 @@ export default function Rooms() {
         </script>
       </Helmet>
 
-      {/* Modern Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-3 sm:py-4 gap-4">
+      {/* Modern Fixed Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm transition-all duration-300 h-14 sm:h-16 flex items-center w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="flex justify-between items-center gap-4">
             <div className="flex items-center gap-3 sm:gap-4 w-full md:w-auto overflow-hidden">
               <Link to="/" className="bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 sm:p-2.5 rounded-full transition-all flex-shrink-0">
                 <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
