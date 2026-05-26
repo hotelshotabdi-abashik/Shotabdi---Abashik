@@ -66,10 +66,7 @@ export default function Home() {
     if (settings && settings.videoAdEnabled && settings.videoAdUrl) {
       const hasVisitedBefore = sessionStorage.getItem('has_visited_before');
       if (hasVisitedBefore === 'true') {
-        const timer = setTimeout(() => {
-          setShowVideoAd(true);
-        }, 1000);
-        return () => clearTimeout(timer);
+        setShowVideoAd(true);
       } else {
         sessionStorage.setItem('has_visited_before', 'true');
       }
@@ -1002,6 +999,7 @@ export default function Home() {
                 loop
                 muted
                 playsInline
+                preload="auto"
                 className="w-full max-h-[70vh] object-contain rounded-2xl pointer-events-none select-none bg-transparent"
               />
             </motion.div>
