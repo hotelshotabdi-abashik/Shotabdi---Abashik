@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, Upload, CheckCircle2, AlertCircle, Loader2, X, ShieldCheck, Image as ImageIcon } from 'lucide-react';
+import { Camera, Upload, CheckCircle2, AlertCircle, Loader2, X, ShieldCheck, Image as ImageIcon, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -22,6 +22,7 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
   const [nidPreview, setNidPreview] = useState<string | null>(null);
   const [nidNumber, setNidNumber] = useState(profile?.nidNumber || '');
   const [loading, setLoading] = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -78,6 +79,55 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
         setNidPreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleExtractNidInfo = async () => {
+    if (!nidFile) {
+      toast.error(t('অনুগ্রহ করে আগে এনআইডির ছবি দিন।', 'Please upload or capture an NID image first.'));
+      return;
+    }
+    setExtracting(true);
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(nidFile);
+      reader.onloadend = async () => {
+        try {
+          const base64withPrefix = reader.result as string;
+          const base64Data = base64withPrefix.split(',')[1];
+          const mimeType = nidFile.type;
+
+          const response = await fetch('/api/extract-nid', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageBase64: base64Data, mimeType }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to extract NID');
+          }
+
+          const data = await response.json();
+          if (data && data.nidNumber) {
+            setNidNumber(data.nidNumber);
+            toast.success(t('এনআইডি তথ্য সফলভাবে এক্সট্র্যাক্ট করা হয়েছে!', 'NID info successfully extracted!'));
+            if (data.fullNameEn) {
+              toast.info(`${t('পূর্ণ নাম (ইংরেজি):', 'Full Name (EN):')} ${data.fullNameEn}`);
+            }
+          } else {
+            toast.error(t('এনআইডি নম্বর সনাক্ত করা যায়নি। অনুগ্রহ করে পরিষ্কার ছবি দিন।', 'NID number not detected. Please upload a clearer image.'));
+          }
+        } catch (apiErr: any) {
+          console.error(apiErr);
+          toast.error(t('তথ্য এক্সট্র্যাক্ট করতে সমস্যা হয়েছে।', 'Failed to extract information.'));
+        } finally {
+          setExtracting(false);
+        }
+      };
+    } catch (err) {
+      console.error(err);
+      toast.error(t('ফাইল পড়তে সমস্যা হয়েছে।', 'Failed to read file.'));
+      setExtracting(false);
     }
   };
 
@@ -198,7 +248,29 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = ({ isOp
                 </div>
 
                 <div className="pt-2">
-                  <label className="block text-sm font-bold text-slate-700 mb-1">{t('এনআইডি নম্বর', 'NID Number')}</label>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className="block text-sm font-bold text-slate-700">{t('এনআইডি নম্বর', 'NID Number')}</label>
+                    {nidPreview && (
+                      <button
+                        type="button"
+                        onClick={handleExtractNidInfo}
+                        disabled={extracting}
+                        className="flex items-center gap-1 text-xs bg-red-50 text-red-750 hover:bg-red-100 font-bold px-2.5 py-1 rounded-lg transition-all border border-red-100 disabled:opacity-50 cursor-pointer pointer-events-auto"
+                      >
+                        {extracting ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            {t('তথ্য খোঁজা হচ্ছে...', 'Extracting...')}
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3 h-3 text-red-650" />
+                            {t('এআই দিয়ে অটোফিল', 'Autofill with AI')}
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                   <input 
                     type="text"
                     value={nidNumber}

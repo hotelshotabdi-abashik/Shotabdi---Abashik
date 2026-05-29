@@ -10,7 +10,7 @@ import { initializeApp as initClient } from 'firebase/app';
 import { getFirestore as getClientFirestore, collection, getDocs } from 'firebase/firestore';
 import fs from 'fs';
 import axios from 'axios';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 
 dotenv.config();
 
@@ -293,6 +293,65 @@ async function startServer() {
     } catch (error) {
       console.error('Error sending email:', error);
       res.status(500).json({ error: 'Failed to send email' });
+    }
+  });
+
+  app.post('/api/extract-nid', async (req, res) => {
+    let { imageBase64, mimeType, imageUrl } = req.body;
+
+    try {
+      if (!imageBase64 && imageUrl) {
+        // Fetch image and convert to base64 on server-side to avoid CORS or fetch limits
+        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        const contentType = imageResponse.headers['content-type'] || 'image/jpeg';
+        const buffer = Buffer.from(imageResponse.data);
+        imageBase64 = buffer.toString('base64');
+        mimeType = contentType;
+      }
+
+      if (!imageBase64 || !mimeType) {
+        return res.status(400).json({ error: 'Either imageBase64 or imageUrl is required' });
+      }
+
+      const imagePart = {
+        inlineData: {
+          mimeType: mimeType,
+          data: imageBase64,
+        },
+      };
+
+      const textPart = {
+        text: "Extract information from this Bangladesh National Identification Card (NID). Read the details with high absolute precision. Extract the full name in English, full name in Bengali (if visible), exact National ID number, and date of birth.",
+      };
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: { parts: [imagePart, textPart] },
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              fullNameEn: { type: Type.STRING, description: "Full Name in English from the card (or best transliteration, capitalized nicely)" },
+              fullNameBn: { type: Type.STRING, description: "Full Name in Bengali (বাংলা) from the card (if present/visible)" },
+              nidNumber: { type: Type.STRING, description: "Clear National ID or NID Number (usually 10, 13, or 17 numeric digits)" },
+              dateOfBirth: { type: Type.STRING, description: "Date of Birth as shown on the NID card (e.g. DD MMM YYYY or YYYY-MM-DD)" },
+            },
+            required: ["nidNumber"],
+          },
+        },
+      });
+
+      const text = response.text;
+      if (!text) {
+        throw new Error('Gemini failed to return text results');
+      }
+
+      const result = JSON.parse(text.trim());
+      res.json(result);
+    } catch (err: any) {
+      console.error('Error in /api/extract-nid:', err);
+      res.status(500).json({ error: err.message || 'Failed to analyze NID image' });
     }
   });
 
