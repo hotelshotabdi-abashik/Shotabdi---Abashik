@@ -4,7 +4,7 @@ import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { updatePassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X, BadgeCheck, Fingerprint, Trash2, AlertTriangle, Image as ImageIcon, Sparkles, Loader2 } from 'lucide-react';
+import { UserCircle, FileText, Phone, User, CheckCircle2, Shield, Lock, Smartphone, Globe, Camera, LogOut, Key, X, BadgeCheck, Fingerprint, Trash2, AlertTriangle, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '../context/LanguageContext';
 import PhoneInput from '../components/PhoneInput';
@@ -22,53 +22,6 @@ export default function Profile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [isVerificationModalOpen, setIsVerificationModalOpen] = useState(false);
-  const [extractingNid, setExtractingNid] = useState(false);
-  const [extractedNidData, setExtractedNidData] = useState<any>(null);
-  const [showExtractedModal, setShowExtractedModal] = useState(false);
-
-  const handleExtractUploadedNid = async () => {
-    if (!profile?.nidImageUrl) {
-      toast.error(t('কোন পরিচয়পত্র (NID) আপলোড করা নেই।', 'No identity card (NID) uploaded.'));
-      return;
-    }
-    setExtractingNid(true);
-    try {
-      const response = await fetch('/api/extract-nid', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageUrl: fixR2Url(profile.nidImageUrl) }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to extract NID information');
-      }
-      
-      const data = await response.json();
-      if (data) {
-        setExtractedNidData(data);
-        setShowExtractedModal(true);
-        toast.success(t('এনআইডি তথ্য সফলভাবে এক্সট্র্যাক্ট করা হয়েছে!', 'NID info successfully extracted!'));
-      } else {
-        toast.error(t('তথ্য এক্সট্র্যাক্ট করা যায়নি। অনুগ্রহ করে স্পষ্ট ছবি দিন।', 'Failed to extract info. Please verify the NID image is clear.'));
-      }
-    } catch (err: any) {
-      console.error(err);
-      toast.error(t('তথ্য এক্সট্র্যাক্ট করতে ব্যর্থ হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।', 'Failed to extract NID information. Please try again.'));
-    } finally {
-      setExtractingNid(false);
-    }
-  };
-
-  const handleApplyExtractedData = () => {
-    if (!extractedNidData) return;
-    setFormData({
-      ...formData,
-      legalName: extractedNidData.fullNameEn || formData.legalName,
-      nidNumber: extractedNidData.nidNumber || formData.nidNumber,
-    });
-    setShowExtractedModal(false);
-    toast.success(t('তথ্য ফরমে যুক্ত করা হয়েছে! পরিবর্তনগুলো স্থায়ী করতে নিচে সংরক্ষণ বাটন চাপুন।', 'Data applied to form! Click Save below to persist.'));
-  };
   
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('profileDraft');
@@ -546,30 +499,9 @@ export default function Profile() {
                 </div>
                 
                 {profile?.nidNumber && (
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-xs text-slate-400 font-bold uppercase mb-1">{t('NID নম্বর', 'NID Number')}</p>
-                      <p className="font-mono text-slate-900 tracking-wider bg-white px-3 py-1 rounded inline-block border border-slate-100">{profile.nidNumber}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleExtractUploadedNid}
-                      disabled={extractingNid}
-                      className="flex items-center gap-1.5 text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-3 py-2 rounded-xl transition-all border border-indigo-100 disabled:opacity-50 cursor-pointer pointer-events-auto shrink-0 animate-pulse"
-                      title={t('এআই দিয়ে তথ্য এক্সট্র্যাক্ট করুন', 'Extract info with AI')}
-                    >
-                      {extractingNid ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          {t('খোঁজা হচ্ছে...', 'Scanning...')}
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                          {t('এআই দিয়ে তথ্য খুঁজুন', 'AI Extract')}
-                        </>
-                      )}
-                    </button>
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <p className="text-xs text-slate-400 font-bold uppercase mb-1">{t('NID নম্বর', 'NID Number')}</p>
+                    <p className="font-mono text-slate-900 tracking-wider bg-white px-3 py-1 rounded inline-block border border-slate-100">{profile.nidNumber}</p>
                   </div>
                 )}
                 
@@ -836,77 +768,6 @@ export default function Profile() {
         onClose={() => setIsVerificationModalOpen(false)} 
         onVerified={() => setIsVerificationModalOpen(false)}
       />
-
-      {showExtractedModal && extractedNidData && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100">
-            <div className="bg-slate-900 px-6 py-4 flex justify-between items-center text-white">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-red-500 animate-pulse" />
-                <h3 className="text-lg font-bold">{t('এআই পরিচয়পত্র তথ্য এক্সট্রাকশন', 'AI NID Information')}</h3>
-              </div>
-              <button 
-                onClick={() => setShowExtractedModal(false)}
-                className="p-1 hover:bg-white/10 rounded-full transition-colors"
-                type="button"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <p className="text-slate-500 text-sm leading-relaxed">
-                {t('আপনার আপলোডকৃত পরিচয়পত্র থেকে নিচের তথ্যগুলো সফলভাবে সনাক্ত করা হয়েছে:', 'The following information was successfully extracted from your uploaded NID image:')}
-              </p>
-
-              <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                {extractedNidData.fullNameEn && (
-                  <div>
-                    <span className="text-xs font-bold text-slate-400 block uppercase mb-0.5">{t('পূর্ণ নাম (ইংরেজি)', 'Full Name (English)')}</span>
-                    <span className="text-slate-800 font-bold text-sm bg-white border border-slate-100 px-2 py-1 rounded block">{extractedNidData.fullNameEn}</span>
-                  </div>
-                )}
-                {extractedNidData.fullNameBn && (
-                  <div>
-                    <span className="text-xs font-bold text-slate-400 block uppercase mb-0.5">{t('পূর্ণ নাম (বাংলা)', 'Full Name (Bengali)')}</span>
-                    <span className="text-slate-800 font-bold text-sm bg-white border border-slate-100 px-2 py-1 rounded block">{extractedNidData.fullNameBn}</span>
-                  </div>
-                )}
-                {extractedNidData.nidNumber && (
-                  <div>
-                    <span className="text-xs font-bold text-slate-400 block uppercase mb-0.5">{t('এনআইডি নম্বর', 'NID Number')}</span>
-                    <span className="font-mono text-indigo-700 font-bold text-sm bg-indigo-50/50 px-2 py-1 rounded border border-indigo-100 inline-block tracking-wider">{extractedNidData.nidNumber}</span>
-                  </div>
-                )}
-                {extractedNidData.dateOfBirth && (
-                  <div>
-                    <span className="text-xs font-bold text-slate-400 block uppercase mb-0.5">{t('জন্ম তারিখ', 'Date of Birth')}</span>
-                    <span className="text-slate-800 font-bold text-sm bg-white border border-slate-100 px-2 py-1 rounded block">{extractedNidData.dateOfBirth}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowExtractedModal(false)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl font-bold transition-all text-sm cursor-pointer"
-                >
-                  {t('বন্ধ করুন', 'Close')}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleApplyExtractedData}
-                  className="flex-1 bg-red-700 hover:bg-red-800 text-white py-3 rounded-xl font-bold transition-all text-sm shadow-md cursor-pointer flex items-center justify-center gap-1.5"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  {t('ফরমে বসান', 'Apply to Form')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
